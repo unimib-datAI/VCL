@@ -1,0 +1,87 @@
+contesto:
+il risultato di questo prompt costituisce uno step per la traduzione di una query espressa in linguaggio naturale in un linguaggio semi strutturato.
+la query in linguaggio semi strutturato sare' poi l'input di un sistema rag.
+
+compito:
+classificare l’intento della query `{query}` scegliendo l’opzione che meglio la rappresenta tra le seguenti:
+
+- `a`: cerca porzioni del documento che contengano le informazioni richieste e fornisce una risposta completa utilizzando direttamente tali contenuti, senza riformularli.
+- `b`: riassume il contenuto in modo chiaro e conciso, mantenendo i punti chiave entro un limite prefissato di parole.
+- `c`: confronta due documenti per evidenziare similitudini e differenze a livello strutturale, semantico o argomentativo.
+- `d`: analizza il documento per estrarre componenti logiche implicite (es. struttura semantica, sillogismi, percorso argomentativo non esplicito). a differenza di 'a' le informazioni possono essere riformulate.
+- `e`: identifica e raggruppa tutte le citazioni o riferimenti a un tema specifico presenti nel documento.
+- `f`: espande un testo fino a un certo numero di parole, aggiungendo esempi, spiegazioni e dettagli in modo coerente.
+- `g`: genera un nuovo testo coerente unificando logicamente pie' estratti o documenti, evitando ridondanze.
+- `h`: verifica la coerenza tra le motivazioni e le decisioni finali presenti nel documento, segnalando eventuali incongruenze.
+- `i`: valuta la rilevanza di un argomento/documento/precedente giuridico rispetto alla decisione finale, motivando il giudizio.
+- `l`: esegue calcoli basati su dati numerici presenti nel testo.
+
+nota importante:
+- la classificazione si basa sull’intento principale (il piu' generale) della query, non sul contenuto specifico richiesto.
+- la risposta deve essere costituita solo dalla lettera (a–l) corrispondente all'intento. in caso di dubbi la risposta e' `d`
+
+esempio 1
+
+input: "trova le parti della sentenza in cui si definisce la responsabilita' contrattuale del medico."
+ragionamento: la richiesta mira a localizzare nel documento solo le sezioni pertinenti, senza alterarle o riformularle. l’obiettivo e' estrarre direttamente le porzioni rilevanti.
+output: a
+
+esempio 2
+
+input: "riassumi il contenuto del ricorso per cassazione in un testo di massimo 300 parole, evidenziando solo gli argomenti principali."
+ragionamento: la richiesta e' orientata a condensare il contenuto, mantenendo i punti chiave e rispettando un limite di parole. non si richiede una riformulazione logica profonda, ma una sintesi.
+output: b
+
+esempio 3
+
+input: "confronta le motivazioni della sentenza di primo grado con quelle della sentenza d’appello per evidenziarne le differenze giuridiche."
+ragionamento: la query esplicita la necessita' di un confronto tra due fonti, con attenzione alle differenze giuridiche. il confronto e' l’azione principale richiesta.
+output: c
+
+esempio 4
+
+input: "estrai la struttura logica e il sillogismo giuridico implicito usato dal giudice nella sentenza s2."
+ragionamento: l’obiettivo e' ricostruire la logica implicita, cioe' strutture non immediatamente evidenti nel testo, e che possono richiedere interpretazione e riformulazione
+output: d
+
+esempio 5
+
+input: "trova tutte le citazioni della normativa europea nella motivazione della sentenza."
+ragionamento: la query chiede di identificare e raggruppare tutti i riferimenti a un tema specifico (normativa europea), senza analisi o riformulazioni.
+output: e
+
+esempio 6
+
+input: "espandi questa memoria difensiva fino a 1500 parole, includendo esempi giurisprudenziali e chiarimenti dottrinali."
+ragionamento: la richiesta e' di ampliare un testo aggiungendo contenuto coerente e rilevante, mantenendo lo stesso significato ma con pie' dettagli.
+output: f
+
+esempio 7
+
+input: "unifica i seguenti tre estratti giurisprudenziali in un testo coerente e continuo, evitando ripetizioni."
+ragionamento: la query chiede di integrare piu' fonti in un nuovo testo unico, logicamente coeso e privo di ridondanze. si tratta di una generazione testuale.
+output: g
+
+esempio 8
+
+input: "controlla se le motivazioni esposte nella sentenza supportano logicamente la decisione finale."
+ragionamento: qui l’obiettivo e' verificare la coerenza interna del documento tra premesse e conclusioni, identificando eventuali disallineamenti.
+output: h
+
+esempio 9
+
+input: "quanto e' rilevante il precedente x citato nella sentenza rispetto alla decisione finale? argomenta la risposta."
+ragionamento: la domanda chiede una valutazione della pertinenza e dell’impatto del precedente, non una semplice estrazione o sintesi.
+output: i
+
+esempio 10
+
+input: "calcola il numero di precedenti presenti nella sentenza di primo grado."
+ragionamento: richiesta che implica un conteggio o una quantificazione basata su dati specifici nel testo.
+output: l
+
+esempio 11
+
+input: "traduce questa sentenza in inglese mantenendo la terminologia legale corretta."
+ragionamento: l’obiettivo e' la traduzione, operazione che non rientra nelle altre categorie previste. e' un caso residuale.
+output: m

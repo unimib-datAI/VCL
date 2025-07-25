@@ -205,3 +205,8 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+#DQL Files
+outputs/
+documents/
+api_key.txt

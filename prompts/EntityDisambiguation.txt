@@ -1,0 +1,127 @@
+contesto:
+- hai ricevuto la seguente domanda: "{query}".
+- è stato determinato che si tratta di un'operazione di tipo "{comando}", ovvero che "{descrizione_comando}".
+- è stato appurato che l'operazione deve essere applicata su "{dove}".
+- è confermato che l'operazione lavora considerando un'entita'.
+
+definizione dell'entita':
+un'entita' puo' essere di uno dei seguenti tipi:
+- "persona": riferimento a individui
+- "fonte": citazioni in documenti giudiziari (es. "sentenza di cassazione n.12, 2018")
+- "organizzazione": enti o aziende (es. "tribunale di milano", "vodafone")
+- "luogo": localita' reali
+- "denaro": importi monetari
+- "articolo": articolo del codice o di leggi italiane
+
+obiettivo:
+fornire una rappresentazione strutturata in json di questa entita', per consentire a un sistema rag operazioni di verifica di contenuto esatto o similarit� del coseno.
+
+struttura json richiesta:
+{{
+    "name": "entita'",
+    "type": "",
+    "key": "",
+    "ragionamento": ""
+}}
+
+descrizione dei campi:
+- "type": uno dei tipi di entita' indicati
+- "key": parole chiave dell'entita'. se non emergono parole chiave specifiche, usare "all"
+- "ragionamento": spiegazione dettagliata e coerente su come sono stati determinati "type" e "key". deve:
+  - far esplicitamente riferimento agli elementi della query che motivano la scelta del tipo
+  - giustificare le parole chiave selezionate
+  - mostrare tutti i passaggi logici
+
+rispondi esclusivamente con l'oggetto json.
+
+esempi:
+
+1) query: "estrai dalla sentenza s1 i valori economici espressi in euro"
+output:
+{{
+    "name": "entita'",
+    "type": "denaro",
+    "key": "euro",
+    "ragionamento": "la query richiede valori economici, che rientrano in 'denaro'. il vincolo 'in euro' specifica la valuta, quindi la key � 'euro'."
+}}
+
+2) query: "evidenzia le persona coinvolte nel ricorso r2"
+output:
+{{
+    "name": "entita'",
+    "type": "persona",
+    "key": "persona coinvolte",
+    "ragionamento": "il comando mira a recuperare i soggetti umani menzionati, quindi tipo 'persona'. non sono indicate specifiche (all), ma essendo coinvolgimenti, uso 'persona coinvolte' come key."
+}}
+
+3) query: "trova tutte le citazioni alla sentenza di primo grado nella memoria m2"
+output:
+{{
+    "name": "entita'",
+    "type": "fonte",
+    "key": "sentenza di primo grado",
+    "ragionamento": "si cerca espressamente una citazione che rientra in 'fonte'. la query menziona 'sentenza di primo grado', quindi key = 'sentenza di primo grado'."
+}}
+
+4) query: "indica l'organizzazione che ha emesso l'articolo 5"
+output:
+{{
+    "name": "entita'",
+    "type": "organizzazione",
+    "key": "emittente articolo 5",
+    "ragionamento": "� richiesto di identificare l'organo o ente emittente, quindi tipo 'organizzazione'. la parola chiave riguarda chi ha emesso l'articolo 5, quindi 'emittente articolo 5'."
+}}
+
+5) query: "elenca i luogo menzionati in sentenza s2"
+output:
+{{
+    "name": "entita'",
+    "type": "luogo",
+    "key": "all",
+    "ragionamento": "la query chiede tutti i luogo presenti, senza specifiche, quindi tipo 'luogo' e key 'all'."
+}}
+
+6) query: "recupera importi superiori a 1000 euro nella sentenza s1"
+output:
+{{
+    "name": "entita'",
+    "type": "denaro",
+    "key": ">1000 euro",
+    "ragionamento": "si richiedono importi monetari, tipo 'denaro'. il filtro 'superiori a 1000 euro' diventa key '>1000 euro'."
+}}
+
+7) query: "mostra riferimenti all'articolo 14 della costituzione"
+output:
+{{
+    "name": "entita'",
+    "type": "articolo",
+    "key": "articolo 14 costituzione",
+    "ragionamento": "si tratta di articolo di legge, quindi tipo 'articolo'. la key � il riferimento esplicito 'articolo 14 costituzione'."
+}}
+
+8) query: "filtra i documenti contenenti la parola 'contratto'"
+output:
+{{
+    "name": "entita'",
+    "type": "fonte",
+    "key": "contratto",
+    "ragionamento": "il termine 'contratto' è un generico riferimento a citazioni/documenti, quindi tipo 'fonte'. key = 'contratto'."
+}}
+
+9) query: "identifica il luogo associato a mario rossi"
+output:
+{{
+    "name": "entita'",
+    "type": "luogo",
+    "key": "all",
+    "ragionamento": "la query chiede il luogo relativo a una persona, ma non specifica quale, quindi tipo 'luogo'. mancando dettagli, key = 'all'."
+}}
+
+10) query: "estrai le organizzazioni menzionate senza allegati"
+output:
+{{
+    "name": "entita'",
+    "type": "organizzazione",
+    "key": "all",
+    "ragionamento": "si richiedono organizzazioni, tipo 'organizzazione'. l'espressione 'senza allegati' suggerisce estrazione dal testo principale, ma non influenza key, quindi 'all'."
+}}

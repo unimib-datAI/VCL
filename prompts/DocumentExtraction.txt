@@ -1,0 +1,80 @@
+contesto:
+il risultato di questo prompt costituisce uno step per la traduzione di una query espressa in linguaggio naturale in un linguaggio semi strutturato.
+la query in linguaggio semi strutturato sara' poi l'input di un sistema rag.
+il sistema rag e' composto da una componente "contesto" in cui sono memorizzati i documenti da analizzare.
+
+compito:
+individuare l'elenco dei documenti legali a cui si riferisce la query "{query}".
+i possibili documenti sono:
+- `sentenza di primo grado` (s1)
+- `sentenza di secondo grado` (s2)
+- `memoria giudiziale` (m2)
+- `ricorso giudiziale` (r2)
+se nella query non e' riportato un riferimento diretto al documento i possibili valori sono:
+- `['contesto']` se occorre analizzare tutti i documenti che compongono il contesto
+- `None` se non si ritiene necessario utilizzare il sistema rag per ottenere una risposta in quanto tutte le informazioni necessarie sono presenti nella query o il dominio non rientra nell'aspetto legale.
+
+nota importante:
+- rispondi esclusivamente con la lista python dei documenti rilevanti.
+- in caso di dubbi la risposta e' `['contesto']`
+
+esempio 1
+
+input: "estrai il sillogismo della sentenza s2 con meno di 100 parole"
+ragionamento: la query menziona "s2", da interpretare come sentenza di secondo grado. l’estrazione del sillogismo implica l’analisi del contenuto logico della sentenza.
+output: ["sentenza di secondo grado"]
+
+esempio 2
+
+input: "confronta le decisioni relative alla parte voni nelle due tipologie di sentenze allegate"
+ragionamento: il riferimento a "due tipologie di sentenze" implica sia la sentenza di primo grado che la sentenza di secondo grado.
+output: ["sentenza di primo grado", "sentenza di secondo grado"]
+
+esempio 3
+
+input: "estrai dalla sentenza di 1 livello i valori economici espressi in euro"
+ragionamento: "sentenza di 1 livello" e' sinonimo di sentenza di primo grado. la richiesta e' diretta e specifica.
+output: ["sentenza di primo grado"]
+
+esempio 4
+
+input: "riassumi in 50 parole la memoria"
+ragionamento: il termine "memoria" in ambito legale si riferisce alla memoria giudiziale. l’obiettivo e' sintetizzarne il contenuto.
+output: ["memoria giudiziale"]
+
+esempio 5
+
+input:
+"trova precedenti su persona mario rossi"
+ragionamento: non e' indicato alcun documento specifico. poich� si cercano precedenti, occorre analizzare tutti i documenti disponibili nel contesto.
+output: ["contesto"]
+
+esempio 6
+
+input: "calcola la differenza matematica tra 100 e 50"
+ragionamento: la query e' di natura aritmetica e non ha alcuna rilevanza legale. il sistema rag non e' necessario.
+output: ["None"]
+
+esempio 7
+
+input: "mostra solo le decisioni dopo il 2015 nella sentenza s1"
+ragionamento: "s1" puo' essere interpretata come sentenza di primo grado. il riferimento temporale non cambia il documento implicato.
+output: ["sentenza di primo grado"]
+
+esempio 8
+
+input: "analizza il percorso logico e fornisci la risposta tramite elenco puntato"
+ragionamento: la query e' generica e non fa riferimento a documenti specifici. per eseguire l’analisi richiesta e' necessario accedere all’intero contesto.
+output: ["contesto"]
+
+esempio 9
+
+input: "come si cucina la pasta?"
+ragionamento: domanda completamente fuori dominio legale. non richiede analisi documentale n� coinvolge il sistema rag.
+output: ["None"]
+
+esempio 10
+
+input: "confronta i passaggi logici dei documenti"
+ragionamento: la query e' generica e non specifica quali documenti. per soddisfarla, e' necessario analizzare il contesto nel suo complesso.
+output: ["contesto"]

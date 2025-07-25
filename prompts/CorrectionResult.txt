@@ -1,0 +1,5 @@
+domanda: {question}
+risposta iniziale: {response}
+valutazione ricevuta: {feedback}
+
+analizza la risposta e fornisci una nuova versione migliorata, se necessaria, che segua la stessa struttura di risposta iniziale. rispondi con solo la versione migliorata.

@@ -1,0 +1,7 @@
+{comando} i seguenti testi considerando come condizioni:
+{condizioni}
+
+La risposta deve essere un semplice testo, dove se non sono stati posti limiti sul numero di parole deve essere lungo almeno 250 parole.
+
+Testi:
+{testi}

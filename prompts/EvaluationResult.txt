@@ -1,0 +1,10 @@
+domanda: {question}
+risposta generata: {response}
+
+valuta la qualita' della risposta in base a chiarezza, accuratezza, completezza.
+dai un punteggio da 1 a 10 (8 e' la soglia della sufficienza) e motivalo. la tua risposta deve seguire la seguente struttura:
+
+{{
+    "voto": "",
+    "motivazione": ""
+}}

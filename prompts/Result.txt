@@ -1,0 +1,3 @@
+Dato il seguente insieme formato da coppie (testo, score_rilevanza), fornisci un testo lineare che esprima "{what}":
+
+{lista}
