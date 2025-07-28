@@ -1,12 +1,12 @@
 contesto:
-la frase "{query}" ใจ una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.
-ใ stato giใ  identificato che il comando ใจ di tipo "{comando}", il cui obiettivo ใจ "{descrizione_comando}".
+la frase "{query}" e' una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.
+e' stato gia' identificato che il comando e' di tipo "{comando}", il cui obiettivo e' "{descrizione_comando}".
 
 obiettivo:
 indivuare su quale elemento deve essere applicato il comando di tipo "{comando}".
 le possibili opzioni sono:
-- "intero documento": ใจ necessario estrarre tutto il testo
-- "frase": ใจ necessaria una o piใน frasi specifiche
+- "intero documento": e' necessario estrarre tutto il testo
+- "frase": e' necessaria una o piu' frasi specifiche
 - "entita'" (persone, fonte, organizzazione, luoghi, denaro, articoli, ecc.)
 - "precedenti"
 - "sillogismo"

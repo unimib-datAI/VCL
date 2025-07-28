@@ -1,11 +1,11 @@
 contesto:
 - hai ricevuto la seguente domanda: "{query}".
-- ãˆ stato determinato che si tratta di un'operazione di tipo "{comando}", ovvero: "{descrizione_comando}".
-- ãˆ stato inoltre stabilito che tale operazione deve essere applicata su "{dove}". di conseguenza, questo valore non deve comparire nel campo "relativa_a".
-- ãˆ stato accertato che lâ€™elemento su cui lâ€™operazione si concentra ã¨ una o piã¹ frasi.
+- e' stato determinato che si tratta di un'operazione di tipo "{comando}", ovvero: "{descrizione_comando}".
+- e' stato inoltre stabilito che tale operazione deve essere applicata su "{dove}". di conseguenza, questo valore non deve comparire nel campo "relativa_a".
+- e' stato accertato che lâ€™elemento su cui lâ€™operazione si concentra e' una o piu' frasi.
 
 obiettivo:
-generare una rappresentazione strutturata dellâ€™oggetto "frase" in formato json, ottimizzata per essere processata da un sistema rag (retrieval-augmented generation). tale rappresentazione deve agevolare operazioni basate su ricerca testuale (esatta o per similaritã  semantica, come la similaritã  del coseno).
+generare una rappresentazione strutturata dellâ€™oggetto "frase" in formato json, ottimizzata per essere processata da un sistema rag (retrieval-augmented generation). tale rappresentazione deve agevolare operazioni basate su ricerca testuale (esatta o per similarita' semantica, come la similarita' del coseno).
 
 struttura attesa:
 
@@ -21,11 +21,11 @@ struttura attesa:
 
 descrizione dei campi:
 - "name": valore fisso, sempre "frase".
-- "limitata": booleano (true o false). indica se la frase ã¨ delimitata da virgolette o altre espressioni testuali che ne limitano il contenuto.
+- "limitata": booleano (true o false). indica se la frase e' delimitata da virgolette o altre espressioni testuali che ne limitano il contenuto.
 - "relativa_a": oggetto che descrive il contesto o l'elemento di riferimento a cui si riferisce la frase:
   - "name": categoria di riferimento, uno tra:
-    - "intero documento": ã¨ necessario individuare ciã² che ã¨ scritto in "descrizione" nell'intero documento
-    - "entitã ": include elementi come "persone" (riferimento a individui), "fonte" (citazioni in documenti giudiziari), "organizzazione" (enti o aziende) "luoghi" (localitã  reali), "denaro" (importi monetari), "articoli" (articoli del codice o di leggi italiane)
+    - "intero documento": e' necessario individuare cio' che e' scritto in "descrizione" nell'intero documento
+    - "entita'": include elementi come "persone" (riferimento a individui), "fonte" (citazioni in documenti giudiziari), "organizzazione" (enti o aziende) "luoghi" (localita' reali), "denaro" (importi monetari), "articoli" (articoli del codice o di leggi italiane)
     - "sillogismo"
     - "percorso logico"
     - "passaggio logico"
@@ -49,10 +49,10 @@ esempi:
        "name": "frase",
        "limitata": true,
        "relativa_a": {{
-           "name": "entitã ",
+           "name": "entita'",
            "descrizione": "sentenza 672"
        }},
-       "ragionamento": "la richiesta menziona una 'frase' specifica contenuta in s2, indicando un'operazione su un segmento testuale localizzato, quindi 'limitata' ã¨ true. il riferimento alla 'sentenza 672' rappresenta il contesto a cui la frase si riferisce. poichã© s2 ã¨ giã  il valore del campo 'dove', non puã² essere usato come riferimento; la sentenza 672 ã¨ quindi il vero punto di riferimento. ho assegnato 'entitã ' a 'name' in quanto si fa riferimento a un oggetto giuridico identificabile (una sentenza)."
+       "ragionamento": "la richiesta menziona una 'frase' specifica contenuta in s2, indicando un'operazione su un segmento testuale localizzato, quindi 'limitata' e' true. il riferimento alla 'sentenza 672' rappresenta il contesto a cui la frase si riferisce. poiche' s2 e' gia' il valore del campo 'dove', non puo' essere usato come riferimento; la sentenza 672 e' quindi il vero punto di riferimento. ho assegnato 'entita'' a 'name' in quanto si fa riferimento a un oggetto giuridico identificabile (una sentenza)."
    }}
 
 2) query: "spiega la frase contenente 'violazione dellâ€™articolo 21' presente nella memoria m2."
@@ -66,7 +66,7 @@ esempi:
            "name": "intero documento",
            "descrizione": "violazione dell'articolo 21"
        }},
-       "ragionamento": "la query specifica che la frase da spiegare contiene lâ€™espressione 'violazione dellâ€™articolo 21', per cui la frase non ã¨ necessariamente delimitata e quindi 'limitata' ã¨ false."
+       "ragionamento": "la query specifica che la frase da spiegare contiene lâ€™espressione 'violazione dellâ€™articolo 21', per cui la frase non e' necessariamente delimitata e quindi 'limitata' e' false."
    }}
 
 3) query: "sintetizza la frase riferita a vodafone nella sentenza s1."
@@ -77,10 +77,10 @@ esempi:
        "name": "frase",
        "limitata": false,
        "relativa_a": {{
-           "name": "entitã ",
+           "name": "entita'",
            "descrizione": "vodafone"
        }},
-       "ragionamento": "la frase non ã¨ necessariamente delimitata da virgolette, quindi 'limitata' ã¨ false. il riferimento ã¨ unâ€™organizzazione specifica, 'vodafone', quindi 'relativa_a' ha name 'entitã ' e descrizione 'vodafone'. il documento di lavoro ã¨ la sentenza di primo grado, e non puã² essere usato come riferimento."
+       "ragionamento": "la frase non e' necessariamente delimitata da virgolette, quindi 'limitata' e' false. il riferimento e' unâ€™organizzazione specifica, 'vodafone', quindi 'relativa_a' ha name 'entita'' e descrizione 'vodafone'. il documento di lavoro e' la sentenza di primo grado, e non pue' essere usato come riferimento."
    }}
 
 4) query: "riassumi brevemente la frase relativa al percorso logico che ha portato alla decisione in s2."
@@ -94,7 +94,7 @@ esempi:
            "name": "percorso logico",
            "descrizione": "che ha portato alla decisione"
        }},
-       "ragionamento": "non ã¨ detto che si tratti di una frase delimitata, quindi 'limitata' ã¨ false. il riferimento ã¨ chiaramente al ragionamento che ha portato alla decisione, riconducibile a un 'percorso logico'.
+       "ragionamento": "non e' detto che si tratti di una frase delimitata, quindi 'limitata' e' false. il riferimento e' chiaramente al ragionamento che ha portato alla decisione, riconducibile a un 'percorso logico'.
    }}
 
 5) query: "riassumi la frase in cui viene giustificata la decisione della corte in s2."
@@ -108,7 +108,7 @@ esempi:
            "name": "passaggio logico",
            "descrizione": "giustificazione della decisione della corte"
        }},
-       "ragionamento": "la frase fa riferimento a un passaggio logico che giustifica una decisione, non a una frase delimitata, quindi 'limitata' ã¨ false. anche se contenuta in s2, il focus ã¨ sul ragionamento espresso, cioã¨ su un 'passaggio logico'."
+       "ragionamento": "la frase fa riferimento a un passaggio logico che giustifica una decisione, non a una frase delimitata, quindi 'limitata' e' false. anche se contenuta in s2, il focus e' sul ragionamento espresso, cioe' su un 'passaggio logico'."
    }}
 
 6) query: "spiega la frase che si riferisce al comma 3 dellâ€™articolo 33."
@@ -122,7 +122,7 @@ esempi:
            "name": "articoli",
            "descrizione": "comma 3 dellâ€™articolo 33"
        }},
-       "ragionamento": "la frase non ã¨ delimitata da virgolette, quindi 'limitata' ã¨ false. il riferimento al 'comma 3 dellâ€™articolo 33' ã¨ specifico di un testo normativo, quindi appartiene alla categoria 'articoli' e non genericamente a 'entitã '."
+       "ragionamento": "la frase non e' delimitata da virgolette, quindi 'limitata' e' false. il riferimento al 'comma 3 dellâ€™articolo 33' e' specifico di un testo normativo, quindi appartiene alla categoria 'articoli' e non genericamente a 'entita''."
    }}
 
 7) query: "analizza la frase che parla dell'imputato."
@@ -133,10 +133,10 @@ esempi:
        "name": "frase",
        "limitata": false,
        "relativa_a": {{
-           "name": "entitã ",
+           "name": "entita'",
            "descrizione": "imputato"
        }},
-       "ragionamento": "la frase non ã¨ delimitata, quindi 'limitata' ã¨ false. il soggetto 'imputato' ã¨ una persona coinvolta nel procedimento, quindi appartiene alla categoria 'entitã ' (tipo persone). anche se la frase ã¨ nel documento, il riferimento ã¨ a una persona e non al documento nel suo insieme."
+       "ragionamento": "la frase non e' delimitata, quindi 'limitata' e' false. il soggetto 'imputato' e' una persona coinvolta nel procedimento, quindi appartiene alla categoria 'entita'' (tipo persone). anche se la frase e' nel documento, il riferimento e' a una persona e non al documento nel suo insieme."
    }}
 
 8) query: "riassumi la frase nel ricorso che sintetizza il cuore dellâ€™argomentazione."
@@ -150,5 +150,5 @@ esempi:
            "name": "percorso logico",
            "descrizione": "cuore dellâ€™argomentazione"
        }},
-       "ragionamento": "non viene riportata una frase delimitata, quindi 'limitata' ã¨ false. il riferimento al 'cuore dellâ€™argomentazione' indica una struttura logica e non un'entitã  o un testo giuridico, per cui la frase ã¨ relativa a un 'percorso logico'."
+       "ragionamento": "non viene riportata una frase delimitata, quindi 'limitata' e' false. il riferimento al 'cuore dellâ€™argomentazione' indica una struttura logica e non un'entita' o un testo giuridico, per cui la frase e' relativa a un 'percorso logico'."
    }}

@@ -43,7 +43,8 @@ class Config:
 
     def load_documents(self) -> list[dict]:
         docs = []
-        for fn in os.listdir(self.docs_path):
-            with open(os.path.join(self.docs_path, fn), "r") as f:
-                docs.append(json.load(f))
+        if os.path.exists(self.docs_path):
+            for fn in os.listdir(self.docs_path):
+                with open(os.path.join(self.docs_path, fn), "r") as f:
+                    docs.append(json.load(f))
         return docs

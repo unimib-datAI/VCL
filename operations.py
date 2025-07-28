@@ -64,7 +64,7 @@ class OperationExecutor:
             doc = hit["_source"] #self.docs.get(op["dove"][0], "")
             
             if not doc == "":
-                results.append((doc["type_doc"], doc["text"]))
+                results.append((doc["name"], doc["text"]))
             else:
                 results.append(("", ""))
         return results
