@@ -46,3 +46,6 @@ esempi:
 
 10) input: "elenca tra le seguenti frasi quelle che rispettano la condizione if x allora y ..."
     output: "frase"
+
+11) input: "chi è coinvolto nel caso?"
+    output: "entita'"

@@ -50,6 +50,7 @@ class NL2DQLPipeline:
             output_5 = self.pc.chain_5.invoke(
                 {"query": dq, "comando": cmd, "descrizione_comando": self.cfg.command_descriptions.get(cmd, ""),
                 "dove": dql["dove"]})
+            output_5 = self.converters.query_in_dict(output_5)
 
             if "entit" in output_5["relativa_a"]["name"]:
                 output_5["relativa_a"]["name"] = "entita\'"
