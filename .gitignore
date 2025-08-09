@@ -209,4 +209,4 @@ __marimo__/
 #DQL Files
 outputs/
 documents/
-api_key.txt
+settings/

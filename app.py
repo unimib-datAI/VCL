@@ -1,19 +1,32 @@
 # app.py
 from config import Config
-from converters import OutputConverter
-from prompt_chains import PromptChains
-from pipelines import NL2DQLPipeline
-from operations import DQL2Operations, OperationExecutor
 from datetime import datetime
+
 import os
+import argparse
+
+def parse_args():
+    """ parse command line input """
+    
+    parser = argparse.ArgumentParser(description="DQL",
+                                     formatter_class=argparse.RawTextHelpFormatter)
+    
+    #parser.add_argument("-q", action="store", dest="query", required=True,
+    #                    help="The query to execute")
+    
+    parser.add_argument("-api", action="store", dest="api_key", required=False,
+                        help="API Key for Gemini. If not specified, the settings/api_key.txt file is read.")
+    parser.add_argument("-rag", action="store_true", dest="rag",
+                        help="Indicates whether the entire documents (unspecified parameter) or only the relevant chunks (specified parameter) should be retrieved.")
+
+    options = parser.parse_args()
+
+    return options
+
 
 def main():
-    cfg = Config()
-    docs = cfg.load_documents()
-    pc = PromptChains()
-    converters = OutputConverter()
-    nl2dql = NL2DQLPipeline(pc, cfg, converters)
-    executor = OperationExecutor(docs)
+    opts = parse_args()
+    cfg = Config(opts)
 
     while True:
         user = input("Input (empty to end): ").strip()
@@ -26,20 +39,20 @@ def main():
 
         with open(out_path, "w") as f:
             f.write(f"Input: {user}\n\n")
-            dql_res = nl2dql.run(user)
-            f.write(f"DQL: {dql_res}\n\n")
-            ops = DQL2Operations.generate(dql_res["response"])
-            f.write(f"Operations: {ops}\n\n")
-            results = executor.execute(ops)
+            #dql_res = nl2dql.run(user)
+            #f.write(f"DQL: {dql_res}\n\n")
+            #ops = DQL2Operations.generate(dql_res["response"])
+            #f.write(f"Operations: {ops}\n\n")
+            #results = executor.execute(ops)
 
             # final formatting con result_chain2
-            final = pc.result_2.invoke({
-                "comando": dql_res["response"]["comando"],
-                "condizioni": dql_res["feedback"],
-                "testi": "\n".join(f"{t}: {txt}" for t, txt in results),
-            })
-            print(final)
-            f.write(f"\nResult: {final}")
+            #final = pc.result_2.invoke({
+            #    "comando": dql_res["response"]["comando"],
+            #    "condizioni": dql_res["feedback"],
+            #    "testi": "\n".join(f"{t}: {txt}" for t, txt in results),
+            #})
+            #print(final)
+            #f.write(f"\nResult: {final}")
 
 if __name__ == "__main__":
     main()
