@@ -7,12 +7,12 @@ To run this project, follow these steps:
 
 1. Go to the [Gemini API website](https://aistudio.google.com/app/apikey)
 2. Generate a new API key.
-3. Copy the generated key and paste it into a file named `api_key.txt`. Optionally, you can run `app.py` with the `-api` flag if you want to store the key.
+3. Copy the generated key and paste it into a file named `api_key.txt`. Optionally, you can run `main.py` with the `-api` flag if you want to store the key.
 4. Make sure you are connected to your university's VPN — this is required to access the Elasticsearch database.
-5. Run the `app.py` file. Use the `-rag` flag if you want only relevant chunks to be used during retrieval.
+5. Run the `main.py` file. Use the `-rag` flag if you want only relevant chunks to be used during retrieval.
 
 ```bash
-python app.py
+python main.py
 ```
 
 ## Future Improvements

@@ -29,8 +29,8 @@ def main():
     cfg = Config(opts)
 
     while True:
-        user = input("Input (empty to end): ").strip()
-        if not user:
+        query = input("Input (empty to end): ").strip()
+        if not query:
             break
 
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
@@ -38,8 +38,8 @@ def main():
         os.makedirs("outputs", exist_ok=True)
 
         with open(out_path, "w") as f:
-            f.write(f"Input: {user}\n\n")
-            #dql_res = nl2dql.run(user)
+            f.write(f"Input: {query}\n\n")
+            #dql_query = nl2dql.run(user)
             #f.write(f"DQL: {dql_res}\n\n")
             #ops = DQL2Operations.generate(dql_res["response"])
             #f.write(f"Operations: {ops}\n\n")
