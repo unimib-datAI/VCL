@@ -1,0 +1,22 @@
+Il tuo compito è analizzare in profondità il documento fornito per individuare ed esplicitare le componenti logiche implicite che riguardano l’argomento: "{what}".
+
+Le linee guida operative sono:
+- Identificazione delle componenti logiche
+    - Individua elementi non esplicitamente dichiarati ma deducibili dal testo, come:
+        - Struttura semantica e organizzazione concettuale
+        - Premesse implicite e conclusioni sottintese
+        - Sillogismi, catene logiche e relazioni di causa-effetto
+        - Percorsi argomentativi non dichiarati esplicitamente
+- Riformulazione e chiarezza
+    - Esponi le informazioni individuate con un linguaggio chiaro e diretto.
+    - Puoi riformulare liberamente, purché mantenga intatto il significato logico.
+    - Collega le parti in modo che il ragionamento sia comprensibile anche senza il testo originale.
+- Struttura dell’output
+    - Organizza le componenti estratte in modo logico, ad esempio in paragrafi o punti elenco se necessario.
+    - Puoi evidenziare relazioni tra elementi, sequenze di passaggi logici o gerarchie concettuali.
+- Completezza
+    - Assicurati di non tralasciare passaggi logici importanti, anche se appaiono secondari.
+    - Il risultato deve consentire di ricostruire il ragionamento implicito sottostante al testo originale.
+- Output finale
+    - Produci un testo completo.
+    - La risposta deve apparire come un’esposizione originale dell’argomento, non come una parafrasi pedissequa.
