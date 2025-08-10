@@ -1,9 +1,16 @@
-# config.py
+from langchain.chat_models import init_chat_model
+
 import os
 import json
 import argparse
 
 class Config:
+    DB_URL = 'http://10.0.0.108:9201'
+    
+    model_name: str = "gemini-2.0-flash"
+    provider: str = "google_genai"    
+    llm = init_chat_model(model_name, model_provider=provider)
+    
     command_map = {
         "a": "cerca", 
         "b": "riassumi", 
