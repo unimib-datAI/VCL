@@ -8,8 +8,12 @@ class Config:
     DB_URL = 'http://10.0.0.108:9201'
     
     model_name: str = "gemini-2.0-flash"
-    provider: str = "google_genai"    
-    llm = init_chat_model(model_name, model_provider=provider)
+    provider: str = "google_genai"
+    
+    rag: bool = False
+    
+    url = "http://127.0.0.1:8000/chat"
+    headers = {"Content-Type": "application/json"}
     
     command_map = {
         "a": "cerca", 
@@ -39,34 +43,39 @@ class Config:
         "altro": ""
     }
         
-    def __init__(self, opts: argparse.Namespace):
+    def __init__(self, opts: argparse.Namespace = None):
+        
+        api_key = None
         
         """
             Step 1: Setting API key
             
             An API key can be specified on the command line or the last used key can be retrieved.
         """
-        
-        api_key = opts.api_key
+        if opts:
+            api_key = opts.api_key
+            
+            """
+                Step 2: Setting Retrieval
+                
+                It is stored whether the entire document (False) or only the relevant chunks (True) should be retrieved during retrieval.
+            """
+            
+            self.rag = opts.rag
+            
         api_path = os.path.join('settings', 'api_key.txt')
-        
+            
         if not api_key and os.path.exists(api_path) and os.path.isfile(api_path):
             api_key = self.read_file(api_path)
-                
-        if not api_key:
-            raise ValueError('No API key could be found.')
-        else:
-            self.write_file(api_path, api_key)
                     
-        os.environ["GOOGLE_API_KEY"] = api_key
+            if not api_key:
+                raise ValueError('No API key could be found.')
+            else:
+                self.write_file(api_path, api_key)
+                        
+            os.environ["GOOGLE_API_KEY"] = api_key
         
-        """
-            Step 2: Setting Retrieval
-            
-            It is stored whether the entire document (False) or only the relevant chunks (True) should be retrieved during retrieval.
-        """
-        
-        self.rag = opts.rag
+        self.llm = init_chat_model(self.model_name, model_provider=self.provider)
 
     @staticmethod
     def read_file(path: str) -> str:
@@ -86,7 +95,7 @@ class Config:
         return json.loads(output)
 
     @staticmethod
-    def str_in_list(output: str) -> list:
+    def str_in_list(self, output: str) -> list:
         output = output[output.index("[") : output.rfind("]") + 1]
         return eval(output)
 
