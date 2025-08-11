@@ -1,5 +1,6 @@
 # app.py
 from config import Config
+from rewriting import Rewriting
 from datetime import datetime
 
 import os
@@ -39,20 +40,9 @@ def main():
 
         with open(out_path, "w") as f:
             f.write(f"Input: {query}\n\n")
-            #dql_query = nl2dql.run(user)
-            #f.write(f"DQL: {dql_res}\n\n")
-            #ops = DQL2Operations.generate(dql_res["response"])
-            #f.write(f"Operations: {ops}\n\n")
-            #results = executor.execute(ops)
-
-            # final formatting con result_chain2
-            #final = pc.result_2.invoke({
-            #    "comando": dql_res["response"]["comando"],
-            #    "condizioni": dql_res["feedback"],
-            #    "testi": "\n".join(f"{t}: {txt}" for t, txt in results),
-            #})
-            #print(final)
-            #f.write(f"\nResult: {final}")
+            dql = Rewriting(query, cfg)
+            print(dql.command)
+            
 
 if __name__ == "__main__":
     main()
