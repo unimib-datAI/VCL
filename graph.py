@@ -33,7 +33,7 @@ class State(TypedDict):
     
 
 def correctionQuery(state: State) -> Command[Literal["intentClassification"]]:
-    result = chain("CorrectionQuery", {"query": state["query"]}, state)
+    result = chain("1 - CorrectionQuery", {"query": state["query"]}, state)
     
     return Command(
         goto="intentClassification",
@@ -41,7 +41,7 @@ def correctionQuery(state: State) -> Command[Literal["intentClassification"]]:
     )
 
 def intentClassification(state: State) -> Command[Literal["documentExtraction"]]:
-    result = chain("IntentClassification", {"query": state["query"], "\'command\'": ""}, state)
+    result = chain("2 - IntentClassification", {"query": state["query"], "\'command\'": ""}, state)
 
     return Command(
         goto="documentExtraction",
@@ -49,7 +49,7 @@ def intentClassification(state: State) -> Command[Literal["documentExtraction"]]
     )
 
 def documentExtraction(state: State) -> Command[Literal["whatExtraction"]]:
-    result = chain("DocumentExtraction", {"query": state["query"]}, state)
+    result = chain("3 - DocumentExtraction", {"query": state["query"]}, state)
     result = cfg.str_in_list(result)
 
     return Command(
@@ -58,7 +58,7 @@ def documentExtraction(state: State) -> Command[Literal["whatExtraction"]]:
     )
 
 def whatExtraction(state: State) -> Command[Literal["entityDisambiguation", "phraseDisambiguation", "conditionsExtraction"]]:
-    result = chain("WhatExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"])}, state)
+    result = chain("4 - WhatExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"])}, state)
     result = {"name": result}
 
     if "entit" in result["name"]:
@@ -74,7 +74,7 @@ def whatExtraction(state: State) -> Command[Literal["entityDisambiguation", "phr
     )
 
 def entityDisambiguation(state: State) -> Command[Literal["conditionsExtraction"]]:
-    result = chain("EntityDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"]),
+    result = chain("5a - EntityDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"]),
                 "dove": state["where"]}, state)
     result = cfg.str_in_dict(result)
 
@@ -90,7 +90,7 @@ def entityDisambiguation(state: State) -> Command[Literal["conditionsExtraction"
     )
 
 def phraseDisambiguation(state: State) -> Command[Literal["entityDisambiguation", "conditionsExtraction"]]:
-    result = chain("PhraseDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"]),
+    result = chain("5b - PhraseDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"]),
                 "dove": state["where"]}, state)
     result = cfg.str_in_dict(result)
 
@@ -100,7 +100,7 @@ def phraseDisambiguation(state: State) -> Command[Literal["entityDisambiguation"
     )
 
 def conditionsExtraction(state: State) -> Command[Literal["evaluationResult"]]:
-    result = chain("ConditionsExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"])}, state)
+    result = chain("6 - ConditionsExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"])}, state)
     result = cfg.str_in_dict(result)
         
     return Command(
@@ -110,7 +110,7 @@ def conditionsExtraction(state: State) -> Command[Literal["evaluationResult"]]:
 
 def evaluationResult(state: State) -> Command[Literal["intentClassification", END]]:
     response = {"command": state["command"], "what": state["what"], "where": state["where"], "how": state["how"]}
-    result = chain("EvaluationResult", {"question": state["query"], "response": str(response)}, state)
+    result = chain("7 - EvaluationResult", {"question": state["query"], "response": str(response)}, state)
     result = cfg.str_in_dict(result)
     
     if int(result["voto"]) < 8:
