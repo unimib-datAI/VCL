@@ -1,19 +1,31 @@
 import requests
+import socket
 
 from config import Config
 
-class Rewriting:
-    command = None
+class DQL:
+    def __init__(self, nl_query, structured_query):
+        self.nl_query = nl_query
+        self.dql_query = structured_query
     
-    def __init__(self, query: str, cfg: Config):
-        self.original_query = query
+
+class Rewriting:
+    def __init__(self, cfg: Config):
+        self.url = cfg.url
+        self.headers = cfg.headers
         
+        hostname = socket.gethostname()
+        self.ip = socket.gethostbyname(hostname)
+        
+    def rewrite(self, query):
         data = {
             "message": query,
-            "thread_id": "1"
+            "thread_id": str(self.ip)
         }
 
-        response = requests.post(cfg.url, json=data, headers=cfg.headers)
+        response = requests.post(self.url, json=data, headers=self.headers)
 
         if response.status_code == 200:
-            self.command = response.text
+            return DQL(query, response.text)
+        else:
+            return DQL(query, None)
