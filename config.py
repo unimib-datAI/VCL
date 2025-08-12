@@ -62,6 +62,7 @@ class Config:
             """
             
             self.rag = opts.rag
+            self.seconds = opts.seconds
             
         api_path = os.path.join('settings', 'api_key.txt')
             

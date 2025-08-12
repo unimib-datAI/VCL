@@ -3,6 +3,7 @@ from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 import os
+import time
 
 class Generator:
     path = os.path.join("prompts", "generator")
@@ -10,6 +11,7 @@ class Generator:
     def __init__(self, cfg):
         self.llm = cfg.llm
         self.rag = cfg.rag
+        self.seconds = cfg.seconds
         self.read = cfg.read_file
         self.parsers = StrOutputParser()
         
@@ -38,6 +40,10 @@ class Generator:
         chain = template | self.llm | self.parsers
         
         if op["comando"] == "calcola":
-            return chain.invoke({"query": op, "response": result})
+            result = chain.invoke({"query": op, "response": result})
         else:
-            return chain.invoke({"what": op["cosa"]})
+            result = chain.invoke({"what": op["cosa"]})
+            
+        time.sleep(self.seconds)
+        
+        return result

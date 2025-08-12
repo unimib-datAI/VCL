@@ -17,6 +17,8 @@ def parse_args():
     
     parser.add_argument("-api", action="store", dest="api_key", required=False,
                         help="API Key for Gemini. If not specified, the settings/api_key.txt file is read.")
+    parser.add_argument("-wait", action="store", dest="seconds", required=False,
+                        help="Number of seconds the system should wait after each call to an LLM (useful if using free plans).")
     parser.add_argument("-rag", action="store_true", dest="rag",
                         help="Indicates whether the entire documents (unspecified parameter) or only the relevant chunks (specified parameter) should be retrieved.")
 

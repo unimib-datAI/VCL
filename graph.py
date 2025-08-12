@@ -13,6 +13,7 @@ from config import Config
 
 import os
 import json
+import time
 
 project_root = Path(__file__).resolve().parent
 
@@ -148,6 +149,9 @@ def chain(name: str, input: dict, state: State) -> str:
     prompt = ChatPromptTemplate.from_template(template)
     chain = prompt | cfg.llm | StrOutputParser()
     result = chain.invoke(input)
+    
+    time.sleep(cfg.seconds)
+    
     return result.strip().lower()
 
 graph = build_graph()
