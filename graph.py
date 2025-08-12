@@ -45,12 +45,12 @@ def intentClassification(state: State) -> Command[Literal["documentExtraction"]]
 
     return Command(
         goto="documentExtraction",
-        update={"command": cfg.get_command_from_key(cfg, result)},
+        update={"command": cfg.get_command_from_key(result)},
     )
 
 def documentExtraction(state: State) -> Command[Literal["whatExtraction"]]:
     result = chain("DocumentExtraction", {"query": state["query"]}, state)
-    result = cfg.str_in_list(cfg, result)
+    result = cfg.str_in_list(result)
 
     return Command(
         goto="whatExtraction",
@@ -58,7 +58,7 @@ def documentExtraction(state: State) -> Command[Literal["whatExtraction"]]:
     )
 
 def whatExtraction(state: State) -> Command[Literal["entityDisambiguation", "phraseDisambiguation", "conditionsExtraction"]]:
-    result = chain("WhatExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(cfg, state["command"])}, state)
+    result = chain("WhatExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"])}, state)
     result = {"name": result}
 
     if "entit" in result["name"]:
@@ -74,7 +74,7 @@ def whatExtraction(state: State) -> Command[Literal["entityDisambiguation", "phr
     )
 
 def entityDisambiguation(state: State) -> Command[Literal["conditionsExtraction"]]:
-    result = chain("EntityDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(cfg, state["command"]),
+    result = chain("EntityDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"]),
                 "dove": state["where"]}, state)
     result = cfg.str_in_dict(result)
 
@@ -90,7 +90,7 @@ def entityDisambiguation(state: State) -> Command[Literal["conditionsExtraction"
     )
 
 def phraseDisambiguation(state: State) -> Command[Literal["entityDisambiguation", "conditionsExtraction"]]:
-    result = chain("PhraseDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(cfg, state["command"]),
+    result = chain("PhraseDisambiguation", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"]),
                 "dove": state["where"]}, state)
     result = cfg.str_in_dict(result)
 
@@ -100,7 +100,7 @@ def phraseDisambiguation(state: State) -> Command[Literal["entityDisambiguation"
     )
 
 def conditionsExtraction(state: State) -> Command[Literal["evaluationResult"]]:
-    result = chain("ConditionsExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(cfg, state["command"])}, state)
+    result = chain("ConditionsExtraction", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"])}, state)
     result = cfg.str_in_dict(result)
         
     return Command(
