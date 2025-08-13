@@ -6,18 +6,22 @@ from langgraph.graph import StateGraph, START, END
 
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
-from langchain.chat_models import init_chat_model
 
+import sys
 from pathlib import Path
-from config import Config
+
+sys.path.append(str(Path(__file__).resolve().parent))
+
+from utils.config_graph import Config
 
 import os
 import json
 import time
 
-project_root = Path(__file__).resolve().parent
 
-cfg = Config()
+project_root = Path(__file__).resolve().parent.parent
+cfg = Config.get_instance()
+
 
 class State(TypedDict):
     query: str
@@ -113,7 +117,7 @@ def evaluationResult(state: State) -> Command[Literal["intentClassification", EN
     result = chain("7 - EvaluationResult", {"question": state["query"], "response": str(response)}, state)
     result = cfg.str_in_dict(result)
     
-    if int(result["voto"]) < 8:
+    if int(result["voto"]) < 8 and state["iteration"] < cfg.max_iteration:
         goto = "intentClassification"
     else:
         goto = END

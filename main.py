@@ -1,5 +1,5 @@
 # app.py
-from config import Config
+from utils.config import Config
 from rewriting import Rewriting
 from datetime import datetime
 
@@ -29,7 +29,8 @@ def parse_args():
 
 def main():
     opts = parse_args()
-    cfg = Config(opts)
+    cfg = Config.get_instance(opts)
+    rewriting = Rewriting(cfg)
 
     while True:
         query = input("Input (empty to end): ").strip()
@@ -42,8 +43,8 @@ def main():
 
         with open(out_path, "w") as f:
             f.write(f"Input: {query}\n\n")
-            dql = Rewriting(query, cfg)
-            print(dql.command)
+            dql = rewriting.rewrite(query)
+            print(dql.dql_query)
             
 
 if __name__ == "__main__":

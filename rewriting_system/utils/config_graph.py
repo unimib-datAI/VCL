@@ -1,24 +1,30 @@
-from langchain.chat_models import init_chat_model
-import os
 import ast
 import json
 import argparse
+import sys
+from pathlib import Path
 
+sys.path.append(str(Path(__file__).resolve().parent.parent.parent))
+
+from utils.LLM import LLM
 
 class Config:
-    # ElasticSearch database URL
-    DB_URL = 'http://10.0.0.108:9201'
+    """
+    System configuration class.
+    Implemented as a singleton to ensure only one global instance.
+    """
 
-    # LLM model and provider
-    model_name: str = "gemini-2.0-flash"
-    provider: str = "google_genai"
+    # Class variable that will contain the single instance
+    _instance = None
 
-    # Default behavior for RAG: extract full documents
-    rag: bool = False
+    # Maximum number of iterations of the rewriting system
+    max_iteration: int = 3
 
-    # URL and headers for the rewriting system
-    url = "http://127.0.0.1:8000/chat"
-    headers = {"Content-Type": "application/json"}
+    # Default value for GEMINI API KEY
+    api_key = None
+    
+    # Default value for SECONDS: time we must wait after all LLM calls
+    seconds: int = 0
 
     # Mapping of single-letter keys to internal command names
     command_map = {
@@ -50,34 +56,40 @@ class Config:
         "altro": ""
     }
 
+    @classmethod
+    def get_instance(cls, opts: argparse.Namespace = None):
+        """
+        Access method for the singleton's only instance.
+        If it doesn't already exist, it creates and initializes it.
+        """
+        if cls._instance is None:
+            cls._instance = cls(opts)
+        return cls._instance
+
     def __init__(self, opts: argparse.Namespace = None):
-        api_key = None
+        """
+        Initializes configuration values only the first time.
+        Avoids overwriting values if they've already been initialized.
+        """
+        if hasattr(self, "_initialized") and self._initialized:
+            return
 
         # Load options from CLI arguments if provided
         if opts:
-            api_key = opts.api_key
-            self.rag = opts.rag
-            self.seconds = opts.seconds  # Presumably used elsewhere in the program
+            if opts.api_key:
+                self.api_key = opts.api_key
 
-        # Path where the API key is stored
-        api_path = os.path.join('settings', 'api_key.txt')
+            if opts.max_iterations and int(opts.max_iterations) > 0:
+                self.max_iterations = int(opts.max_iterations)
 
-        # If no API key was passed, try reading from the file
-        if not api_key and os.path.exists(api_path) and os.path.isfile(api_path):
-            api_key = self.read_file(api_path)
+            if opts.seconds and int(opts.seconds) > 0:
+                self.seconds = int(opts.seconds)
 
-        # Set the environment variable for the Google GenAI API
-        if api_key:
-            os.environ["GOOGLE_API_KEY"] = api_key
-            
-            # Save the key again (could be useful if normalized or updated)
-            self.write_file(api_path, api_key)
-        else:
-            raise ValueError('No API key could be found.')
-            
+        # Instantiate the LLM model with the configured API key
+        self.llm = LLM.get_instance(api_key=self.api_key).llm
 
-        # Initialize the LLM model from LangChain
-        self.llm = init_chat_model(self.model_name, model_provider=self.provider)
+        # Mark as initialized to avoid double initializations
+        self._initialized = True
 
     def get_command_from_key(self, key: str) -> str:
         """
@@ -95,19 +107,6 @@ class Config:
             key = self.get_command_from_key(key)
         
         return self.command_descriptions.get(key, "")
-
-    @staticmethod
-    def read_file(path: str) -> str:
-        """Read a text file and return its stripped content."""
-        with open(path, "r") as f:
-            return f.read().strip()
-
-    @staticmethod
-    def write_file(path: str, key: str):
-        """Write the given string to a file, creating directories if needed."""
-        os.makedirs(os.path.dirname(path), exist_ok=True)
-        with open(path, "w") as f:
-            f.write(key)
 
     @staticmethod
     def str_in_dict(output: str) -> dict:

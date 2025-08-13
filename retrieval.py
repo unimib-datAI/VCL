@@ -1,6 +1,6 @@
 from elasticsearch import Elasticsearch
 
-from config import Config
+from utils.config import Config
 
 class Retrieval:
     def __init__(self, cfg: Config):

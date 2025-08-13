@@ -1,7 +1,7 @@
 import requests
 import socket
 
-from config import Config
+from utils.config import Config
 
 class DQL:
     def __init__(self, nl_query, structured_query):

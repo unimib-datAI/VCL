@@ -11,7 +11,7 @@ To run this project, follow these steps:
 4. Make sure you are connected to your university's VPN — this is required to access the Elasticsearch database.
 5. Start the graph. Run the following command:
 ```bash
-uvicorn app:app --reload
+python rewriting_system/main.py
 ```
 6. Run the `main.py` file. Use the `-rag` flag if you want only relevant chunks to be used during retrieval.
 ```bash
