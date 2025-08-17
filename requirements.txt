@@ -1,0 +1,8 @@
+langchain-google-genai
+langgraph
+langchain-core
+langchain
+pydantic
+fastapi
+elasticsearch
+typing-extensions
