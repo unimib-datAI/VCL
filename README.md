@@ -22,6 +22,10 @@ python rewriting_system/main.py
 python main.py
 ```
 
+## Multi-Agent System
+
+![image](images/graph.png)
+
 ## Future Improvements
 
 The following enhancements are planned to improve the current system:

@@ -159,3 +159,5 @@ def chain(name: str, input: dict, state: State) -> str:
     return result.strip().lower()
 
 graph = build_graph()
+with open("images/graph.png", "wb") as f:
+    f.write(graph.get_graph().draw_mermaid_png())
