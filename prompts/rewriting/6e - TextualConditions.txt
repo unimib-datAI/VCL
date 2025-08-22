@@ -1,0 +1,12 @@
+contesto:
+la frase "{query}" è una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.
+è stato già identificato che il comando è di tipo "{comando}", il cui obiettivo è "{descrizione_comando}".
+è stato già identificato che il comando deve essere applicato su "{what}".
+
+obiettivo:
+individuare le condizioni aggiuntive di tipo testuale che deve soddisfare il comando.
+Una condizione aggiuntiva testuale sulla query è un vincolo che specifica come deve essere strutturata la risposta, ad esempio indicando il formato (elenco puntato, tabella), la lunghezza massima o minima, l’ordine logico dei punti trattati, o altre regole stilistiche e organizzative del testo. Non è una condizione che lavora quindi sui dati, ma sulla struttura in linguaggio naturale della risposta.
+
+Formato di risposta:
+Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.
+La risposta può rimanere vuota ("") se nessun vincolo è necessario.

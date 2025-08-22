@@ -1,0 +1,12 @@
+contesto:
+la frase "{query}" è una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.
+è stato già identificato che il comando è di tipo "{comando}", il cui obiettivo è "{descrizione_comando}".
+è stato già identificato che il comando deve essere applicato su "{what}".
+
+obiettivo:
+individuare le condizioni aggiuntive di tipo formale che deve soddisfare il comando.
+Una condizione aggiuntiva formale in una query è un vincolo logico che si aggiunge ad altri vincoli già presenti per restringere, filtrare o specializzare l’insieme dei dati restituiti. Non riguarda quindi la struttura testuale della risposta, ma sono solo ulteriori filtri sui dati.
+
+Formato di risposta:
+Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.
+La risposta può rimanere vuota ("") se nessun vincolo è necessario.
