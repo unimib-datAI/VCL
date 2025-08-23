@@ -2,4 +2,4 @@ correggi solo gli errori di battitura presenti nella seguente query, senza modif
 
 restituisci esclusivamente la versione corretta della domanda, senza aggiungere spiegazioni o commenti.
 
-query: "{query}"
+query: '{query}'
