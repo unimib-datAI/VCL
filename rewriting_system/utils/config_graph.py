@@ -34,11 +34,8 @@ class Config:
         "d": "estrai",
         "e": "esplora",
         "f": "espandi",
-        "g": "verifica",
-        "h": "integra",
-        "i": "valutaRil",
-        "l": "calcola",
-        "m": "altro"
+        "g": "calcola",
+        "h": "altro"
     }
 
     # Descriptions for each available command
@@ -49,10 +46,7 @@ class Config:
         "estrai": "Analizza il documento per estrarre componenti logiche implicite (es. struttura semantica, sillogismi, percorso argomentativo non esplicito). A differenza di 'A' le informazioni possono essere riformulate.",
         "esplora": "Identifica e raggruppa tutte le citazioni o riferimenti a un tema specifico presenti nel documento.",
         "espandi": "Espande un testo fino a un certo numero di parole, aggiungendo esempi, spiegazioni e dettagli in modo coerente.",
-        "verifica": "Verifica la coerenza tra le motivazioni e le decisioni finali presenti nel documento, segnalando eventuali incongruenze.",
-        "integra": "Genera un nuovo testo coerente unificando logicamente più estratti o documenti, evitando ridondanze.",
-        "valutaRil": "Valuta la rilevanza di un argomento/documento/precedente giuridico rispetto alla decisione finale, motivando il giudizio.",
-        "calcola": "Esegue calcoli basati su dati numerici presenti nel testo.",
+        "calcola": "esegue calcoli basati su elementi presenti nel testo",
         "altro": ""
     }
 

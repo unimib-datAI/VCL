@@ -1,6 +1,5 @@
 import argparse
 from utils.LLM import LLM
-from typing import Optional
 
 class Config:
     """
@@ -13,10 +12,6 @@ class Config:
 
     # ElasticSearch database URL
     DB_URL: str = 'http://10.0.0.108:9201'
-
-    # LLM model and provider
-    model_name: str = "gemini-2.0-flash"
-    provider: str = "google_genai"
 
     # Default behavior for RAG: extract full documents
     rag: bool = False
