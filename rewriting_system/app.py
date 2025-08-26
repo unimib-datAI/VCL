@@ -14,15 +14,21 @@ class ChatInput(BaseModel):
 def initial_state(query: str):
     return {
         "query": query,      # Original user query
-        "command": "",       # Placeholder for a command
-        "where": [],         # Placeholder for conditions/filters
-        "what": {},          # Placeholder for requested information
-        "ent": {},           # Placeholder for recognized entities
-        "phr": {},           # Placeholder for recognized phrases
-        "how": {},           # Placeholder for processing instructions
-        "iteration": 0,      # Counter for processing iterations
-        "feedback": "",      # Placeholder for feedback
-        "response": {}       # Placeholder for the generated response
+        "command": str,
+        "documents": [],
+        "unit": "",
+        "what_name": "",
+        "what_type": "",
+        "what_description": "",
+        "how_section": "",
+        "how_temporal": "",
+        "how_mathematics": "",
+        "how_logic": "",
+        "how_formal": "",
+        "how_textual": "",
+        "iteration": 0,
+        "feedback": "",
+        "response": {}
     }
 
 # POST endpoint for handling chat messages
@@ -35,4 +41,4 @@ async def chat(input: ChatInput):
     response = await graph.ainvoke(initial_state(input.message), config=config)
 
     # Return the DQL-structured query from the response
-    return response["response"].content
+    return response["response"]
