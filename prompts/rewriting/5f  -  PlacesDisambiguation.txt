@@ -1,0 +1,22 @@
+contesto:
+la frase "{query}" e' una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.
+e' stato gia' identificato che il comando e' di tipo "{comando}", il cui obiettivo e' "{descrizione_comando}".
+e' stato gia' identificato che il comando deve essere applicato su un'entità di tipo "luogo".
+
+obiettivo:
+indivuare le caratteristiche che deve soddisfare l'entità di tipo "luogo".
+le possibili opzioni sono:
+- "tutte": non ci sono limitazioni sull'entità. in generale si usa quando si vogliono ottenere tutte le entità.
+- un nome di luogo: si usa quando si vogliono ottenere tutte le informazioni su un singolo luogo
+- "sede tribunale/corte"
+- "luogo del fatto"
+- "luogo di residenza domicilio o sede legale delle parti"
+- "luogo di residenza domicilio o sede legale dell'avvocato"
+- "luogo di residenza domicilio o sede legale del giudice"
+- "luogo di residenza domicilio o sede legale dei testimoni"
+- "luogo struttura detentiva"
+- altro: luoghi rilevanti al caso specifico.
+
+Formato di risposta:
+Restituire esclusivamente il nome dell’elemento individuato.
+Se la categoria è "altro", rispondere con la sintassi altro/descrizione (es "altro/ospedale")
