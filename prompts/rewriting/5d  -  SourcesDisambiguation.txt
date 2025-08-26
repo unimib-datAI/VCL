@@ -1,0 +1,14 @@
+contesto:
+la frase "{query}" e' una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.
+e' stato gia' identificato che il comando e' di tipo "{comando}", il cui obiettivo e' "{descrizione_comando}".
+e' stato gia' identificato che il comando deve essere applicato su un'entità di tipo "fonte".
+
+obiettivo:
+indivuare le caratteristiche che deve soddisfare l'entità di tipo "fonte".
+le possibili opzioni sono:
+- "tutte": non ci sono limitazioni sull'entità. in generale si usa quando si vogliono ottenere tutte le entità.
+- una fonte specifica: si usa quando si vogliono ottenere tutte le informazioni su una singola entità "fonte"
+
+Formato di risposta:
+Restituire esclusivamente il nome dell’elemento individuato.
+Se la categoria è "altro", rispondere con la sintassi altro/descrizione (es "altro/CCNL")
