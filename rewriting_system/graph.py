@@ -22,6 +22,7 @@ cfg = Config.get_instance()
 
 class State(TypedDict):
     query: str
+    thread_id: str
     
     command: str
     
