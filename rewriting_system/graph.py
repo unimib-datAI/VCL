@@ -90,12 +90,7 @@ def unitExtraction(state: State) -> Command[Literal["whatExtraction"]]:
         update={"unit": result},
     )
 
-def whatExtraction(state: State) -> Command[Literal["personDisambiguation",
-                                                    "organizationDisambiguation", 
-                                                    "moneyDisambiguation", 
-                                                    "sourcesDisambiguation", 
-                                                    "articlesDisambiguation", 
-                                                    "placesDisambiguation",
+def whatExtraction(state: State) -> Command[Literal["entityDisambiguation",
                                                     "sectionsConditions"]]:
     result = chain("4 - WhatExtraction", 
                    {
@@ -104,22 +99,6 @@ def whatExtraction(state: State) -> Command[Literal["personDisambiguation",
                        "descrizione_comando": cfg.get_description_from_command(state["command"])
                     }, 
                    state)
-
-    match result:
-        case "persona":
-            goto = "personDisambiguation"
-        case "organizzazione":
-            goto = "organizationDisambiguation"
-        case "luogo":
-            goto = "placesDisambiguation"
-        case "denaro":
-            goto = "moneyDisambiguation"
-        case "fonte":
-            goto = "sourcesDisambiguation"
-        case "articolo":
-            goto = "articlesDisambiguation"
-        case _:
-            goto = "sectionsConditions"
             
     what_name = ""
     what_type = ""
@@ -127,8 +106,12 @@ def whatExtraction(state: State) -> Command[Literal["personDisambiguation",
     if result == "persona" or result == "organizzazione" or result == "luogo" or result == "denaro" or result == "fonte" or result == "articolo":
         what_name = "entità" 
         what_type = result
+        
+        goto = "entityDisambiguation"
     else:
         what_name = result
+        
+        goto = "sectionsConditions"
         
     return Command(
         goto=goto,
@@ -138,48 +121,22 @@ def whatExtraction(state: State) -> Command[Literal["personDisambiguation",
         }
     )
     
-def personDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]:
-    result = chain("5a - PersonDisambiguation", {}, state)
+def entityDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]:
+    result = ""
     
-    return Command(
-        goto="sectionsConditions",
-        update={"what_description": result}
-    )
-    
-def organizationDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]:
-    result = chain("5b - OrganizationDisambiguation", {}, state)
-    
-    return Command(
-        goto="sectionsConditions",
-        update={"what_description": result}
-    )
-    
-def moneyDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]:
-    result = chain("5c - MoneyDisambiguation", {}, state)
-    
-    return Command(
-        goto="sectionsConditions",
-        update={"what_description": result}
-    )
-    
-def sourcesDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]:
-    result = chain("5d - SourcesDisambiguation", {}, state)
-    
-    return Command(
-        goto="sectionsConditions",
-        update={"what_description": result}
-    )
-    
-def articlesDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]:
-    result = chain("5e - ArticlesDisambiguation", {}, state)
-    
-    return Command(
-        goto="sectionsConditions",
-        update={"what_description": result}
-    )
-    
-def placesDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]:
-    result = chain("5f - PlacesDisambiguation", {}, state)
+    match state["what_type"]:
+        case "persona":
+            result = chain("5a - PersonDisambiguation", {}, state)
+        case "organizzazione":
+            result = chain("5b - OrganizationDisambiguation", {}, state)
+        case "denaro":
+            result = chain("5c - MoneyDisambiguation", {}, state)
+        case "fonte":
+            result = chain("5d - SourcesDisambiguation", {}, state)
+        case "articolo":
+            result = chain("5e - ArticlesDisambiguation", {}, state)
+        case "luogo":
+            result = chain("5f - PlacesDisambiguation", {}, state)
     
     return Command(
         goto="sectionsConditions",
@@ -306,12 +263,7 @@ def build_graph():
     graph_builder.add_node("unitExtraction", unitExtraction)
     
     graph_builder.add_node("whatExtraction", whatExtraction)
-    graph_builder.add_node("personDisambiguation", personDisambiguation)
-    graph_builder.add_node("organizationDisambiguation", organizationDisambiguation)
-    graph_builder.add_node("moneyDisambiguation", moneyDisambiguation)
-    graph_builder.add_node("sourcesDisambiguation", sourcesDisambiguation)
-    graph_builder.add_node("articlesDisambiguation", articlesDisambiguation)
-    graph_builder.add_node("placesDisambiguation", placesDisambiguation)
+    graph_builder.add_node("entityDisambiguation", entityDisambiguation)
     
     graph_builder.add_node("sectionsConditions", sectionsConditions)
     graph_builder.add_node("temporalConditions", temporalConditions)
