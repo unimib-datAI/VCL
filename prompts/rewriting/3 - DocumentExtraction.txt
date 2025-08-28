@@ -11,7 +11,7 @@ i possibili documenti sono:
 - `memoria giudiziale` (m2)
 - `ricorso giudiziale` (r2)
 se nella query non e' riportato un riferimento diretto al documento i possibili valori sono:
-- `['contesto']` se occorre analizzare tutti i documenti che compongono il contesto
+- `['contesto']` se occorrono ulteriori approfondimenti (analizzare il contesto conversazionale) per determinare su quali documenti lavorare 
 - `None` se non si ritiene necessario utilizzare il sistema rag per ottenere una risposta in quanto tutte le informazioni necessarie sono presenti nella query o il dominio non rientra nell'aspetto legale.
 
 nota importante:
@@ -63,8 +63,8 @@ output: ["sentenza di primo grado"]
 
 esempio 8
 
-input: "analizza il percorso logico e fornisci la risposta tramite elenco puntato"
-ragionamento: la query e' generica e non fa riferimento a documenti specifici. per eseguire l’analisi richiesta e' necessario accedere all’intero contesto.
+input: "analizza il percorso logico della sentenza e fornisci la risposta tramite elenco puntato"
+ragionamento: la query menziona una sentenza, ma non specifica il grado. per eseguire l’analisi richiesta e' necessario accedere al contesto per disambiguare quale sentenza è necessario analizzare tra "sentenza di primo grado" e "sentenza di secondo grado".
 output: ["contesto"]
 
 esempio 9
