@@ -7,8 +7,11 @@ from langgraph.graph import StateGraph
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
+from storage import Storage
+
 import os
 import time
+import re
 
 import sys
 from pathlib import Path
@@ -19,6 +22,8 @@ from utils.config_graph import Config
 
 project_root = Path(__file__).resolve().parent.parent
 cfg = Config.get_instance()
+
+r = Storage()
 
 class State(TypedDict):
     query: str
@@ -71,16 +76,50 @@ def intentClassification(state: State) -> Command[Literal["documentExtraction", 
         update={"command": result},
     )
 
-def documentExtraction(state: State) -> Command[Literal["whatExtraction"]]:
+def documentExtraction(state: State) -> Command[Literal["whatExtraction", "documentDisambiguation"]]:
     result = chain("3 - DocumentExtraction", 
                    {"query": state["query"]}, 
                    state)
     
     result = cfg.str_in_list(result)
 
+    goto = "whatExtraction"
+    if "contesto" in result:
+        goto = "documentDisambiguation"
+    else:
+        r.write(state["thread_id"], state["query"], result)
+        
+    return Command(
+        goto=goto,
+        update={"documents": result},
+    )
+
+def documentDisambiguation(state: State) -> Command[Literal["whatExtraction"]]:
+    chat = r.read(state["thread_id"])
+    
+    if not (chat == []):
+        chat_str = ""
+        
+        for i in range(len(chat)):
+            chat_str += f"""
+            RICHIESTA/DOMANDA {i}
+            - time: {chat[i]["time"]}
+            - query: \"{chat[i]["query"]}\""
+            - ID doc input: \"{chat[i]["docRef"]}\"
+            - ID doc response: \"{chat[i]["docOut"]}\""
+            
+            
+            """
+            doc = chain("3a - DocumentDisambiguation", {"chat": chat, "query": state["query"]}, state)
+            doc = cfg.str_in_list(doc) 
+    else:
+        doc = ["sentenza di primo grado", "sentenza di secondo grado", "memoria giudiziale", "ricorso giudiziale"]
+    
+    r.write(state["thread_id"], state["query"], doc)
+    
     return Command(
         goto="whatExtraction",
-        update={"documents": result},
+        update={"documents": doc},
     )
     
 def unitExtraction(state: State) -> Command[Literal["whatExtraction"]]:
@@ -260,6 +299,7 @@ def build_graph():
     graph_builder.add_node("intentClassification", intentClassification)
     
     graph_builder.add_node("documentExtraction", documentExtraction)
+    graph_builder.add_node("documentDisambiguation", documentDisambiguation)
     
     graph_builder.add_node("unitExtraction", unitExtraction)
     
@@ -285,7 +325,7 @@ def chain(name: str, input: dict, state: State) -> str:
 
     template = open(path, "r").read()
 
-    if state["response"] is not None:
+    if not (state["response"] == {}):
         response_clean = str(state['response']).replace("{", "(").replace("}", ")")
         template = f"[FEEDBACK]\nconsidera che per la query \"{state['query']}\" è già stato generato un possibile output:\n{response_clean}\nquesto output ha ricevuto però una valutazione non sufficiente per i nostri standard in quanto \"{state['feedback']}\".\nnon devi riscostruire l'intero output, ma nella risposta tieni conto del feedback.\n[PROMPT]\n{template}"
 
