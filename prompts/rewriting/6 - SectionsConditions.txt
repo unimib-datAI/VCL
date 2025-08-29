@@ -10,4 +10,4 @@ La query può anche non vincolare ad alcuna sezione, ovvero la risposta deve ess
 
 Formato di risposta:
 Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.
-Nel caso in cui la query non vincoli ad alcuna sezione la risposta deve rimanere vuota ("").
+Nel caso in cui la query non vincoli ad alcuna sezione (quindi si deve lavorare sull'intero documento) la risposta deve rimanere vuota ("").

@@ -40,11 +40,8 @@ class State(TypedDict):
     what_description: str
     
     how_section: str
-    how_temporal: str
-    how_mathematics: str
-    how_logic: str
-    how_formal: str
-    how_textual: str
+    how_data: str
+    how_response: str
     
     iteration: int
     feedback: str
@@ -195,44 +192,20 @@ def sectionsConditions(state: State) -> Command[Literal["temporalConditions",
         update={"how_section": result}
     )
     
-def temporalConditions(state: State) -> Command[Literal["aggregator"]]:
-    result = chain("6a - TemporalConditions", {}, state)
+def dataConditions(state: State) -> Command[Literal["aggregator"]]:
+    result = chain("6a - DataConditions", {}, state)
     
     return Command(
         goto="aggregator",
-        update={"how_temporal": result}
+        update={"how_data": result}
     )
     
-def mathematicsConditions(state: State) -> Command[Literal["aggregator"]]:
-    result = chain("6b - MathematicsConditions", {}, state)
+def responseConditions(state: State) -> Command[Literal["aggregator"]]:
+    result = chain("6b - ResponseConditions", {}, state)
     
     return Command(
         goto="aggregator",
-        update={"how_mathematics": result}
-    )
-    
-def logicConditions(state: State) -> Command[Literal["aggregator"]]:
-    result = chain("6c - LogicConditions", {}, state)
-    
-    return Command(
-        goto="aggregator",
-        update={"how_logic": result}
-    )
-    
-def formalConditions(state: State) -> Command[Literal["aggregator"]]:
-    result = chain("6d - FormalConditions", {}, state)
-    
-    return Command(
-        goto="aggregator",
-        update={"how_formal": result}
-    )
-    
-def textualConditions(state: State) -> Command[Literal["aggregator"]]:
-    result = chain("6e - TextualConditions", {}, state)
-    
-    return Command(
-        goto="aggregator",
-        update={"how_textual": result}
+        update={"how_response": result}
     )
     
 def aggregator(state: State) -> Command[Literal["evaluationResult"]]:
@@ -255,20 +228,11 @@ def aggregator(state: State) -> Command[Literal["evaluationResult"]]:
     if state["how_section"]:
         how.update({"Section": state["how_section"]})
     
-    if state["how_temporal"]:
-        how.update({"Temporal": state["how_temporal"]})
+    if state["how_data"]:
+        how.update({"Data": state["how_data"]})
     
-    if state["how_mathematics"]:
-        how.update({"Mathematics": state["how_mathematics"]})
-    
-    if state["how_logic"]:
-        how.update({"Logic": state["how_logic"]})
-    
-    if state["how_formal"]:
-        how.update({"Formal": state["how_formal"]})
-    
-    if state["how_textual"]:
-        how.update({"Textual": state["how_textual"]})
+    if state["how_response"]:
+        how.update({"Response": state["how_response"]})
         
     response.update({"how": how})
     
@@ -307,11 +271,8 @@ def build_graph():
     graph_builder.add_node("entityDisambiguation", entityDisambiguation)
     
     graph_builder.add_node("sectionsConditions", sectionsConditions)
-    graph_builder.add_node("temporalConditions", temporalConditions)
-    graph_builder.add_node("mathematicsConditions", mathematicsConditions)
-    graph_builder.add_node("logicConditions", logicConditions)
-    graph_builder.add_node("formalConditions", formalConditions)
-    graph_builder.add_node("textualConditions", textualConditions)
+    graph_builder.add_node("dataConditions", dataConditions)
+    graph_builder.add_node("responseConditions", responseConditions)
     
     graph_builder.add_node("aggregator", aggregator)
     graph_builder.add_node("evaluationResult", evaluationResult)

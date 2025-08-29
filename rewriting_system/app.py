@@ -22,11 +22,8 @@ def initial_state(query: str, thread_id: str):
         "what_type": "",
         "what_description": "",
         "how_section": "",
-        "how_temporal": "",
-        "how_mathematics": "",
-        "how_logic": "",
-        "how_formal": "",
-        "how_textual": "",
+        "how_data": "",
+        "how_response": "",
         "iteration": 0,
         "feedback": "",
         "response": {}
