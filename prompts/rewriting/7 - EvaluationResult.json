@@ -1,0 +1,44 @@
+{
+    "system": [
+        "domanda: \"{question}\"",
+        "risposta generata: \"{response}\"",
+
+        "valuta la qualita' della risposta in base a chiarezza, accuratezza, completezza.\n",
+        "dai un punteggio da 1 a 10 (8 e' la soglia della sufficienza) e motivalo. la tua risposta deve seguire la seguente struttura:\n",
+
+        "{{",
+        "    'voto': '',\n",
+        "    'motivazione': ''\n",
+        "}}\n",
+
+        "nella valutazione considera che:\n",
+        "- i possibili valori di 'command' sono:\n",
+        "    - 'cerca' nel caso in cui l'obiettivo del comando è quello di cercare porzioni del documento che contengano le informazioni richieste e fornisce una risposta completa utilizzando direttamente tali contenuti, senza riformularli.\n",
+        "    - 'riassumi' nel caso in cui l'obiettivo del comando è quello di riassumere il contenuto in modo chiaro e conciso, mantenendo i punti chiave entro un limite prefissato di parole.\n",
+        "    - 'confronta' nel caso in cui l'obiettivo del comando è quello di confrontare due (o più) documenti per evidenziare similitudini e differenze a livello strutturale, semantico o argomentativo.\n",
+        "    - 'estrai'  nel caso in cui l'obiettivo del comando è quello di analizzare il documento per estrarre componenti logiche implicite (es. struttura semantica, sillogismi, percorso argomentativo non esplicito). A differenza di 'A' le informazioni possono essere riformulate.\n",
+        "    - 'esplora' nel caso in cui l'obiettivo del comando è quello di identificare e raggruppare tutte le citazioni o riferimenti a un tema specifico presenti nel documento.\n",
+        "    - 'espandi' nel caso in cui l'obiettivo del comando è quello di espandere un testo fino a un certo numero di parole, aggiungendo esempi, spiegazioni e dettagli in modo coerente.\n",
+        "    - 'verifica' nel caso in cui l'obiettivo del comando è quello di verificare la coerenza tra le motivazioni e le decisioni finali presenti nel documento, segnalando eventuali incongruenze.\n",
+        "    - 'integra' nel caso in cui l'obiettivo del comando è quello di generare un nuovo testo coerente unificando logicamente più estratti o documenti, evitando ridondanze.\n",
+        "    - 'valutaRil' nel caso in cui l'obiettivo del comando è quello di valutare la rilevanza di un argomento/documento/precedente giuridico rispetto alla decisione finale, motivando il giudizio.\n",
+        "    - 'calcola' nel caso in cui l'obiettivo del comando è quello di eseguire calcoli basati su dati numerici presenti nel testo.\n",
+        "    - 'altro' in tutti gli altri i casi\n",
+        "- i possibili documenti su cui l'operazione deve essere applicata sono:\n",
+        "    - '['sentenza di primo grado']': spesso indicato anche come 'S. Trib.', 'S. G.d.P.', 'S. I grado', 'S1', 'S. Corte Ass.', 'N. R.G. Trib'.\n",
+        "    - '['sentenza di secondo grado']': spesso indicato anche come 'S. App.' (Sentenza della Corte d’Appello), 'Sent. II° gr', 'S2', 'S. Trib. App.' (Sentenza del Tribunale in appello), 'S. Corte Ass. App.' (Sentenza della Corte d’Assise d’Appello), 'S. App. civ./pen.'\n",
+        "    - '['memoria giudiziale']'\n",
+        "    - '['ricorso giudiziale']'\n",
+        "    - elementi conversazionale: si intende elemento come 'risposta precedente', 'contesto' (usato come se fosse 'altro'), ecc...\n",
+        "- le possibili opzioni per 'what.name', ovvero su quale elemento deve essere applicato il comando sono:\n",
+        "    - 'intero documento': è necessario estrarre tutto il testo\n",
+        "    - 'frase': è necessaria una o piu' frasi specifiche\n",
+        "    - 'entità' è necessario operare su persone, fonti, organizzazioni, luoghi, denaro, articoli, ecc...\n",
+        "    - 'precedenti'\n",
+        "    - 'sillogismo'\n",
+        "    - 'percorso logico'\n",
+        "    - 'passaggio logico'\n",
+        "    - 'altro'\n"
+    ],
+    "examples": []
+}

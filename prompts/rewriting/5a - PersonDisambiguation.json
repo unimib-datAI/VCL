@@ -1,0 +1,123 @@
+{
+   "system": [
+      "contesto:\n",
+      "la frase '{query}' e' una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
+      "e' stato gia' identificato che il comando e' di tipo '{comando}', il cui obiettivo e' '{descrizione_comando}'.",
+      "e' stato gia' identificato che il comando deve essere applicato su un'entità di tipo 'persona'.\n",
+
+      "obiettivo:\n",
+      "indivuare le caratteristiche che deve soddisfare l'entità di tipo 'persona'.\n",
+      "le possibili opzioni sono:\n",
+      "- 'tutte': non ci sono limitazioni sull'entità. in generale si usa quando si vogliono ottenere tutte le entità.\n",
+      "- un nome e/o cognome: si usa quando si vogliono ottenere tutte le informazioni su una singola persona\n",
+      "- 'attore': (la parte che promuove l’azione giudiziaria)\n",
+      "- 'convenuto' (la parte contro cui è proposta l’azione)\n",
+      "- 'parte' (attore e convenuto sono entrambi parti del processo)\n",
+      "- 'parte vittoriosa'\n",
+      "- 'parte soccombente'\n",
+      "- 'appellante' (chi ha fatto ricorso in appello)\n",
+      "- 'ricorrente' (chi ha fatto ricorso in cassazione o altri ricorsi)\n",
+      "- 'appellato' (chi ha ricevuto il ricorso in appello)\n",
+      "- 'controricorrente' (chi ha ricevuto il ricorso in cassazione)\n",
+      "- 'giudice'\n",
+      "- 'avvocato'\n",
+      "- 'testimone'\n",
+      "- altro\n",
+
+      "Formato di risposta:\n",
+      "Restituire esclusivamente il nome dell’elemento individuato.\n",
+      "Se la categoria è 'altro', rispondere con la sintassi altro/descrizione (es 'altro/passante')\n"
+   ],
+
+   "examples": [
+      {
+         "input": "chi ha avuto ragione?",
+         "reasoning": "",
+         "output": "parte vittoriosa"
+      },
+
+      {
+         "input": "chi ha perso?",
+         "reasoning": "",
+         "output": "parte soccombente"
+      },
+
+      {
+         "input": "chi ha stabilito questa sentenza?",
+         "reasoning": "",
+         "output": "giudice"
+      },
+
+      {
+         "input": "a chi si è rivolto Mario?",
+         "reasoning": "",
+         "output": "avvocato"
+      },
+
+      {
+         "input": "riportami tutte le frasi che contengono la Mario Rossi",
+         "reasoning": "",
+         "output": "Mario Rossi"
+      },
+
+      {
+         "input": "quante e quali persone sono menzionate nella sentenza?",
+         "reasoning": "",
+         "output": "tutte"
+      },
+
+      {
+         "input": "chi ha promosso l’azione giudiziaria?",
+         "reasoning": "",
+         "output": "attore"
+      },
+
+      {
+         "input": "contro chi è stata proposta la causa?",
+         "reasoning": "",
+         "output": "convenuto"
+      },
+
+      {
+         "input": "chi sono le parti coinvolte nel processo?",
+         "reasoning": "",
+         "output": "parte"
+      },
+
+      {
+         "input": "chi ha presentato il ricorso in appello?",
+         "reasoning": "",
+         "output": "appellante"
+      },
+
+      {
+         "input": "chi ha fatto ricorso in cassazione?",
+         "reasoning": "",
+         "output": "ricorrente"
+      },
+
+      {
+         "input": "chi ha ricevuto il ricorso in appello?",
+         "reasoning": "",
+         "output": "appellato"
+      },
+
+      {
+         "input": "chi ha ricevuto il ricorso in cassazione?",
+         "reasoning": "",
+         "output": "controricorrente"
+      },
+
+      {
+         "input": "chi può provare quanto successo?",
+         "reasoning": "",
+         "output": "testimone"
+      },
+
+      {
+         "input": "i genitori di Mario sono ancora vivi?",
+         "reasoning": "",
+         "output": "altro/genitori di Mario"
+      }
+   ]
+}

@@ -1,0 +1,6 @@
+{
+  "system": [
+    "correggi solo gli errori di battitura presenti nella seguente query \"{query}\", senza modificarne la struttura o riformularla. restituisci esclusivamente la versione corretta della domanda, senza aggiungere spiegazioni o commenti."
+  ],
+  "examples": []
+}

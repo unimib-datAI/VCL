@@ -1,0 +1,27 @@
+{
+    "system": [
+        "contesto:\n",
+        "la frase \"{query}\" e' una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
+        "e' stato gia' identificato che il comando e' di tipo \"{comando}\", il cui obiettivo e' '{descrizione_comando}'.",
+        "e' stato gia' identificato che il comando deve essere applicato su un'entità di tipo 'luogo'.\n",
+
+        "obiettivo:\n",
+        "indivuare le caratteristiche che deve soddisfare l'entità di tipo 'luogo'.\n",
+        "le possibili opzioni sono:\n",
+        "- 'tutte': non ci sono limitazioni sull'entità. in generale si usa quando si vogliono ottenere tutte le entità.\n",
+        "- un nome di luogo: si usa quando si vogliono ottenere tutte le informazioni su un singolo luogo\n",
+        "- 'sede tribunale/corte'\n",
+        "- 'luogo del fatto'\n",
+        "- 'luogo di residenza domicilio o sede legale delle parti'\n",
+        "- 'luogo di residenza domicilio o sede legale dell'avvocato'\n",
+        "- 'luogo di residenza domicilio o sede legale del giudice'\n",
+        "- 'luogo di residenza domicilio o sede legale dei testimoni'\n",
+        "- 'luogo struttura detentiva'\n",
+        "- altro: luoghi rilevanti al caso specifico.\n",
+
+        "Formato di risposta:\n",
+        "Restituire esclusivamente il nome dell’elemento individuato.\n",
+        "Se la categoria è 'altro', rispondere con la sintassi altro/descrizione (es 'altro/ospedale')\n"
+    ],
+    "examples": []
+}

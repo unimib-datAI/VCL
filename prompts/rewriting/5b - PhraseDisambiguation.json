@@ -1,0 +1,154 @@
+contesto:
+- hai ricevuto la seguente domanda: '{query}'.
+- e' stato determinato che si tratta di un'operazione di tipo '{comando}', ovvero: '{descrizione_comando}'.
+- e' stato inoltre stabilito che tale operazione deve essere applicata su '{dove}'. di conseguenza, questo valore non deve comparire nel campo 'relativa_a'.
+- e' stato accertato che l’elemento su cui l’operazione si concentra e' una o piu' frasi.
+
+obiettivo:
+generare una rappresentazione strutturata dell’oggetto 'frase' in formato json, ottimizzata per essere processata da un sistema rag (retrieval-augmented generation). tale rappresentazione deve agevolare operazioni basate su ricerca testuale (esatta o per similarita' semantica, come la similarita' del coseno).
+
+struttura attesa:
+
+{{
+    'name': 'frase',
+    'limitata': true,
+    'relativa_a': {{
+        'name': '',
+        'descrizione': ''
+    }},
+    'ragionamento': ''
+}}
+
+descrizione dei campi:
+- 'name': valore fisso, sempre 'frase'.
+- 'limitata': booleano (true o false). indica se la frase e' delimitata da virgolette o altre espressioni testuali che ne limitano il contenuto.
+- 'relativa_a': oggetto che descrive il contesto o l'elemento di riferimento a cui si riferisce la frase:
+  - 'name': categoria di riferimento, uno tra:
+    - 'intero documento': e' necessario individuare cio' che e' scritto in 'descrizione' nell'intero documento
+    - 'entita'': include elementi come 'persone' (riferimento a individui), 'fonte' (citazioni in documenti giudiziari), 'organizzazione' (enti o aziende) 'luoghi' (localita' reali), 'denaro' (importi monetari), 'articoli' (articoli del codice o di leggi italiane)
+    - 'sillogismo'
+    - 'percorso logico'
+    - 'passaggio logico'
+    - 'altro'
+  - 'descrizione': una breve spiegazione testuale che identifica l'elemento specifico di riferimento. se la query non fornisce informazioni sufficienti, usare 'altro'.
+- 'ragionamento': spiegazione completa, dettagliata e coerente del processo logico seguito per determinare i valori di tutti i campi ('limitata', 'relativa_a'). la spiegazione deve:
+  - menzionare esplicitamente ogni parte della query usata nel ragionamento;
+  - giustificare la presenza o assenza di virgolette;
+  - chiarire la logica che ha portato alla scelta del tipo e descrizione del riferimento;
+  - essere chiara, discorsiva e ben strutturata, senza omettere passaggi mentali.
+
+rispondi solo con l’oggetto json, senza aggiungere testo o spiegazioni esterne.
+
+esempi:
+1) query: 'riassumi con meno di 100 parole la frase in s2 relativa alla sentenza 672.'
+   comando: 'riassumi'
+   dove: 'sentenza di secondo grado'
+
+   output:
+   {{
+       'name': 'frase',
+       'limitata': true,
+       'relativa_a': {{
+           'name': 'entita'',
+           'descrizione': 'sentenza 672'
+       }},
+       'ragionamento': 'la richiesta menziona una 'frase' specifica contenuta in s2, indicando un'operazione su un segmento testuale localizzato, quindi 'limitata' e' true. il riferimento alla 'sentenza 672' rappresenta il contesto a cui la frase si riferisce. poiche' s2 e' gia' il valore del campo 'dove', non puo' essere usato come riferimento; la sentenza 672 e' quindi il vero punto di riferimento. ho assegnato 'entita'' a 'name' in quanto si fa riferimento a un oggetto giuridico identificabile (una sentenza).'
+   }}
+
+2) query: 'spiega la frase contenente 'violazione dell’articolo 21' presente nella memoria m2.'
+   comando: 'estrai'
+   dove: 'memoria giudiziale'
+   output:
+   {{
+       'name': 'frase',
+       'limitata': false,
+       'relativa_a': {{
+           'name': 'intero documento',
+           'descrizione': 'violazione dell'articolo 21'
+       }},
+       'ragionamento': 'la query specifica che la frase da spiegare contiene l’espressione 'violazione dell’articolo 21', per cui la frase non e' necessariamente delimitata e quindi 'limitata' e' false.'
+   }}
+
+3) query: 'sintetizza la frase riferita a vodafone nella sentenza s1.'
+   comando: 'sintetizza'
+   dove: 'sentenza di primo grado'
+   output:
+   {{
+       'name': 'frase',
+       'limitata': false,
+       'relativa_a': {{
+           'name': 'entita'',
+           'descrizione': 'vodafone'
+       }},
+       'ragionamento': 'la frase non e' necessariamente delimitata da virgolette, quindi 'limitata' e' false. il riferimento e' un’organizzazione specifica, 'vodafone', quindi 'relativa_a' ha name 'entita'' e descrizione 'vodafone'. il documento di lavoro e' la sentenza di primo grado, e non pue' essere usato come riferimento.'
+   }}
+
+4) query: 'riassumi brevemente la frase relativa al percorso logico che ha portato alla decisione in s2.'
+   comando: 'riassumi'
+   dove: 'sentenza di secondo grado'
+   output:
+   {{
+       'name': 'frase',
+       'limitata': false,
+       'relativa_a': {{
+           'name': 'percorso logico',
+           'descrizione': 'che ha portato alla decisione'
+       }},
+       'ragionamento': 'non e' detto che si tratti di una frase delimitata, quindi 'limitata' e' false. il riferimento e' chiaramente al ragionamento che ha portato alla decisione, riconducibile a un 'percorso logico'.
+   }}
+
+5) query: 'riassumi la frase in cui viene giustificata la decisione della corte in s2.'
+   comando: 'riassumi'
+   dove: 'sentenza di secondo grado'
+
+   {{
+       'name': 'frase',
+       'limitata': false,
+       'relativa_a': {{
+           'name': 'passaggio logico',
+           'descrizione': 'giustificazione della decisione della corte'
+       }},
+       'ragionamento': 'la frase fa riferimento a un passaggio logico che giustifica una decisione, non a una frase delimitata, quindi 'limitata' e' false. anche se contenuta in s2, il focus e' sul ragionamento espresso, cioe' su un 'passaggio logico'.'
+   }}
+
+6) query: 'spiega la frase che si riferisce al comma 3 dell’articolo 33.'
+   comando: 'spiega'
+   dove: 'memoria giudiziale'
+   output:
+   {{
+       'name': 'frase',
+       'limitata': false,
+       'relativa_a': {{
+           'name': 'articoli',
+           'descrizione': 'comma 3 dell’articolo 33'
+       }},
+       'ragionamento': 'la frase non e' delimitata da virgolette, quindi 'limitata' e' false. il riferimento al 'comma 3 dell’articolo 33' e' specifico di un testo normativo, quindi appartiene alla categoria 'articoli' e non genericamente a 'entita''.'
+   }}
+
+7) query: 'analizza la frase che parla dell'imputato.'
+   comando: 'analizza'
+   dove: 'sentenza di primo grado'
+   output:
+   {{
+       'name': 'frase',
+       'limitata': false,
+       'relativa_a': {{
+           'name': 'entita'',
+           'descrizione': 'imputato'
+       }},
+       'ragionamento': 'la frase non e' delimitata, quindi 'limitata' e' false. il soggetto 'imputato' e' una persona coinvolta nel procedimento, quindi appartiene alla categoria 'entita'' (tipo persone). anche se la frase e' nel documento, il riferimento e' a una persona e non al documento nel suo insieme.'
+   }}
+
+8) query: 'riassumi la frase nel ricorso che sintetizza il cuore dell’argomentazione.'
+   comando: 'riassumi'
+   dove: 'ricorso giudiziale'
+   output:
+   {{
+       'name': 'frase',
+       'limitata': false,
+       'relativa_a': {{
+           'name': 'percorso logico',
+           'descrizione': 'cuore dell’argomentazione'
+       }},
+       'ragionamento': 'non viene riportata una frase delimitata, quindi 'limitata' e' false. il riferimento al 'cuore dell’argomentazione' indica una struttura logica e non un'entita' o un testo giuridico, per cui la frase e' relativa a un 'percorso logico'.'
+   }}

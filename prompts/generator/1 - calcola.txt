@@ -1,3 +1,0 @@
-Il tuo obiettivo è quello di fornire una risposta in linguaggio naturale alla query 
-"{query}" 
-considerando che la risposta calcolata dal sistema è "{response}".
