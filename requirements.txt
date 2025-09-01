@@ -6,3 +6,4 @@ pydantic
 fastapi
 elasticsearch
 typing-extensions
+upstash-redis
