@@ -180,15 +180,12 @@ def entityDisambiguation(state: State) -> Command[Literal["sectionsConditions"]]
         update={"what_description": result}
     )
 
-def sectionsConditions(state: State) -> Command[Literal["temporalConditions", 
-                                                        "mathematicsConditions", 
-                                                        "logicConditions", 
-                                                        "formalConditions",
-                                                        "textualConditions"]]:
+def sectionsConditions(state: State) -> Command[Literal["dataConditions",
+                                                        "responseConditions"]]:
     result = chain("6 - SectionsConditions", {"query": state["query"], "comando": state["command"], "descrizione_comando": cfg.get_description_from_command(state["command"])}, state)
         
     return Command(
-        goto=["temporalConditions", "mathematicsConditions", "logicConditions", "formalConditions", "textualConditions"],
+        goto=["dataConditions", "responseConditions"],
         update={"how_section": result}
     )
     
