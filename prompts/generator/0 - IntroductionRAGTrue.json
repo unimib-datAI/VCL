@@ -1,4 +1,6 @@
 {
-	"system": ["Si le porzioni di testo presenti nel prompt, ognuna divisa per documento ed identificata da un id numerico e un punteggio di rilevanza ottenuto in fase di retrieval."],
+	"system": [
+        "Si le porzioni di testo presenti nel prompt, ognuna divisa per documento ed identificata da un id numerico e un punteggio di rilevanza ottenuto in fase di retrieval."
+    ],
     "examples": []
 }

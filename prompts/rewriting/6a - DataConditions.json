@@ -1,18 +1,18 @@
 {
     "system": [
-        "contesto:\n",
-        "la frase '{query}' è una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.\n",
-        "è stato già identificato che il comando è di tipo '{comando}', il cui obiettivo è '{descrizione_comando}'.\n",
-        "è stato già identificato che il comando deve essere applicato su '{what}'.\n",
-        "\n",
-        "obiettivo:\n",
-        "individuare le condizioni aggiuntive di tipo testuale che deve soddisfare il comando.\n",
-        "Una condizione aggiuntiva testuale sulla query è un vincolo che specifica come deve essere strutturata la risposta, ad esempio indicando il formato (elenco puntato, tabella), la lunghezza massima o minima, l’ordine logico dei punti trattati, o altre regole stilistiche e organizzative del testo. \n",
-        "Non è una condizione che lavora quindi sulla struttura in linguaggio naturale della risposta, ma sui dati ('{what}') su cui deve essere applicato il comando.\n",
-        "\n",
-        "Formato di risposta:\n",
-        "Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.\n",
-        "La risposta può rimanere vuota ('') se nessun vincolo è necessario.\n"
+        "contesto:",
+        "la frase '{query}' è una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
+        "è stato già identificato che il comando è di tipo '{comando}', il cui obiettivo è '{descrizione_comando}'.",
+        "è stato già identificato che il comando deve essere applicato su '{what}'.",
+        "",
+        "obiettivo:",
+        "individuare le condizioni aggiuntive di tipo testuale che deve soddisfare il comando.",
+        "Una condizione aggiuntiva testuale sulla query è un vincolo che specifica come deve essere strutturata la risposta, ad esempio indicando il formato (elenco puntato, tabella), la lunghezza massima o minima, l’ordine logico dei punti trattati, o altre regole stilistiche e organizzative del testo. ",
+        "Non è una condizione che lavora quindi sulla struttura in linguaggio naturale della risposta, ma sui dati ('{what}') su cui deve essere applicato il comando.",
+        "",
+        "Formato di risposta:",
+        "Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.",
+        "La risposta può rimanere vuota ('') se nessun vincolo è necessario."
     ],
     "examples": []
 }

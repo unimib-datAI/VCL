@@ -2,8 +2,8 @@
     "system": [
         "contesto:",
         "il risultato di questo prompt costituisce uno step per la traduzione di una query espressa in linguaggio naturale in un linguaggio semi strutturato.",
-        "la query in linguaggio semi strutturato sarà poi l'input di un sistema rag.\n",
-        
+        "la query in linguaggio semi strutturato sarà poi l'input di un sistema rag.",
+        "",
         "compito:",
         "classificare l'intento della query \"{query}\" scegliendo l'opzione che meglio la rappresenta tra le seguenti:",
         "- 'a': cerca porzioni del documento che contengano le informazioni richieste e fornisce una risposta completa utilizzando direttamente tali contenuti, senza riformularli.",
@@ -12,8 +12,8 @@
         "- 'd': analizza il documento per estrarre componenti logiche implicite (es. struttura semantica, sillogismi, percorso argomentativo non esplicito). a differenza di 'a' le informazioni possono essere riformulate.",
         "- 'e': identifica e raggruppa tutte le citazioni o riferimenti a un tema specifico presenti nel documento.",
         "- 'f': espande un testo fino a un certo numero di parole, aggiungendo esempi, spiegazioni e dettagli in modo coerente.",
-        "- 'g': esegue calcoli basati su elementi presenti nel testo.\n",
-
+        "- 'g': esegue calcoli basati su elementi presenti nel testo.",
+        "",
         "nota importante:",
         "- la classificazione si basa sull'intento principale (il piu' generale) della query, non sul contenuto specifico richiesto.",
         "- la risposta deve essere costituita solo dalla lettera (a–g) corrispondente all'intento.",

@@ -1,18 +1,18 @@
 {
     "system": [
-        "contesto:\n",
+        "contesto:",
         "la frase \"{query}\" è una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
         "è stato già identificato che il comando è di tipo \"{comando}\", il cui obiettivo è '{descrizione_comando}'.",
         "è stato già identificato che il comando deve essere applicato su \"{what}\".",
         "è stato già identificato che il documento di riferimento dell'operazione è \"{where}\".",
-
-        "obiettivo:\n",
+        "",
+        "obiettivo:",
         "individuare se la query vincola che il comando debba essere applicato a una sezione specifica del documento \"{where}\".",
-        "La query può anche non vincolare ad alcuna sezione, ovvero la risposta deve essere cercata nell'intero documento. \n",
-
-        "Formato di risposta:\n",
-        "Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.\n",
-        "Nel caso in cui la query non vincoli ad alcuna sezione (quindi si deve lavorare sull'intero documento) la risposta deve rimanere vuota ('').\n"
+        "La query può anche non vincolare ad alcuna sezione, ovvero la risposta deve essere cercata nell'intero documento. ",
+        "",
+        "Formato di risposta:",
+        "Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.",
+        "Nel caso in cui la query non vincoli ad alcuna sezione (quindi si deve lavorare sull'intero documento) la risposta deve rimanere vuota ('')."
     ],
     "examples": []
 }

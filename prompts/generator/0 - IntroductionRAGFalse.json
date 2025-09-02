@@ -1,4 +1,6 @@
 {
-	"system": ["Si considerino i seguenti documenti, ognugno identificato da un id numerico e un nome."],
+	"system": [
+        "Si considerino i seguenti documenti, ognugno identificato da un id numerico e un nome."
+    ],
     "examples": []
 }
