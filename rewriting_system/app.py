@@ -15,7 +15,8 @@ def initial_state(query: str, thread_id: str):
     return {
         "query": query,      # Original user query
         "thread_id": thread_id,
-        "command": str,
+        "command": "",
+        "description_command": "",
         "documents": [],
         "unit": "",
         "what_name": "",
