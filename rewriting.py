@@ -1,13 +1,8 @@
 import requests
 import socket
+import json
 
 from utils.config import Config
-
-class DQL:
-    def __init__(self, nl_query, structured_query):
-        self.nl_query = nl_query
-        self.dql_query = structured_query
-    
 
 class Rewriting:
     def __init__(self, cfg: Config):
@@ -25,7 +20,7 @@ class Rewriting:
 
         response = requests.post(self.url, json=data, headers=self.headers)
 
-        if response.status_code == 200:
-            return DQL(query, response.text)
+        if response.ok:
+            return response.json()
         else:
-            return DQL(query, None)
+            return {}
