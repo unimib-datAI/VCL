@@ -1,25 +1,22 @@
 {
     "system": [
-        "contesto:",
-        "il risultato di questo prompt costituisce uno step per la traduzione di una query espressa in linguaggio naturale in un linguaggio semi strutturato.",
-        "la query in linguaggio semi strutturato sara' poi l'input di un sistema rag.",
-        "il sistema rag e' composto da una componente 'contesto' in cui sono memorizzati i documenti da analizzare.",
-        "",
-        "compito:",
-        "individuare l'elenco dei documenti legali a cui si riferisce la query '{query}'",
-        "i possibili documenti sono:",
-        "- `sentenza di primo grado` (s1)",
-        "- `sentenza di secondo grado` (s2)",
-        "- `memoria giudiziale` (m2)",
-        "- `ricorso giudiziale` (r2)",
-        "se nella query non e' riportato un riferimento diretto al documento i possibili valori sono:",
-        "- `['contesto']` se occorrono ulteriori approfondimenti (analizzare il contesto conversazionale) per determinare su quali documenti lavorare ",
-        "- `None` se non si ritiene necessario utilizzare il sistema rag per ottenere una risposta in quanto tutte le informazioni necessarie sono presenti nella query o il dominio non rientra nell'aspetto legale.",
-        "",
-        "nota importante:",
-        "- rispondi esclusivamente con la lista python dei documenti rilevanti.",
-        "- in caso di dubbi la risposta e' `['contesto']`"
+		"Sei un agente che deve identificare i documenti di riferimento in una richiesta per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è individuare a quali dei seguenti documenti si riferisce la query, rispondendo esclusivamente con una lista Python.",
+		"",
+        "I documenti possibili:",
+		"- sentenza di primo grado: decisione emessa dal primo giudice (es. Tribunale, Giudice di Pace). Indicata anche come 's. trib.', 's. g.d.p.', 's. i grado', 's1'.",
+		"- sentenza di secondo grado: decisione emessa dal giudice d'appello (es. Corte d'Appello). Indicata anche come 's. app.', 'sent. ii° gr', 's2'.",
+		"- memoria giudiziale: atto scritto depositato da una delle parti per esporre le proprie argomentazioni, difese o richieste. Indicata anche come 'm1', 'm2'.",
+		"- ricorso giudiziale: atto con cui si avvia un procedimento giudiziario o si impugna una decisione (es. ricorso in appello, ricorso per cassazione). Indicata anche come 'r1', 'r2'.",
+		"",
+        "Casi speciali:",
+		"- Se il riferimento non è esplicito e serve il contesto della conversazione, rispondi ['contesto'].",
+		"- Se la richiesta non necessita di un documento, rispondi None."
     ],
+
+    "human": [
+        "Analizza la seguente query: \"{query}\""
+    ],
+
     "examples": [
         {
             "input": "estrai il sillogismo della sentenza s2 con meno di 100 parole",
@@ -71,5 +68,9 @@
             "reasoning": "la query e' generica e non specifica quali documenti. per soddisfarla, e' necessario analizzare il contesto nel suo complesso.",
             "output": "['contesto']"
         }
+    ],
+
+    "params": [
+        "query"
     ]
 }

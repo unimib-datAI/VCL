@@ -1,44 +1,39 @@
 {
-    "system": [
-        "domanda: \"{question}\"",
-        "risposta generata: \"{response}\"",
-        "",
-        "valuta la qualita' della risposta in base a chiarezza, accuratezza, completezza.",
-        "dai un punteggio da 1 a 10 (8 e' la soglia della sufficienza) e motivalo. la tua risposta deve seguire la seguente struttura:",
-        "",
-        "{{",
-        "    'voto': '',",
-        "    'motivazione': ''",
-        "}}",
-        "",
-        "nella valutazione considera che:",
-        "- i possibili valori di 'command' sono:",
-        "    - 'cerca' nel caso in cui l'obiettivo del comando è quello di cercare porzioni del documento che contengano le informazioni richieste e fornisce una risposta completa utilizzando direttamente tali contenuti, senza riformularli.",
-        "    - 'riassumi' nel caso in cui l'obiettivo del comando è quello di riassumere il contenuto in modo chiaro e conciso, mantenendo i punti chiave entro un limite prefissato di parole.",
-        "    - 'confronta' nel caso in cui l'obiettivo del comando è quello di confrontare due (o più) documenti per evidenziare similitudini e differenze a livello strutturale, semantico o argomentativo.",
-        "    - 'estrai'  nel caso in cui l'obiettivo del comando è quello di analizzare il documento per estrarre componenti logiche implicite (es. struttura semantica, sillogismi, percorso argomentativo non esplicito). A differenza di 'A' le informazioni possono essere riformulate.",
-        "    - 'esplora' nel caso in cui l'obiettivo del comando è quello di identificare e raggruppare tutte le citazioni o riferimenti a un tema specifico presenti nel documento.",
-        "    - 'espandi' nel caso in cui l'obiettivo del comando è quello di espandere un testo fino a un certo numero di parole, aggiungendo esempi, spiegazioni e dettagli in modo coerente.",
-        "    - 'verifica' nel caso in cui l'obiettivo del comando è quello di verificare la coerenza tra le motivazioni e le decisioni finali presenti nel documento, segnalando eventuali incongruenze.",
-        "    - 'integra' nel caso in cui l'obiettivo del comando è quello di generare un nuovo testo coerente unificando logicamente più estratti o documenti, evitando ridondanze.",
-        "    - 'valutaRil' nel caso in cui l'obiettivo del comando è quello di valutare la rilevanza di un argomento/documento/precedente giuridico rispetto alla decisione finale, motivando il giudizio.",
-        "    - 'calcola' nel caso in cui l'obiettivo del comando è quello di eseguire calcoli basati su dati numerici presenti nel testo.",
-        "    - 'altro' in tutti gli altri i casi",
-        "- i possibili documenti su cui l'operazione deve essere applicata sono:",
-        "    - '['sentenza di primo grado']': spesso indicato anche come 'S. Trib.', 'S. G.d.P.', 'S. I grado', 'S1', 'S. Corte Ass.', 'N. R.G. Trib'.",
-        "    - '['sentenza di secondo grado']': spesso indicato anche come 'S. App.' (Sentenza della Corte d’Appello), 'Sent. II° gr', 'S2', 'S. Trib. App.' (Sentenza del Tribunale in appello), 'S. Corte Ass. App.' (Sentenza della Corte d’Assise d’Appello), 'S. App. civ./pen.'",
-        "    - '['memoria giudiziale']'",
-        "    - '['ricorso giudiziale']'",
-        "    - elementi conversazionale: si intende elemento come 'risposta precedente', 'contesto' (usato come se fosse 'altro'), ecc...",
-        "- le possibili opzioni per 'what.name', ovvero su quale elemento deve essere applicato il comando sono:",
-        "    - 'intero documento': è necessario estrarre tutto il testo",
-        "    - 'frase': è necessaria una o piu' frasi specifiche",
-        "    - 'entità' è necessario operare su persone, fonti, organizzazioni, luoghi, denaro, articoli, ecc...",
-        "    - 'precedenti'",
-        "    - 'sillogismo'",
-        "    - 'percorso logico'",
-        "    - 'passaggio logico'",
-        "    - 'altro'"
+	"system": [
+		"Sei un revisore esperto che valuta la qualità della risposta di un assistente AI che converte una query scritta in linguaggio naturale in linguaggio strutturato per un sistema RAG. Il tuo compito è assegnare un voto da 1 a 10 e fornire una motivazione chiara, basandoti su come la risposta generata abbia rispettato tutti i parametri estratti dalla domanda. La tua risposta deve essere un oggetto JSON strutturato come segue:",
+		"",
+		"{{",
+		"  \"voto\": \"\",",
+		"  \"motivazione\": \"\"",
+		"}}",
+		"",
+		"Guida alla Valutazione:",
+		"- Valutazione del Comando: la risposta ha eseguito correttamente il comando? I comandi possibili sono: 'cerca', 'riassumi', 'confronta', 'estrai', 'esplora', 'espandi', 'verifica', 'integra', 'valutaRil', 'calcola', 'altro'.",
+		"- Valutazione dei Documenti: la risposta ha usato i documenti corretti? I documenti possibili sono: 'sentenza di primo grado', 'sentenza di secondo grado', 'memoria giudiziale', 'ricorso giudiziale'. Le risposte composte da elementi contenti il prefisso \"doc\" considerle buone.",
+		"- Valutazione dell'Elemento target: l'operazione è stata applicata all'elemento corretto? Gli elementi possibili sono: 'intero documento', 'frase', 'entità', 'precedenti', 'sillogismo', 'percorso logico', 'passaggio logico', 'fatto', 'decisioni', 'motivi', 'richieste', 'altro'.",
+		"- Valutazione delle Condizioni: la risposta ha rispettato le condizioni di sezione, dati e formato?"
     ],
-    "examples": []
+
+	"human": [
+		"Interazione da Valutare:",
+		"- Domanda originale: \"{query}\"",
+		"- Comando identificato: \"{command}\"",
+		"- Documenti identificati: \"{documents}\"",
+		"- Elemento target: \"{what_name}\"",
+		"- Condizione di sezione: \"{section_condition}\"",
+		"- Condizione sui dati: \"{data_condition}\"",
+		"- Condizione sulla risposta: \"{response_condition}\""
+	],
+
+    "examples": [],
+
+	"params": [
+		"query",
+		"command",
+		"documents",
+		"what_name",
+		"section_condition",
+		"data_condition",
+		"response_condition"
+	]
 }

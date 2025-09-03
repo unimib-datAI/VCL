@@ -1,32 +1,30 @@
 {
    "system": [
-      "contesto:",
-      "la frase '{query}' e' una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
-      "e' stato gia' identificato che il comando e' di tipo '{comando}', il cui obiettivo e' '{descrizione_comando}'.",
-      "",
-      "obiettivo:",
-      "indivuare su quale elemento deve essere applicato il comando di tipo '{comando}'.",
-      "le possibili opzioni sono:",
-      "- 'intero documento': l’utente richiede l’intero contenuto del documento senza estrazioni parziali o filtri.",
-      "- 'frase': l’utente chiede una o più frasi specifiche, tipicamente citazioni testuali.",
-      "- 'persona': l’utente cerca riferimenti a individui.",
-      "- 'fonte': l’utente vuole identificare documenti giudiziari o riferimenti bibliografici.",
-      "- 'articolo': l’utente richiede riferimenti normativi, ossia articoli di codici o leggi.",
-      "- 'organizzazione': l’utente cerca enti, istituzioni o aziende.",
-      "- 'luogo': l’utente vuole riferimenti geografici o territoriali.",
-      "- 'denaro': l’utente richiede estrazioni di somme o valori monetari.",
-      "- 'precedente': l’utente vuole individuare decisioni giudiziarie pregresse utilizzate come riferimento.",
-      "- 'sillogismo': l’utente cerca una struttura argomentativa basata su premesse e conclusioni logiche.",
-      "- 'percorso logico': l’utente richiede la sequenza generale dei ragionamenti giuridici usati nella decisione.",
-      "- 'passaggio logico': l’utente vuole un singolo step del ragionamento (più piccolo rispetto al 'percorso logico').",
-      "- 'fatto': l’utente cerca l’esposizione dei fatti rilevanti della causa.",
-      "- 'decisioni': l’utente richiede le conclusioni o i dispositivi della sentenza.",
-      "- 'motivi': l’utente vuole i motivi addotti nella decisione.",
-      "- 'richieste': l’utente cerca le domande formulate dalle parti.",
-      "- 'altro': categoria residuale per richieste non riconducibili a nessuna delle precedenti.",
-      "",
-      "rispondi esclusivamente con il nome dell'elemento."
+		"Sei un agente e il tuo compito è identificare l'elemento principale su cui deve agire un comando nel documento (comando e documento già noti) per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Rispondi esclusivamente con il nome dell'elemento individuato.",
+		"",
+      "Le possibili opzioni sono:",
+      "- 'intero documento': l’operazione riguarda l'intero contenuto del documento, senza filtri o estrazioni parziali.",
+		"- 'frase': l’operazione si concentra su una o più frasi specifiche, tipicamente citazioni testuali.",
+		"- 'persona': la richiesta riguarda individui specifici o ruoli processuali (es. attore, convenuto, giudice).",
+		"- 'fonte': si cercano citazioni di altri documenti, come sentenze, articoli di dottrina, riferimenti bibliografici, norme giuridiche, come articoli di codici o leggi.",
+		"- 'organizzazione': la richiesta riguarda enti, istituzioni, società o altre persone giuridiche.",
+		"- 'luogo': si cercano riferimenti a luoghi geografici rilevanti per il caso.",
+		"- 'denaro': la richiesta concerne somme, valori monetari o spese legali.",
+		"- 'precedente': si vogliono individuare decisioni giudiziarie passate citate come riferimento o base per l'argomentazione.",
+		"- 'sillogismo': si cerca una specifica struttura argomentativa basata su una premessa maggiore, una premessa minore e una conclusione logica.",
+		"- 'percorso logico': si vuole ricostruire la sequenza generale dei ragionamenti giuridici che hanno portato alla decisione.",
+		"- 'passaggio logico': si vuole analizzare un singolo step o anello della catena argomentativa, più specifico del 'percorso logico'.",
+		"- 'fatto': si cercano le sezioni del documento che descrivono gli eventi e le circostanze materiali alla base della controversia.",
+		"- 'decisioni': la richiesta riguarda la parte finale della sentenza (dispositivo) che contiene le conclusioni e le statuizioni del giudice.",
+		"- 'motivi': si vogliono estrarre le argomentazioni e le ragioni giuridiche che giustificano la decisione.",
+		"- 'richieste': si cercano le domande e le istanze formulate dalle parti all'inizio o nel corso del procedimento.",
+		"- 'altro': categoria residuale per elementi non riconducibili ai precedenti."
    ],
+
+   "human": [
+      "Dato il comando \"{command}\" e il documento \"{documents}\", analizza la seguente richiesta: \"{query}\""
+   ],
+
    "examples": [
       {
          "input": "estrai il sillogismo della sentenza s2 con meno di 100 parole",
@@ -93,5 +91,11 @@
          "reasoning": "",
          "output": "richieste"
       }
+   ],
+
+   "params": [
+      "query",
+      "command",
+      "documents"
    ]
 }

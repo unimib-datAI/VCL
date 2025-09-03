@@ -1,18 +1,15 @@
 {
     "system": [
-        "contesto:",
-        "la frase \"{query}\" è una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
-        "è stato già identificato che il comando è di tipo \"{comando}\", il cui obiettivo è '{descrizione_comando}'.",
-        "è stato già identificato che il comando deve essere applicato su \"{what}\".",
-        "",
-        "obiettivo:",
-        "individuare le condizioni aggiuntive di tipo dati che deve soddisfare il comando.",
-        "Una condizione aggiuntiva sui dati è un vincolo che specifica quali informazioni o elementi devono essere considerati o esclusi nel processo, ad esempio limitare l’ambito temporale (solo documenti dal 2020 in poi), la giurisdizione (solo normativa italiana), la tipologia di fonte (solo leggi, solo sentenze, solo contratti), il livello di dettaglio richiesto, o altre regole che operano direttamente su \"{what}\".",
-        "Non è una condizione che lavora sulla struttura del testo della risposta, ma sui contenuti o sul sottoinsieme di dati da selezionare ed elaborare.",
-        "",
-        "Formato di risposta:",
-        "Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.",
-        "La risposta può rimanere vuota ('') se nessun vincolo è necessario."
+      "Sei un agente e il tuo compito è individuare se la query contiene condizioni sul formato della risposta (es. \"in un elenco puntato\", \"massimo 100 parole\", \"in una tabella\") per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Non sono quindi coinvolti in questa fase i dettagli sui dati, ma solo le informazioni strutturali della risposta. Il tuo compito è quello di analizzare la domanda e restituire esclusivamente la descrizione (breve) della condizione aggiuntiva rilevata. La risposta può rimanere vuota ('') se nessun vincolo è necessario."
     ],
-    "examples": []
+
+    "human": [
+      "Analizza la seguente query e individua la condizione sulla struttura della risposta: \"{query}\""
+    ],
+
+    "examples": [],
+
+    "params": [
+      "query"
+    ]
 }

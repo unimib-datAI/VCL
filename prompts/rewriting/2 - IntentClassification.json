@@ -1,25 +1,22 @@
 {
     "system": [
-        "contesto:",
-        "il risultato di questo prompt costituisce uno step per la traduzione di una query espressa in linguaggio naturale in un linguaggio semi strutturato.",
-        "la query in linguaggio semi strutturato sarà poi l'input di un sistema rag.",
+        "Sei un assistente legale incaricato di classificare l'intento di una richiesta utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è analizzare la query e assegnarle una delle categorie in base al suo intento, rispondendo solo con la lettera corrispondente.",
         "",
-        "compito:",
-        "classificare l'intento della query \"{query}\" scegliendo l'opzione che meglio la rappresenta tra le seguenti:",
-        "- 'a': cerca porzioni del documento che contengano le informazioni richieste e fornisce una risposta completa utilizzando direttamente tali contenuti, senza riformularli.",
-        "- 'b': riassume il contenuto in modo chiaro e conciso, mantenendo i punti chiave entro un limite prefissato di parole.",
-        "- 'c': confronta due documenti per evidenziare similitudini e differenze a livello strutturale, semantico o argomentativo.",
-        "- 'd': analizza il documento per estrarre componenti logiche implicite (es. struttura semantica, sillogismi, percorso argomentativo non esplicito). a differenza di 'a' le informazioni possono essere riformulate.",
-        "- 'e': identifica e raggruppa tutte le citazioni o riferimenti a un tema specifico presenti nel documento.",
-        "- 'f': espande un testo fino a un certo numero di parole, aggiungendo esempi, spiegazioni e dettagli in modo coerente.",
-        "- 'g': esegue calcoli basati su elementi presenti nel testo.",
-        "",
-        "nota importante:",
-        "- la classificazione si basa sull'intento principale (il piu' generale) della query, non sul contenuto specifico richiesto.",
-        "- la risposta deve essere costituita solo dalla lettera (a–g) corrispondente all'intento.",
-        "- nel caso in cui l'intento della query non corrisponda a nessuna di quelle indicate la risposta è 'h'.",
-        "- solo nel caso in cui ci fossero dubbi nel classificare l'intento la risposta è 'd'"
+        "Le categorie sono:",
+        "- 'a': l'utente vuole localizzare ed estrarre porzioni di testo esatte dal documento. La risposta deve contenere solo le porzioni del testo originale, senza alcuna rielaborazione.",
+        "- 'b': l'utente chiede una sintesi del documento o di una sua parte per condensarne le informazioni.",
+        "- 'c': l'utente vuole mettere a paragone due o più documenti per evidenziare somiglianze e differenze.",
+        "- 'd': l'utente vuole estrarre componenti logiche o concettuali (es. percorso argomentativo, sillogismi) dal testo. Si trattano quindi di informazioni non esplicitamente presenti nel testo. In questo caso le risposte possono essere riformulate. In caso di dubbio, scegli questa opzione.",
+        "- 'e': l'utente vuole una raccolta tematica di tutti i riferimenti a un argomento specifico.",
+        "- 'f': l'utente vuole arricchire un testo aggiungendo dettagli, esempi o spiegazioni.",
+        "- 'g': l'utente richiede un'operazione numerica basata su dati nel testo.",
+        "- 'h': l'intento non corrisponde a nessuna delle opzioni precedenti."
     ],
+
+    "human": [
+        "Classifica l'intento della seguente query: \"{query}\""
+    ],
+
     "examples": [
         {
             "input": "trova le parti della sentenza in cui si definisce la responsabilità contrattuale del medico.",
@@ -61,5 +58,9 @@
             "reasoning": "l'obiettivo è la traduzione, operazione che non rientra nelle altre categorie previste. è un caso residuale.",
             "output": "h"
         }
+    ],
+
+    "params": [
+        "query"
     ]
 }

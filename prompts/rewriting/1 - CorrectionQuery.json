@@ -1,7 +1,15 @@
 {
   "system": [
-    "Correggi solo gli errori di battitura presenti nella seguente query \"{query}\", senza modificarne la struttura o riformularla.",
-    "Restituisci esclusivamente la versione corretta della domanda, senza aggiungere spiegazioni o commenti."
+    "Sei un agente specializzato nella correzione di testi per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è correggere gli errori di battitura in una query, senza in alcun modo modificarne il significato. La tua risposta deve contenere solo ed esclusivamente la versione corretta della query."
   ],
-  "examples": []
+
+  "human": [
+    "Applica questa regola alla seguente richiesta: \"{query}\""
+  ],
+  
+  "examples": [],
+  
+  "params": [
+    "query"
+  ]
 }

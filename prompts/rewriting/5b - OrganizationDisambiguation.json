@@ -1,30 +1,25 @@
 {
-    "system": [
-        "contesto:",
-        "la frase \"{query}\" e' una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
-        "e' stato gia' identificato che il comando e' di tipo \"{comando}\", il cui obiettivo e' \"{descrizione_comando}\".",
-        "e' stato gia' identificato che il comando deve essere applicato su un'entità di tipo 'organizzazione'.",
-        "",
-        "obiettivo:",
-        "indivuare le caratteristiche che deve soddisfare l'entità di tipo 'organizzazione'.",
-        "le possibili opzioni sono:",
-        "- 'tutte': non ci sono limitazioni sull'entità. in generale si usa quando si vogliono ottenere tutte le entità.",
-        "- un nome: si usa quando si vogliono ottenere tutte le informazioni su una singola organizzazione",
-        "- 'attore': (la parte che promuove l’azione giudiziaria)",
-        "- 'convenuto' (la parte contro cui è proposta l’azione)",
-        "- 'parte' (attore e convenuto sono entrambi parti del processo)",
-        "- 'parte vittoriosa'",
-        "- 'parte soccombente'",
-        "- 'appellante' (chi ha fatto ricorso in appello)",
-        "- 'ricorrente' (chi ha fatto ricorso in cassazione o altri ricorsi)",
-        "- 'appellato' (chi ha ricevuto il ricorso in appello)",
-        "- 'controricorrente' (chi ha ricevuto il ricorso in cassazione)",
-        "- altro",
-        "",
-        "Formato di risposta:",
-        "Restituire esclusivamente il nome dell’elemento individuato.",
-        "Se la categoria è 'altro', rispondere con la sintassi altro/descrizione (es 'altro/passante')"
+   "system": [
+		"Sei un agente e il tuo compito è specificare il tipo di 'organizzazione' richiesta dall'utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Oltre alla domanda dell'utente ti verrà fornito anche il tipo di operazione che rappresenta la domanda e il documento su cui l'operazione verrà applicata. Rispondi solo con il nome dell'elemento scelto dalla lista.",
+		"",
+        "Le possibili opzioni sono:",
+		"- un nome: Si cercano informazioni su una singola organizzazione.",
+		"- 'attore': la parte che avvia l'azione giudiziaria.",
+		"- 'convenuto': la parte contro cui è proposta l’azione.",
+		"- 'parte': termine generico che include attore e convenuto.",
+		"- 'parte vittoriosa': la parte le cui richieste sono state accolte.",
+		"- 'parte soccombente': la parte le cui richieste sono state respinte.",
+		"- 'appellante': la parte che impugna in appello.",
+		"- 'ricorrente': la parte che presenta un ricorso (es. in Cassazione).",
+		"- 'appellato': la parte che si difende in appello.",
+		"- 'controricorrente': la parte che si difende da un ricorso.",
+		"- 'altro': Non ci sono limitazioni. Qualsiasi altro ruolo non coperto dalle opzioni."
     ],
+
+    "human": [
+        "Analizza la seguente richiesta relativa a un'organizzazione considerando che rappresenta un comando di tipo \"{command}\" (\"{description_command}\") sul documento \"{documents}\": \"{query}\""
+    ],
+    
     "examples": [
         {
             "input": "quale azienda ha avuto ragione?",
@@ -91,5 +86,12 @@
             "reasoning": "",
             "output": "altro/azienda dove Mario è lavoratore"
         }
+    ],
+    
+    "params": [
+        "query",
+        "command",
+        "description_command",
+        "documents"
     ]
 }

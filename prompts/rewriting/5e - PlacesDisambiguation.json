@@ -1,0 +1,29 @@
+{
+    "system": [
+		"Sei un agente e il tuo compito è specificare il tipo di 'luogo' richiesta dall'utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Rispondi solo con il nome dell'elemento.",
+		"",
+        "Le possibili opzioni sono:",
+        "- un nome di luogo: si usa quando si vogliono ottenere tutte le informazioni su un singolo luogo",
+        "- 'sede tribunale/corte'",
+        "- 'luogo del fatto'",
+        "- 'luogo di residenza domicilio o sede legale delle parti'",
+        "- 'luogo di residenza domicilio o sede legale dell'avvocato'",
+        "- 'luogo di residenza domicilio o sede legale del giudice'",
+        "- 'luogo di residenza domicilio o sede legale dei testimoni'",
+        "- 'luogo struttura detentiva'",
+        "- 'altro': Non ci sono limitazioni. Qualsiasi altro ruolo non coperto dalle opzioni."
+    ],
+
+    "human": [
+        "Analizza la seguente richiesta relativa a un luogo considerando che rappresenta un comando di tipo \"{command}\" (\"{description_command}\") sul documento \"{documents}\": \"{query}\""
+    ],
+
+    "examples": [],
+    
+    "params": [
+        "query",
+        "command",
+        "description_command",
+        "documents"
+    ]
+}

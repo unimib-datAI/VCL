@@ -1,18 +1,16 @@
 {
     "system": [
-        "contesto:",
-        "la frase \"{query}\" è una richiesta legale in linguaggio naturale, da inoltrare a un sistema rag.",
-        "è stato già identificato che il comando è di tipo \"{comando}\", il cui obiettivo è '{descrizione_comando}'.",
-        "è stato già identificato che il comando deve essere applicato su \"{what}\".",
-        "è stato già identificato che il documento di riferimento dell'operazione è \"{where}\".",
-        "",
-        "obiettivo:",
-        "individuare se la query vincola che il comando debba essere applicato a una sezione specifica del documento \"{where}\".",
-        "La query può anche non vincolare ad alcuna sezione, ovvero la risposta deve essere cercata nell'intero documento. ",
-        "",
-        "Formato di risposta:",
-        "Restituire esclusivamente la descrizione della condizione aggiuntiva rilevata.",
-        "Nel caso in cui la query non vincoli ad alcuna sezione (quindi si deve lavorare sull'intero documento) la risposta deve rimanere vuota ('')."
+      "Sei un agente e il tuo compito è individuare se la query contiene un vincolo a una sezione specifica del documento (es. \"nelle motivazioni\", \"nel dispositivo\") per un assistente AI (ambito legale) che converte una query scritta in linguaggio naturale in linguaggio strutturato per un sistema RAG. Il tuo compito è quello di analizzare la domanda e di fornire esclusivamente il nome della sezione dove è opportuno ricercare i dati (i dati su cui lavorare sono già noti). Se non trovi alcuna condizione di sezione, rispondi con una stringa vuota ('')."
     ],
-    "examples": []
+
+    "human": [
+      "Analizza la seguente query e individua la condizione sulla struttura della risposta considerando che i dati riguardano \"{what_name}\": \"{query}\""
+    ],
+
+    "examples": [],
+
+    "params": [
+      "query",
+      "what_name"
+    ]
 }
