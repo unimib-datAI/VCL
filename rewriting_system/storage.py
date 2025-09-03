@@ -23,12 +23,8 @@ class Storage:
         if data is None:
             return []
         
-        return json.loads(data)
-    
-    def write(self, key: str, query: str, docRef: str, data: Optional[List[Dict[str, Any]]] = None):
-        if data is None:
-            data = self.read(key)
-
+        data = json.loads(data)
+        
         now = datetime.now(timezone.utc)
 
         filtered = []
@@ -40,20 +36,41 @@ class Storage:
             
             if int(abs((now - t).total_seconds() / 60)) < 60:
                 filtered.append(d)
+                
+        return filtered
+    
+    def write(self, key: str, query: str, docRef: str, data: Optional[List[Dict[str, Any]]] = None):
+        if data is None:
+            data = self.read(key)
+
+        now = datetime.now(timezone.utc)
         
-        id_doc = "0"
-        if len(filtered) > 0:
-            last_doc_id = filtered[-1]["docOut"]
-            id_doc = str(int(last_doc_id[last_doc_id.index("_") + 1:]) + 1)
+        id = self.getNewId(key, data)
             
-        filtered.append({
+        data.append({
             "time": now.isoformat(),
             "query": query,
             "docRef": docRef,
-            "docOut": f"doc_{id_doc}"
+            "docOut": id
         })
 
-        self.r.set(key, json.dumps(filtered), ex=1800)
+        self.r.set(key, json.dumps(data), ex=1800)
+        
+        return id
+        
+        
+    
+    def getNewId(self, key: str, data: Optional[List[Dict[str, Any]]] = None):
+        if data is None:
+            data = self.read(key)
+        
+        id_doc = "0"
+        if len(data) > 0:
+            last_doc_id = data[-1]["docOut"]
+            id_doc = str(int(last_doc_id[last_doc_id.index("_") + 1:]) + 1)
+        
+        return f"doc_{id_doc}"
+        
 
     def clear(self, key: str):
         self.r.set(key, json.dumps([]))

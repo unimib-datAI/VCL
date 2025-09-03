@@ -35,6 +35,7 @@ class State(TypedDict):
     description_command: str
     
     documents: list[str]
+    id_result: str
     
     unit: str
     
@@ -74,18 +75,19 @@ def intentClassification(state: State) -> Command[Literal["documentExtraction", 
 
 def documentExtraction(state: State) -> Command[Literal["whatExtraction", "documentDisambiguation"]]:
     result = chain("3 - DocumentExtraction", state)
-    
     result = cfg.str_in_list(result)
+    
+    id_result = ""
 
     goto = "whatExtraction"
     if "contesto" in result:
         goto = "documentDisambiguation"
     else:
-        r.write(state["thread_id"], state["query"], result)
+        id_result = r.write(state["thread_id"], state["query"], result)
         
     return Command(
         goto=goto,
-        update={"documents": result},
+        update={"documents": result, "id_result": id_result},
     )
 
 def documentDisambiguation(state: State) -> Command[Literal["whatExtraction"]]:
@@ -97,11 +99,11 @@ def documentDisambiguation(state: State) -> Command[Literal["whatExtraction"]]:
     else:
         doc = ["sentenza di primo grado", "sentenza di secondo grado", "memoria giudiziale", "ricorso giudiziale"]
     
-    r.write(state["thread_id"], state["query"], doc)
+    id_result = r.write(state["thread_id"], state["query"], doc)
     
     return Command(
         goto="whatExtraction",
-        update={"documents": doc},
+        update={"documents": doc, "id_result": id_result},
     )
     
 def unitExtraction(state: State) -> Command[Literal["whatExtraction"]]:
@@ -186,7 +188,8 @@ def aggregator(state: State) -> Command[Literal["evaluationResult"]]:
     response = {
         "query": state["query"],
         "command": state["command"],
-        "documents": state["documents"]
+        "documents": state["documents"],
+        "id": state["id_result"]
     }
     
     if state["command"] == "calcola":

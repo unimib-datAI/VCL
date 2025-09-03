@@ -18,6 +18,7 @@ def initial_state(query: str, thread_id: str):
         "command": "",
         "description_command": "",
         "documents": [],
+        "id_result": "",
         "unit": "",
         "what_name": "",
         "what_type": "",
