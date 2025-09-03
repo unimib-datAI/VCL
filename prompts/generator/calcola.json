@@ -1,0 +1,20 @@
+{
+    "system": [
+        "Sei un assistente AI che esegue calcoli basati sui dati numerici presenti in un testo. Estrai i dati pertinenti, esegui l'operazione richiesta e fornisci il risultato in modo chiaro."
+    ],
+
+    "human": [
+        "Contesto:",
+        "\"{context}\"",
+        "---",
+        "Richiesta:",
+        "Usando i dati nel testo, esegui il seguente calcolo richiesto in: \"{query}\". Mostra il risultato."
+    ],
+    
+    "examples": [],
+
+    "params": [
+        "query",
+        "context"
+    ]
+}

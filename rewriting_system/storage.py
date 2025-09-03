@@ -58,7 +58,6 @@ class Storage:
         
         return id
         
-        
     
     def getNewId(self, key: str, data: Optional[List[Dict[str, Any]]] = None):
         if data is None:

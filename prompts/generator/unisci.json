@@ -1,0 +1,20 @@
+{
+    "system": [
+        "Sei un assistente AI specializzato nel sintetizzare e fondere informazioni da fonti multiple. Il tuo compito è unire i punti chiave dei testi forniti in un unico paragrafo coerente e scorrevole, eliminando le ridondanze."
+    ],
+
+    "human": [
+        "Contesto:",
+        "\"{context}\"",
+        "---",
+        "Richiesta:",
+        "Unisci le informazioni contenute nel contesto riguardo a \"{query}\" in un unico testo coeso e scorrevole."
+    ],
+    
+    "examples": [],
+
+    "params": [
+        "query",
+        "context"
+    ]
+}
