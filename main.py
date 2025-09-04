@@ -1,7 +1,13 @@
 # app.py
 from utils.config import Config
-from rewriting import Rewriting
+from utils.file_manager import write_file
+
 from datetime import datetime
+
+from rewriting import Rewriting
+from planner import Planner
+from retrieval import Retrieval
+from generator import Generator
 
 import os
 import argparse
@@ -30,7 +36,11 @@ def parse_args():
 def main():
     opts = parse_args()
     cfg = Config.get_instance(opts)
+    
     rewriting = Rewriting(cfg)
+    planner = Planner(cfg)
+    retrieval = Retrieval(cfg)
+    generator = Generator(cfg)
 
     while True:
         query = input("Input (empty to end): ").strip()
@@ -43,8 +53,21 @@ def main():
 
         with open(out_path, "w") as f:
             f.write(f"Input: {query}\n\n")
+            
             dql = rewriting.rewrite(query)
-            print(dql.dql_query)
+            ops = planner.decompose(dql)
+            
+            for op in ops:
+                doc = retrieval.execute(op)
+                text = generator.generate(op, doc, query)
+                
+                file = {
+                    "name": op["id"],
+                    "text": text,
+                    "operation": op
+                }
+                
+                write_file(os.path.join("documents", f"{file["name"]}.json"), file)
             
 
 if __name__ == "__main__":
