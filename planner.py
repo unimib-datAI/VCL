@@ -43,7 +43,7 @@ class Planner:
                 "how": {}
             })
             
-            id_docs = [d["documents"][0] for d in ops]
+            id_docs = [d["id"] for d in ops]
             
             print(id_docs)
             

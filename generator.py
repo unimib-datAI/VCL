@@ -1,4 +1,5 @@
 from utils.config import Config
+from utils.file_manager import read_file
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
@@ -8,41 +9,44 @@ import time
 class Generator:
     path = os.path.join("prompts", "generator")
          
-    def __init__(self, cfg):
+    def __init__(self, cfg: Config):
         self.llm = cfg.llm
         self.rag = cfg.rag
         self.seconds = cfg.seconds
-        self.read = cfg.read_file
         self.parsers = StrOutputParser()
         
-    def generate(self, op: str, docs: list[str], result: str = None) -> str:
-        prompt = self.read(os.path.join(self.path, f"0 - IntroductionRAG{str(self.rag)}.txt"))
-        
-        prompt += "\n\n"
-        
-        prompt += self.read(os.path.join(self.path, f"1 - {op["comando"]}.txt"))
-        
-        prompt += "\n\n"
-        
-        if op["condizione"]:
-            prompt += self.read(os.path.join(self.path, f"2 - Conditions.txt"))
-            
-            for condition in op["condizione"].keys():
-                prompt += f"\n- Condizione {condition}: {op['condizione'].get(condition)}"
+    def generate(self, op: str, docs: list[dict], query: str) -> str:
+        if (op["command"] == "estrai" or op["command"] == "cerca") and op["what"]["name"] == "intero documento":
+            return "\n\n".join([d["text"] for d in docs]).strip()
                 
-        prompt += "\n\n"
+        template = read_file(os.path.join(self.path, f"{op["command"]}.json"))
         
+        template["system"] = "\n".join(template["system"])
+        template["human"] = "\n".join(template["human"])
+        
+        conditions = ""
+        if not (op["how"] == {}):
+            conditions = "\nInoltre la risposta deve rispettare le seguenti condizioni:"
+            
+            for condition in op["how"].keys():
+                if op["how"][condition]:
+                    conditions += f"\n- Condizione {condition}: {op['how'].get(condition)}"
+                    
+        if not (conditions == "" or conditions == "\nInoltre la risposta deve rispettare le seguenti condizioni:"):
+            template["system"] += f"\n{conditions}"
+            
+        context = ""
         for i in range(len(docs)):
-            prompt += f"[Document {i + 1}]\n\n{docs[i]}\n\n"
+            context += f"[Document {i + 1}]\n\n{docs[i]}\n\n"
             
-        template = ChatPromptTemplate.from_template(prompt)
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", template["system"]),
+            ("human", template["human"])
+        ])
             
-        chain = template | self.llm | self.parsers
+        chain = prompt | self.llm | self.parsers
         
-        if op["comando"] == "calcola":
-            result = chain.invoke({"query": op, "response": result})
-        else:
-            result = chain.invoke({"what": op["cosa"]})
+        result = chain.invoke({"query": query, "context": context})
             
         time.sleep(self.seconds)
         
