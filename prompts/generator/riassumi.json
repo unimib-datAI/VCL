@@ -4,7 +4,7 @@
         "",
         "Le linee guida operative sono:",
         "- Analisi e filtraggio",
-        "    - Identifica i passaggi pertinenti a \"{what}\" ignorando contenuti non correlati.",
+        "    - Identifica i passaggi pertinenti alla richiesta dell'utente ignorando contenuti non correlati.",
         "    - In presenza di contraddizioni, privilegia l’informazione più chiara, completa e coerente con il contesto globale.",
         "- Sintesi",
         "    - Mantieni solo concetti, fatti e relazioni essenziali.",
