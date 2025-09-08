@@ -1,64 +1,50 @@
 import argparse
+import threading
+
 from utils.LLM import LLM
+from utils.config_graph import GraphConfig
+from utils.storage import Storage
+
 
 class Config:
     """
     Singleton configuration class for managing application settings.
-    Ensures only one instance exists across the entire program.
+    Thread-safe, ensures only one instance exists.
     """
     
-    # Class variable that will contain the single instance
     _instance = None
+    _lock = threading.Lock()
 
-    # ElasticSearch database URL
-    DB_URL: str = 'http://10.0.0.108:9201'
-
-    # Default behavior for RAG: extract full documents
+    DB_URL: str = "http://10.0.0.108:9201"
     rag: bool = False
-
-    # Default value for GEMINI API KEY
-    api_key: str = None
-    
-    # Default value for SECONDS: time we must wait after all LLM calls
-    seconds: int = 0
-
-    # URL and headers for the rewriting system
+    seconds: int = 5
     url: str = "http://127.0.0.1:8000/chat"
     headers: dict = {"Content-Type": "application/json"}
 
-    # Optional: default timeout or delay settings
-    seconds: int = 5
-
     @classmethod
     def get_instance(cls, opts: argparse.Namespace = None):
-        """
-        Access method for the singleton's only instance.
-        If it doesn't already exist, it creates and initializes it.
-        """
         if cls._instance is None:
-            cls._instance = cls(opts)
+            with cls._lock:
+                if cls._instance is None:
+                    cls._instance = cls(opts)
         return cls._instance
 
     def __init__(self, opts: argparse.Namespace = None):
-        """
-        Initialize configuration with optional CLI arguments.
-        This method will not reinitialize if the singleton already exists.
-        """
-        # Prevent reinitialization if instance already has 'llm' attribute
-        if hasattr(self, "llm"):
+        if getattr(self, "_initialized", False):
             return
 
-        # Load options from CLI arguments if provided
+        api_key = None
         if opts:
-            # Override default API key if provided
-            if opts.api_key:
-                self.api_key = opts.api_key
-            # Override RAG behavior if specified
-            if opts.rag:
-                self.rag = opts.rag
-            # Override optional timeout/delay
-            if opts.seconds and int(opts.seconds) > 0:
+            if getattr(opts, "api_key", None):
+                api_key = opts.api_key
+            if getattr(opts, "rag", None) is not None:
+                self.rag = bool(opts.rag)
+            if getattr(opts, "seconds", None) is not None and int(opts.seconds) >= 0:
                 self.seconds = int(opts.seconds)
 
-        # Initialize the LLM object with the API key
-        self.llm = LLM.get_instance(self.api_key).llm
+        # External dependencies
+        self.config_graph = GraphConfig.get_instance(opts)
+        self.llm = LLM.get_instance(api_key=api_key).llm
+        self.storage = Storage.get_instance()
+
+        self._initialized = True

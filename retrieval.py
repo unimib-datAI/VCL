@@ -9,10 +9,11 @@ class Retrieval:
     def __init__(self, cfg: Config):
         self.client = Elasticsearch(cfg.DB_URL)
         
+        self.storage = cfg.storage
         #self.rag = cfg.rag
         self.rag = False
         
-    def execute(self, operation: dict) -> list[dict]:
+    def execute(self, operation: dict, id: str) -> list[dict]:
         if self.rag:
             
             # TO-DO only-chunk retrieval
@@ -45,16 +46,24 @@ class Retrieval:
             
             docs = []
             for d in operation["documents"]:
-                path_file = os.path.join("documents", f"{d}.json")
+                doc = self.storage.get_element(id, d)
                 
-                if os.path.exists(path_file):
-                    file = read_file(path_file)
-                    
+                if not (doc is None):
                     docs.append({
                         "name": d,
-                        "text": file["text"]
+                        "text": doc["text"]
                     })
                 else:
-                    print("File not Found")
+                    path_file = os.path.join("documents", f"{d}.json")
+                
+                    if os.path.exists(path_file):
+                        file = read_file(path_file)
+                        
+                        docs.append({
+                            "name": d,
+                            "text": file["text"]
+                        })
+                    else:
+                        print("File not Found")
             
             return docs

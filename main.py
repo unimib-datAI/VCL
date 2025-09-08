@@ -1,16 +1,9 @@
-# app.py
+from graph import Graph
+
 from utils.config import Config
-from utils.file_manager import write_file
 
-from datetime import datetime
-
-from rewriting import Rewriting
-from planner import Planner
-from retrieval import Retrieval
-from generator import Generator
-
-import os
 import argparse
+import uvicorn
 
 def parse_args():
     """ parse command line input """
@@ -18,57 +11,34 @@ def parse_args():
     parser = argparse.ArgumentParser(description="DQL",
                                      formatter_class=argparse.RawTextHelpFormatter)
     
-    #parser.add_argument("-q", action="store", dest="query", required=True,
-    #                    help="The query to execute")
-    
     parser.add_argument("-api", action="store", dest="api_key", required=False,
                         help="API Key for Gemini. If not specified, the settings/api_key.txt file is read.")
     parser.add_argument("-wait", action="store", dest="seconds", required=False,
                         help="Number of seconds the system should wait after each call to an LLM (useful if using free plans).")
     parser.add_argument("-rag", action="store_true", dest="rag",
                         help="Indicates whether the entire documents (unspecified parameter) or only the relevant chunks (specified parameter) should be retrieved.")
+    parser.add_argument("-max_iterations", action="store", dest="max_iterations", required=False,
+                        help="Maximum number of rewrite attempts for a query.")
+    parser.add_argument("-save_image", action="store_true", dest="save_image", required=False,
+                        help="Saving the rewrite graph image.")
 
     options = parser.parse_args()
 
     return options
 
-
 def main():
     opts = parse_args()
-    cfg = Config.get_instance(opts)
+    Config.get_instance(opts)
     
-    rewriting = Rewriting(cfg)
-    planner = Planner(cfg)
-    retrieval = Retrieval(cfg)
-    generator = Generator(cfg)
-
-    while True:
-        query = input("Input (empty to end): ").strip()
-        if not query:
-            break
-
-        timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        out_path = os.path.join("outputs", f"{timestamp}.txt")
-        os.makedirs("outputs", exist_ok=True)
-
-        with open(out_path, "w") as f:
-            f.write(f"Input: {query}\n\n")
-            
-            dql = rewriting.rewrite(query)
-            ops = planner.decompose(dql)
-            
-            for op in ops:
-                doc = retrieval.execute(op)
-                text = generator.generate(op, doc, query)
-                
-                file = {
-                    "name": op["id"],
-                    "text": text,
-                    "operation": op
-                }
-                
-                write_file(os.path.join("documents", f"{file["name"]}.json"), file)
-            
-
+    if opts.save_image:
+        getGraphImage()
+    
+    uvicorn.run("app:app")
+    
+def getGraphImage():
+    graph = Graph(Config.get_instance()).graph
+    with open("images/graph.png", "wb") as f:
+        f.write(graph.get_graph().draw_mermaid_png())
+    
 if __name__ == "__main__":
     main()
