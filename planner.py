@@ -24,9 +24,7 @@ class Planner:
             query["command"] = "cerca"
             ops = self.decompose(query)
         else:
-            ops = self.getMiddleOperations(query, query["command"])                
-        
-        print(ops)
+            ops = self.getMiddleOperations(query, query["command"])
           
         return ops
     
@@ -44,8 +42,6 @@ class Planner:
             })
             
             id_docs = [d["id"] for d in ops]
-            
-            print(id_docs)
             
             final_op = {
                 "command": new_command,

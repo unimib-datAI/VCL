@@ -119,7 +119,7 @@ class Storage:
             if str(d["name"]).count("_") == 1:
                 new_data.append(d)
             
-        self.r.set(key, json.dumps(new_data))
+        self.r.set(key, json.dumps(new_data), ex=1800)
         
     def deep_clear(self, key: str):
-        self.r.set(key, json.dumps([]))
+        self.r.set(key, json.dumps([]), ex=1800)
