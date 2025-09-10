@@ -1,7 +1,21 @@
+"""
+This module defines the LLM class, a thread-safe singleton that initializes and manages
+a Large Language Model (LLM) using LangChain.
+
+Responsibilities:
+- Load an API key from either an argument or a local file (`settings/api_key.txt`).
+- Set the API key as an environment variable for Google GenAI.
+- Initialize and expose the LLM model via LangChain's `init_chat_model`.
+- Ensure only one instance of the LLM exists across threads (Singleton pattern).
+
+Dependencies:
+- utils.file_manager.read_file, write_file: For reading/writing the API key.
+- langchain.chat_models.init_chat_model: For initializing the LLM.
+"""
+
 # pylint: disable=invalid-name
 import os
 import threading
-
 from pathlib import Path
 from langchain.chat_models import init_chat_model
 
@@ -9,16 +23,35 @@ from utils.file_manager import read_file, write_file
 
 
 class LLM:
+    """
+    Singleton class for initializing and managing a Large Language Model (LLM).
+
+    Attributes:
+        model_name (str): The default LLM model name.
+        provider (str): The provider for the LLM (e.g., Google GenAI).
+        llm: The initialized LangChain chat model instance.
+    """
+
     # Singleton instance
     _instance = None
     # Lock to ensure thread-safety when creating the instance
     _lock = threading.Lock()
 
-    # LLM model and provider
+    # Default LLM model and provider
     model_name: str = "gemini-2.0-flash"
     provider: str = "google_genai"
 
     def __init__(self, api_key: str = None):
+        """
+        Initialize the LLM class.
+
+        Args:
+            api_key (str, optional): API key for the LLM provider.
+                If not provided, it is read from `settings/api_key.txt`.
+
+        Raises:
+            ValueError: If no API key is provided or found in the settings file.
+        """
         # Path where the API key is stored
         api_path = Path(__file__).parent.parent / "settings" / "api_key.txt"
 
@@ -30,7 +63,7 @@ class LLM:
         if api_key:
             os.environ["GOOGLE_API_KEY"] = api_key
 
-            # Save the key again (could be useful if normalized or updated)
+            # Save the key again (could normalize or update formatting)
             write_file(api_path, api_key)
         else:
             raise ValueError("No API key could be found.")
@@ -41,8 +74,16 @@ class LLM:
     @classmethod
     def get_instance(cls, api_key: str = None):
         """
-        Returns the single instance of LLM (Singleton pattern).
-        If the instance does not exist, it will be created in a thread-safe way.
+        Retrieve the singleton instance of the LLM.
+
+        If the instance does not exist, it will be created in a thread-safe manner.
+
+        Args:
+            api_key (str, optional): API key to initialize the model.
+                If not provided, will attempt to load from file.
+
+        Returns:
+            LLM: The singleton instance of the LLM class.
         """
         if cls._instance is None:
             with cls._lock:

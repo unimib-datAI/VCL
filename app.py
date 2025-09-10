@@ -1,3 +1,13 @@
+"""
+This module defines a FastAPI application for the DQL system.
+
+It provides an endpoint (/chat) for processing chat messages, which involves:
+1. Rewriting the input query using the Rewriting module.
+2. Decomposing the rewritten query into operations via the Planner.
+3. Retrieving relevant documents and generating answers for each operation.
+4. Logging all steps and storing intermediate and final results.
+"""
+
 import json
 from datetime import datetime, timezone
 from fastapi import FastAPI
@@ -12,8 +22,10 @@ from generator import Generator
 # Create the FastAPI application instance
 app = FastAPI()
 
+# Load the global configuration
 CFG = Config.get_instance()
 
+# Initialize components
 rewriting = Rewriting(CFG)
 planner = Planner(CFG)
 retrieval = Retrieval(CFG)
@@ -22,17 +34,45 @@ generator = Generator(CFG)
 logger = CFG.logger
 
 
-# Define the request body structure for the /chat endpoint
 class ChatInput(BaseModel):
-    message: str  # User's input message
-    thread_id: str  # Conversation identifier
+    """
+    Schema for the /chat POST request body.
+
+    Attributes:
+        message (str): The user's input message to be processed.
+        thread_id (str): Unique identifier for the conversation thread.
+    """
+
+    message: str
+    thread_id: str
 
 
-# POST endpoint for handling chat messages
 @app.post("/chat")
 async def chat(request: ChatInput):
+    """
+    Process a chat message through the DQL system.
+
+    Steps:
+    1. Log the incoming request.
+    2. Rewrite the input message.
+    3. Decompose the rewritten query into operations.
+    4. For each operation:
+       a. Retrieve relevant documents.
+       b. Generate a textual response.
+       c. Store the results.
+    5. Clear intermediate storage and return the final result.
+
+    Args:
+        request (ChatInput): The incoming chat request containing
+            the message and thread_id.
+
+    Returns:
+        dict: The final result of the chat operation, including the
+            generated text and metadata.
+    """
     timestamp = datetime.now(timezone.utc)
 
+    # Log start of chat processing
     logger.info(
         json.dumps(
             {
@@ -66,7 +106,7 @@ async def chat(request: ChatInput):
         )
     )
 
-    # Step 3: Retrieval + Generation per op
+    # Step 3: Retrieval + Generation per operation
     for op in ops:
         logger.info(
             json.dumps(
@@ -98,7 +138,7 @@ async def chat(request: ChatInput):
                     "step": "API.chat",
                     "action": "generation_done",
                     "operation_id": op["id"],
-                    "result_preview": text[:200],  # evita log enormi
+                    "result_preview": text[:200],
                 }
             )
         )
@@ -122,7 +162,7 @@ async def chat(request: ChatInput):
             )
         )
 
-    # Step 4: Cleanup
+    # Step 4: Cleanup DB
     CFG.storage.clear(request.thread_id)
     logger.info(
         json.dumps(
@@ -134,6 +174,7 @@ async def chat(request: ChatInput):
         )
     )
 
+    # Step 5: Return final result
     result = CFG.storage.get_last_element(request.thread_id)
     logger.info(
         json.dumps(

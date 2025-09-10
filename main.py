@@ -1,14 +1,35 @@
+"""
+This script serves as the main entry point for the DQL system.
+
+It allows command-line configuration of the system, including:
+- Providing an API key
+- Setting wait times between LLM calls
+- Enabling RAG (Retrieval-Augmented Generation)
+- Limiting the number of query rewrite iterations
+- Saving a graphical representation of the rewrite graph
+
+It also launches the FastAPI server using Uvicorn.
+"""
+
 import argparse
 import uvicorn
 
 from graph import Graph
-
 from utils.config import Config
 
 
 def parse_args():
-    """parse command line input"""
+    """
+    Parse command-line arguments provided to the script.
 
+    Returns:
+        argparse.Namespace: A namespace containing the parsed arguments:
+            - api_key (str, optional): API Key for Gemini.
+            - seconds (int, optional): Wait time after each LLM call.
+            - rag (bool): Whether to retrieve relevant chunks only or full documents.
+            - max_iterations (int, optional): Maximum rewrite attempts for a query.
+            - save_image (bool): Whether to save the rewrite graph image.
+    """
     parser = argparse.ArgumentParser(
         description="DQL", formatter_class=argparse.RawTextHelpFormatter
     )
@@ -57,6 +78,15 @@ def parse_args():
 
 
 def main():
+    """
+    Main entry point for the DQL system.
+
+    This function:
+    1. Parses command-line arguments.
+    2. Initializes the Config singleton with parsed options.
+    3. Generates and saves the rewrite graph image if requested.
+    4. Starts the FastAPI application using Uvicorn.
+    """
     opts = parse_args()
     Config.get_instance(opts)
 
@@ -67,6 +97,12 @@ def main():
 
 
 def get_graph_image():
+    """
+    Generates the rewrite graph and saves it as an image.
+
+    The graph is retrieved from the Graph class and saved as
+    'images/graph.png' in PNG format.
+    """
     graph = Graph(Config.get_instance()).graph
     with open("images/graph.png", "wb") as f:
         f.write(graph.get_graph().draw_mermaid_png())
