@@ -11,7 +11,7 @@ class Config:
     Singleton configuration class for managing application settings.
     Thread-safe, ensures only one instance exists.
     """
-    
+
     _instance = None
     _lock = threading.Lock()
 

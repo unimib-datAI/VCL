@@ -1,8 +1,11 @@
-from langchain.chat_models import init_chat_model
-from pathlib import Path
-from utils.file_manager import read_file, write_file
+# pylint: disable=invalid-name
 import os
 import threading
+
+from pathlib import Path
+from langchain.chat_models import init_chat_model
+
+from utils.file_manager import read_file, write_file
 
 
 class LLM:
@@ -17,7 +20,7 @@ class LLM:
 
     def __init__(self, api_key: str = None):
         # Path where the API key is stored
-        api_path = Path(__file__).parent.parent / 'settings' / 'api_key.txt'
+        api_path = Path(__file__).parent.parent / "settings" / "api_key.txt"
 
         # If no API key was provided, try reading it from the file
         if not api_key and os.path.exists(api_path) and os.path.isfile(api_path):
@@ -30,7 +33,7 @@ class LLM:
             # Save the key again (could be useful if normalized or updated)
             write_file(api_path, api_key)
         else:
-            raise ValueError('No API key could be found.')
+            raise ValueError("No API key could be found.")
 
         # Initialize the LLM model from LangChain
         self.llm = init_chat_model(self.model_name, model_provider=self.provider)

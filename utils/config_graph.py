@@ -1,9 +1,10 @@
 import argparse
-import threading
-import json
 import ast
+import json
+import threading
 
 from utils.LLM import LLM
+
 
 class GraphConfig:
     """
@@ -61,7 +62,9 @@ class GraphConfig:
             return
 
         if opts:
-            self.max_iterations = int(getattr(opts, "max_iterations", self.max_iterations))
+            self.max_iterations = int(
+                getattr(opts, "max_iterations", self.max_iterations)
+            )
             self.seconds = int(getattr(opts, "seconds", self.seconds))
 
         self.llm = LLM.get_instance(api_key=getattr(opts, "api_key", self.api_key)).llm
@@ -78,15 +81,15 @@ class GraphConfig:
     @staticmethod
     def str_in_dict(output: str) -> dict:
         try:
-            output = output[output.index("{"): output.rfind("}") + 1]
+            output = output[output.index("{") : output.rfind("}") + 1]
             return json.loads(output)
-        except Exception:
+        except (ValueError, json.JSONDecodeError):
             return {}
 
     @staticmethod
     def str_in_list(output: str) -> list:
         try:
-            output = output[output.index("["): output.rfind("]") + 1]
+            output = output[output.index("[") : output.rfind("]") + 1]
             return ast.literal_eval(output)
-        except Exception:
+        except (ValueError, SyntaxError):
             return []

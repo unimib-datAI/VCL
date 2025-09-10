@@ -2,6 +2,7 @@ import os
 import json
 from typing import Union
 
+
 @staticmethod
 def read_file(path: str) -> Union[str, dict, list]:
     """
@@ -13,6 +14,7 @@ def read_file(path: str) -> Union[str, dict, list]:
         if str(path).endswith(".json"):
             return json.load(f)
         return f.read().strip()
+
 
 @staticmethod
 def write_file(path: str, data: Union[str, dict, list]):

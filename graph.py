@@ -1,5 +1,10 @@
-from typing_extensions import TypedDict
+import os
+import time
+
+from pathlib import Path
+
 from typing import Literal
+from typing_extensions import TypedDict
 
 from langgraph.types import Command
 from langgraph.graph import StateGraph
@@ -8,15 +13,7 @@ from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTempla
 from langchain.prompts.chat import HumanMessagePromptTemplate, AIMessagePromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
-from pathlib import Path
-
-import os
-import time
-
-from utils.storage import Storage
 from utils.config import Config
-from utils.LLM import LLM
-from utils.config_graph import GraphConfig
 from utils.file_manager import read_file
 
 
@@ -44,43 +41,48 @@ class State(TypedDict):
     feedback: str
     response: dict
 
+
 class Graph:
     def __init__(self, cfg: Config = None):
         self.project_root = Path(__file__).resolve().parent
-        
+
         if cfg is None:
             cfg = Config.get_instance()
 
         self.cfg = cfg.config_graph
         self.storage = cfg.storage
         self.llm = self.cfg.llm
-        
+
         graph_builder = StateGraph(State)
-        graph_builder.add_node("correctionQuery", self.correctionQuery)
-        graph_builder.add_node("intentClassification", self.intentClassification)
-        graph_builder.add_node("documentExtraction", self.documentExtraction)
-        graph_builder.add_node("documentDisambiguation", self.documentDisambiguation)
-        graph_builder.add_node("unitExtraction", self.unitExtraction)
-        graph_builder.add_node("whatExtraction", self.whatExtraction)
-        graph_builder.add_node("entityDisambiguation", self.entityDisambiguation)
-        graph_builder.add_node("sectionsConditions", self.sectionsConditions)
-        graph_builder.add_node("dataConditions", self.dataConditions)
-        graph_builder.add_node("responseConditions", self.responseConditions)
+        graph_builder.add_node("correctionQuery", self.correction_query)
+        graph_builder.add_node("intentClassification", self.intent_classification)
+        graph_builder.add_node("documentExtraction", self.document_extraction)
+        graph_builder.add_node("documentDisambiguation", self.document_disambiguation)
+        graph_builder.add_node("unitExtraction", self.unit_extraction)
+        graph_builder.add_node("whatExtraction", self.what_extraction)
+        graph_builder.add_node("entityDisambiguation", self.entity_disambiguation)
+        graph_builder.add_node("sectionsConditions", self.sections_conditions)
+        graph_builder.add_node("dataConditions", self.data_conditions)
+        graph_builder.add_node("responseConditions", self.response_conditions)
         graph_builder.add_node("aggregator", self.aggregator)
-        graph_builder.add_node("evaluationResult", self.evaluationResult)
+        graph_builder.add_node("evaluationResult", self.evaluation_result)
         graph_builder.set_entry_point("correctionQuery")
-        
+
         self.graph = graph_builder.compile()
 
     # -----------------------------
     # NODES
     # -----------------------------
-    
-    def correctionQuery(self, state: State) -> Command[Literal["intentClassification"]]:
+
+    def correction_query(
+        self, state: State
+    ) -> Command[Literal["intentClassification"]]:
         result = self.chain("1 - CorrectionQuery", state)
         return Command(goto="intentClassification", update={"query": result})
 
-    def intentClassification(self, state: State) -> Command[Literal["documentExtraction", "unitExtraction"]]:
+    def intent_classification(
+        self, state: State
+    ) -> Command[Literal["documentExtraction", "unitExtraction"]]:
         result = self.chain("2 - IntentClassification", state)
         result = self.cfg.get_command_from_key(result)
         goto = ["documentExtraction"]
@@ -88,10 +90,15 @@ class Graph:
             goto.append("unitExtraction")
         return Command(
             goto=goto,
-            update={"command": result, "description_command": self.cfg.get_description_from_command(result)}
+            update={
+                "command": result,
+                "description_command": self.cfg.get_description_from_command(result),
+            },
         )
 
-    def documentExtraction(self, state: State) -> Command[Literal["whatExtraction", "documentDisambiguation"]]:
+    def document_extraction(
+        self, state: State
+    ) -> Command[Literal["whatExtraction", "documentDisambiguation"]]:
         result = self.chain("3 - DocumentExtraction", state)
         result = self.cfg.str_in_list(result)
 
@@ -99,7 +106,7 @@ class Graph:
         goto = "whatExtraction"
         if "contesto" in result:
             goto = "documentDisambiguation"
-            
+
         id_result = self.storage.get_new_id(state["thread_id"])
 
         return Command(
@@ -107,33 +114,53 @@ class Graph:
             update={"documents": result, "id_result": id_result},
         )
 
-    def documentDisambiguation(self, state: State) -> Command[Literal["whatExtraction"]]:
+    def document_disambiguation(
+        self, state: State
+    ) -> Command[Literal["whatExtraction"]]:
         chat = self.storage.read(state["thread_id"])
-        if not (chat == []):
+        if not chat == []:
             doc = self.chain("3a - DocumentDisambiguation", state)
             doc = self.cfg.str_in_list(doc)
         else:
-            doc = ["sentenza di primo grado", "sentenza di secondo grado", "memoria giudiziale", "ricorso giudiziale"]
+            doc = [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale",
+            ]
 
         return Command(goto="whatExtraction", update={"documents": doc})
 
-    def unitExtraction(self, state: State) -> Command[Literal["whatExtraction"]]:
+    def unit_extraction(self, state: State) -> Command[Literal["whatExtraction"]]:
         result = self.chain("4 - UnitsExtraction", state)
         return Command(goto="whatExtraction", update={"unit": result})
 
-    def whatExtraction(self, state: State) -> Command[Literal["entityDisambiguation", "sectionsConditions"]]:
+    def what_extraction(
+        self, state: State
+    ) -> Command[Literal["entityDisambiguation", "sectionsConditions"]]:
         result = self.chain("5 - WhatExtraction", state)
         what_name, what_type = "", ""
-        if result in ["persona", "organizzazione", "luogo", "denaro", "fonte", "articolo"]:
+        if result in [
+            "persona",
+            "organizzazione",
+            "luogo",
+            "denaro",
+            "fonte",
+            "articolo",
+        ]:
             what_name = "entità"
             what_type = result
             goto = "entityDisambiguation"
         else:
             what_name = result
             goto = "sectionsConditions"
-        return Command(goto=goto, update={"what_name": what_name, "what_type": what_type})
+        return Command(
+            goto=goto, update={"what_name": what_name, "what_type": what_type}
+        )
 
-    def entityDisambiguation(self, state: State) -> Command[Literal["sectionsConditions"]]:
+    def entity_disambiguation(
+        self, state: State
+    ) -> Command[Literal["sectionsConditions"]]:
         result = ""
         match state["what_type"]:
             case "persona":
@@ -148,15 +175,20 @@ class Graph:
                 result = self.chain("5e - PlacesDisambiguation", state)
         return Command(goto="sectionsConditions", update={"what_description": result})
 
-    def sectionsConditions(self, state: State) -> Command[Literal["dataConditions", "responseConditions"]]:
+    def sections_conditions(
+        self, state: State
+    ) -> Command[Literal["dataConditions", "responseConditions"]]:
         result = self.chain("6 - SectionsConditions", state)
-        return Command(goto=["dataConditions", "responseConditions"], update={"section_condition": result})
+        return Command(
+            goto=["dataConditions", "responseConditions"],
+            update={"section_condition": result},
+        )
 
-    def dataConditions(self, state: State) -> Command[Literal["aggregator"]]:
+    def data_conditions(self, state: State) -> Command[Literal["aggregator"]]:
         result = self.chain("6a - DataConditions", state)
         return Command(goto="aggregator", update={"data_condition": result})
 
-    def responseConditions(self, state: State) -> Command[Literal["aggregator"]]:
+    def response_conditions(self, state: State) -> Command[Literal["aggregator"]]:
         result = self.chain("6b - ResponseConditions", state)
         return Command(goto="aggregator", update={"response_condition": result})
 
@@ -165,14 +197,16 @@ class Graph:
             "query": state["query"],
             "command": state["command"],
             "documents": state["documents"],
-            "id": state["id_result"]
+            "id": state["id_result"],
         }
         if state["command"] == "calcola":
             response.update({"unit": state["unit"]})
 
         what = {"name": state["what_name"]}
         if state["what_name"] == "entità":
-            what.update({"type": state["what_type"], "description": state["what_description"]})
+            what.update(
+                {"type": state["what_type"], "description": state["what_description"]}
+            )
         response.update({"what": what})
 
         how = {}
@@ -186,7 +220,9 @@ class Graph:
 
         return Command(goto="evaluationResult", update={"response": response})
 
-    def evaluationResult(self, state: State) -> Command[Literal["intentClassification", "__end__"]]:
+    def evaluation_result(
+        self, state: State
+    ) -> Command[Literal["intentClassification", "__end__"]]:
         result = self.chain("7 - EvaluationResult", state)
         result = self.cfg.str_in_dict(result)
         if int(result["voto"]) < 8 and state["iteration"] < self.cfg.max_iteration:
@@ -195,54 +231,80 @@ class Graph:
             goto = "__end__"
         return Command(
             goto=goto,
-            update={"iteration": state["iteration"] + 1, "feedback": result["motivazione"], "score": result["voto"]}
+            update={
+                "iteration": state["iteration"] + 1,
+                "feedback": result["motivazione"],
+                "score": result["voto"],
+            },
         )
 
-    # -----------------------------
-    # HELPER
-    # -----------------------------
-
     def chain(self, file: str, state: State) -> str:
-        template = read_file(os.path.join(self.project_root, "prompts", "rewriting", f"{file}.json"))
+        template = read_file(
+            os.path.join(self.project_root, "prompts", "rewriting", f"{file}.json")
+        )
         template["system"] = "\n".join(template["system"])
         template["human"] = "\n".join(template["human"])
 
-        input = {}
+        input_template = {}
         for p in template["params"]:
             if p == "chat":
                 chat = self.storage.chat_in_str(state["thread_id"])
-                input.update({str(p): str(chat)})
+                input_template.update({str(p): str(chat)})
             else:
-                input.update({str(p): str(state[p])})
+                input_template.update({str(p): str(state[p])})
 
         if not (state["response"] == {}) and ("EvaluationResult" not in file):
-            response_clean = str(state['response']).replace("{", "{{").replace("}", "}}")
-            template["system"] = f"[PROMPT]\n{template['human']}\n\n[FEEDBACK]\nConsidera che per la query è già stato generato un possibile output:\n{response_clean}\nquesto output ha ricevuto però una valutazione non sufficiente per i nostri standard in quanto \"{state['feedback']}\".\nnon devi riscostruire l'intero output, ma nella risposta tieni conto del feedback."
+            response_clean = (
+                str(state["response"]).replace("{", "{{").replace("}", "}}")
+            )
+            template["system"] = (
+                f"""
+                [PROMPT]
+                {template['human']}
+                
+                [FEEDBACK]
+                Considera che per la query è già stato generato un possibile output:
+                {response_clean}
+                
+                Questo output ha ricevuto però una valutazione non sufficiente per i nostri standard.
+                La motivazione è stata:
+                \"{state['feedback']}\".
+                
+                Non devi riscostruire l'intero output.
+                Nella risposta tieni conto del feedback."""
+            )
 
-        if not (template["examples"] == []):
-            example_prompt = ChatPromptTemplate.from_messages([
-                HumanMessagePromptTemplate.from_template("{input}"),
-                AIMessagePromptTemplate.from_template("Ragionamento: {reasoning}\nRisultato: {output}"),
-            ])
-            few_shot_prompt = FewShotChatMessagePromptTemplate(example_prompt=example_prompt, examples=template["examples"])
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", template["system"]),
-                few_shot_prompt,
-                ("human", template["human"])
-            ])
+        if not template["examples"] == []:
+            example_prompt = ChatPromptTemplate.from_messages(
+                [
+                    HumanMessagePromptTemplate.from_template("{input}"),
+                    AIMessagePromptTemplate.from_template(
+                        "Ragionamento: {reasoning}\nRisultato: {output}"
+                    ),
+                ]
+            )
+            few_shot_prompt = FewShotChatMessagePromptTemplate(
+                example_prompt=example_prompt, examples=template["examples"]
+            )
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", template["system"]),
+                    few_shot_prompt,
+                    ("human", template["human"]),
+                ]
+            )
         else:
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", template["system"]),
-                ("human", template["human"])
-            ])
+            prompt = ChatPromptTemplate.from_messages(
+                [("system", template["system"]), ("human", template["human"])]
+            )
 
         chain = prompt | self.llm | StrOutputParser()
-        result = chain.invoke(input)
+        result = chain.invoke({"input": input_template})
         time.sleep(self.cfg.seconds)
 
         result = result.lower()
         if "risultato:" in result:
-            result = result[result.index("risultato:") + 11:]
+            result = result[result.index("risultato:") + 11 :]
         if result == "''":
             result = ""
         return result.strip()
