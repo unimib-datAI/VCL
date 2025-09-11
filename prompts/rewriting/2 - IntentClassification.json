@@ -19,42 +19,42 @@
 
     "examples": [
         {
-            "input": "trova le parti della sentenza in cui si definisce la responsabilità contrattuale del medico.",
+            "input": ["trova le parti della sentenza in cui si definisce la responsabilità contrattuale del medico."],
             "reasoning": "la richiesta mira a localizzare nel documento solo le sezioni pertinenti, senza alterarle o riformularle. l'obiettivo è estrarre direttamente le porzioni rilevanti.",
             "output": "a"
         },
         {
-            "input": "riassumi il contenuto del ricorso per cassazione in un testo di massimo 300 parole, evidenziando solo gli argomenti principali.",
+            "input": ["riassumi il contenuto del ricorso per cassazione in un testo di massimo 300 parole, evidenziando solo gli argomenti principali."],
             "reasoning": "la richiesta è orientata a condensare il contenuto, mantenendo i punti chiave e rispettando un limite di parole. non si richiede una riformulazione logica profonda, ma una sintesi.",
             "output": "b"
         },
         {
-            "input": "confronta le motivazioni della sentenza di primo grado con quelle della sentenza d'appello per evidenziarne le differenze giuridiche.",
+            "input": ["confronta le motivazioni della sentenza di primo grado con quelle della sentenza d'appello per evidenziarne le differenze giuridiche."],
             "reasoning": "la query esplicita la necessità di un confronto tra due fonti, con attenzione alle differenze giuridiche. il confronto è l'azione principale richiesta.",
             "output": "c"
         },
         {
-            "input": "estrai la struttura logica e il sillogismo giuridico implicito usato dal giudice nella sentenza s2.",
+            "input": ["estrai la struttura logica e il sillogismo giuridico implicito usato dal giudice nella sentenza s2."],
             "reasoning": "l'obiettivo è ricostruire la logica implicita, cioè strutture non immediatamente evidenti nel testo, e che possono richiedere interpretazione e riformulazione",
             "output": "d"
         },
         {
-            "input": "trova tutte le citazioni della normativa europea nella motivazione della sentenza.",
+            "input": ["trova tutte le citazioni della normativa europea nella motivazione della sentenza."],
             "reasoning": "la query chiede di identificare e raggruppare tutti i riferimenti a un tema specifico (normativa europea), senza analisi o riformulazioni.",
             "output": "e"
         },
         {
-            "input": "espandi questa memoria difensiva fino a 1500 parole, includendo esempi giurisprudenziali e chiarimenti dottrinali.",
+            "input": ["espandi questa memoria difensiva fino a 1500 parole, includendo esempi giurisprudenziali e chiarimenti dottrinali."],
             "reasoning": "la richiesta è di ampliare un testo aggiungendo contenuto coerente e rilevante, mantenendo lo stesso significato ma con più dettagli.",
             "output": "f"
         },
         {
-            "input": "calcola il numero di precedenti presenti nella sentenza di primo grado.",
+            "input": ["calcola il numero di precedenti presenti nella sentenza di primo grado."],
             "reasoning": "richiesta che implica un conteggio o una quantificazione basata su dati specifici nel testo.",
             "output": "g"
         },
         {
-            "input": "traduce questa sentenza in inglese mantenendo la terminologia legale corretta.",
+            "input": ["traduce questa sentenza in inglese mantenendo la terminologia legale corretta."],
             "reasoning": "l'obiettivo è la traduzione, operazione che non rientra nelle altre categorie previste. è un caso residuale.",
             "output": "h"
         }

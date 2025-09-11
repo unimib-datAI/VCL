@@ -11,7 +11,280 @@
 		"Nuova Richiesta: \"{query}\""
 	],
 
-    "examples": [],
+    "examples": [
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Analizza il ricorso giudiziale e riassumi i motivi principali.\"",
+				"- ID doc input: \"['ricorso giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Quali articoli di legge vengono citati a supporto del primo motivo nel documento?\""
+			],
+			"reasoning": "La query chiede dettagli ('articoli di legge') su un'informazione specifica ('primo motivo') menzionata nella risposta precedente ('resp_1'). L'informazione originale si trova nel documento iniziale ('ricorso giudiziale'). Pertanto, entrambi sono rilevanti per rispondere.",
+			"output": "['ricorso giudiziale', 'resp_1']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Confronta la sentenza di primo grado con la sentenza di secondo grado riguardo alla valutazione della prova testimoniale.\"",
+				"- ID doc input: \"['sentenza di primo grado', 'sentenza di secondo grado']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Spiegami le ragioni di questa divergenza.\""
+			],
+			"reasoning": "L'utente chiede le ragioni di 'questa divergenza'. L'espressione 'questa divergenza' si riferisce direttamente al confronto fatto in 'resp_1', che a sua volta si basa sull'analisi dei due documenti originali ('sentenza di primo grado', 'sentenza di secondo grado').",
+			"output": "['sentenza di primo grado', 'sentenza di secondo grado', 'resp_1']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Riassumi la memoria giudiziale depositata dalla controparte.\"",
+				"- ID doc input: \"['memoria giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"RICHIESTA/DOMANDA 2:",
+				"- time: 1",
+				"- query: \"Cosa dice la sentenza di primo grado a riguardo?\"",
+				"- ID doc input: \"['sentenza di primo grado']\"",
+				"- ID doc response: \"resp_2\"",
+				"",
+				"Nuova Richiesta: \"Come posso contestare la loro argomentazione alla luce della decisione del giudice?\""
+			],
+			"reasoning": "L'utente vuole contestare 'la loro argomentazione' (contenuta in 'doc_1' e riassunta in 'resp_1') basandosi sulla 'decisione del giudice' (contenuta in 'sentenza di primo grado' e riassunta in 'resp_2'). La query collega tutti gli elementi precedenti.",
+			"output": "['memoria giudiziale', 'sentenza di primo grado', 'resp_1', 'resp_2']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Ho bisogno di un'analisi della sentenza di 1 grado.\"",
+				"- ID doc input: \"['sentenza di primo grado']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Cercami la definizione di 'atto pubblico' nel codice civile.\""
+			],
+			"reasoning": "La nuova richiesta introduce un argomento completamente nuovo e non correlato alla conversazione precedente sulla sentenza di cassazione. Non ci sono pronomi o riferimenti impliciti allo storico.",
+			"output": "[]"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Qual è la posizione della nostra memoria giudiziale sulla questione del risarcimento?\"",
+				"- ID doc input: \"['memoria giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"E cosa dice in proposito il ricorso della controparte?\""
+			],
+			"reasoning": "La query introduce un nuovo documento ('ricorso giudiziale') ma lo mette in relazione diretta con il contesto precedente tramite l'espressione 'in proposito'. 'In proposito' si riferisce alla 'questione del risarcimento', tema centrale della domanda precedente, che coinvolge 'memoria giudiziale' e 'resp_1'.",
+			"output": "['memoria giudiziale', 'ricorso giudiziale', 'resp_1']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Riassumi la sentenza di secondo grado.\"",
+				"- ID doc input: \"['sentenza di secondo grado']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Qual era la decisione di primo grado?\""
+			],
+			"reasoning": "La query chiede esplicitamente della 'decisione di primo grado', un elemento menzionato per la prima volta in 'resp_1'. Poiché 'resp_1' stava riassumendo la 'sentenza di secondo grado', entrambi i documenti (quello esplicito e quello menzionato implicitamente) e la risposta che li collega sono rilevanti.",
+			"output": "['sentenza di secondo grado', 'sentenza di primo grado', 'resp_1']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Ho caricato due documenti: la comparsa conclusionale (doc_1) e la replica (doc_2).\"",
+				"- ID doc input: \"['doc_1', 'doc_2']\"",
+				"- ID doc response: \"resp_3\"",
+				"",
+				"Nuova Richiesta: \"Confronta le richieste finali in doc_1 e doc_2.\""
+			],
+			"reasoning": "L'utente fa riferimento esplicito e diretto ai documenti 'doc_1' e 'doc_2' usando i loro ID. La risposta precedente ('doc_3') è solo una conferma di ricezione e non contiene informazioni sostanziali a cui la query si riferisce.",
+			"output": "['doc_1', 'doc_2']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Spiegami il concetto di 'vizio di motivazione' come descritto nel ricorso giudiziale.\"",
+				"- ID doc input: \"['ricorso giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"RICHIESTA/DOMANDA 2:",
+				"- time: 2",
+				"- query: \"Ok, e cosa dice la sentenza di secondo grado a riguardo?\"",
+				"- ID doc input: \"['sentenza di secondo grado']\"",
+				"- ID doc response: \"resp_2\"",
+				"",
+				"Nuova Richiesta: \"Ci sono altri vizi menzionati nel ricorso?\""
+			],
+			"reasoning": "La query chiede di 'altri vizi' menzionati specificamente 'nel ricorso'. Sebbene il concetto di 'vizio' sia stato discusso in 'resp_1' e 'resp_2', la domanda torna a focalizzarsi esclusivamente sul contenuto del documento originale ('ricorso giudiziale') per cercare nuove informazioni non ancora discusse.",
+			"output": "['ricorso giudiziale']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Quali sono i punti salienti del ricorso giudiziale?\"",
+				"- ID doc input: \"['ricorso giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"RICHIESTA/DOMANDA 2:",
+				"- time: 2",
+				"- query: \"E della memoria giudiziale?\"",
+				"- ID doc input: \"['memoria giudiziale']\"",
+				"- ID doc response: \"resp_2\"",
+				"",
+				"Nuova Richiesta: \"Espandi la risposta precedente.\""
+			],
+			"reasoning": "L'utente si riferisce esplicitamente alla 'risposta precedente' ('resp_2').",
+			"output": "['resp_2']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Quali sono i punti salienti del ricorso giudiziale?\"",
+				"- ID doc input: \"['ricorso giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"RICHIESTA/DOMANDA 2:",
+				"- time: 2",
+				"- query: \"E della memoria giudiziale?\"",
+				"- ID doc input: \"['memoria giudiziale']\"",
+				"- ID doc response: \"resp_2\"",
+				"",
+				"Nuova Richiesta: \"Spiegami meglio il concetto nella risposta alla prima domanda.\""
+			],
+			"reasoning": "L'utente si riferisce in modo specifico alla 'risposta alla prima domanda', che corrisponde a 'resp_1'. Quella risposta era basata sul 'ricorso giudiziale'. Pertanto, entrambi sono rilevanti.",
+			"output": "['ricorso giudiziale', 'resp_1']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Analizza la sentenza di primo grado e la sentenza di secondo grado.\"",
+				"- ID doc input: \"['sentenza di primo grado', 'sentenza di primo grado']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Quali erano le motivazioni del giudice nel primo documento?\""
+			],
+			"reasoning": "La query chiede informazioni sul 'primo documento'. Nel contesto della prima richiesta dell'utente, il primo documento menzionato è la 'sentenza di primo grado'.",
+			"output": "['sentenza di primo grado']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Ho caricato la memoria giudiziale.\"",
+				"- ID doc input: \"['memoria giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Bene, ora riassumi.\""
+			],
+			"reasoning": "Il comando 'ora riassumi' si riferisce implicitamente all'ultimo oggetto della conversazione, ovvero il documento appena caricato, la 'memoria giudiziale'. La 'resp_1' è solo una conferma e non contiene informazioni utili per il riassunto.",
+			"output": "['memoria giudiziale']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Cosa dice il ricorso giudiziale riguardo la data dell'inadempimento?\"",
+				"- ID doc input: \"['ricorso giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"E per quanto riguarda le prove, cosa dice?\""
+			],
+			"reasoning": "La domanda 'E per quanto riguarda le prove, cosa dice?' è una continuazione della precedente. Il soggetto sottinteso è sempre lo stesso documento, il 'ricorso giudiziale'.",
+			"output": "['ricorso giudiziale']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Compara le conclusioni della perizia A (doc_1) e della perizia B (doc_2).\"",
+				"- ID doc input: \"['doc_1', 'doc_2']\"",
+				"- ID doc response: \"doc_3\"",
+				"",
+				"Nuova Richiesta: \"Sulla base di cosa la prima perizia stima un danno inferiore?\""
+			],
+			"reasoning": "La query chiede chiarimenti sulla 'prima perizia', che nel contesto della conversazione è la 'perizia A (doc_1)'. Si fa anche riferimento al 'danno inferiore', un concetto introdotto in 'resp_3'.",
+			"output": "['doc_1', 'resp_3']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Analizza la sentenza di primo grado.\"",
+				"- ID doc input: \"['sentenza di primo grado']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Trova i passaggi nel documento relativi a questo punto.\""
+			],
+			"reasoning": "L'espressione 'questo punto' si riferisce chiaramente all'argomento menzionato nella risposta precedente ('resp_1'). La query chiede di trovare i passaggi specifici nel 'documento' originale, cioè la 'sentenza di primo grado'.",
+			"output": "['sentenza di primo grado', 'resp_1']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Riassumi le richieste nel nostro ricorso giudiziale.\"",
+				"- ID doc input: \"['ricorso giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Ok, e invece la memoria di controparte cosa dice?\""
+			],
+			"reasoning": "L'utente introduce un nuovo documento ('memoria giudiziale') ma usa la congiunzione 'invece' per creare un confronto con l'argomento precedente. L'argomento precedente era il contenuto di 'ricorso giudiziale', riassunto in 'resp_1'. Per fare un confronto, sono tutti rilevanti.",
+			"output": "['ricorso giudiziale', 'memoria giudiziale', 'resp_1']"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Riassumi la sentenza di appello.\"",
+				"- ID doc input: \"['sentenza di secondo grado']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Cerca la definizione di \"contratto preliminare\".\""
+			],
+			"reasoning": "La nuova richiesta è una domanda di carattere generale e nozionistico. Non ha alcun collegamento con il contenuto della 'sentenza di appello' o con la risposta precedente.",
+			"output": "[]"
+		},
+		{
+			"input": [
+				"Storico Chat:",
+				"RICHIESTA/DOMANDA 1:",
+				"- time: 1",
+				"- query: \"Elenca le parti citate nella memoria giudiziale.\"",
+				"- ID doc input: \"['memoria giudiziale']\"",
+				"- ID doc response: \"resp_1\"",
+				"",
+				"Nuova Richiesta: \"Chi è l'attore menzionato nella risposta?\""
+			],
+			"reasoning": "La query chiede chi è 'l'attore menzionato nella risposta'. Si riferisce in modo diretto e inequivocabile alle informazioni contenute in 'resp_1', che a sua volta le ha estratte dalla 'memoria giudiziale'.",
+			"output": "['memoria giudiziale', 'resp_1']"
+		}
+    ],
 
 	"params": [
 		"query"

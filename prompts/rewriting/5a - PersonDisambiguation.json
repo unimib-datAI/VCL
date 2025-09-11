@@ -25,91 +25,91 @@
 
    "examples": [
       {
-         "input": "chi ha avuto ragione?",
+         "input": ["chi ha avuto ragione?"],
          "reasoning": "",
          "output": "parte vittoriosa"
       },
 
       {
-         "input": "chi ha perso?",
+         "input": ["chi ha perso?"],
          "reasoning": "",
          "output": "parte soccombente"
       },
 
       {
-         "input": "chi ha stabilito questa sentenza?",
+         "input": ["chi ha stabilito questa sentenza?"],
          "reasoning": "",
          "output": "giudice"
       },
 
       {
-         "input": "a chi si è rivolto Mario?",
+         "input": ["a chi si è rivolto Mario?"],
          "reasoning": "",
          "output": "avvocato"
       },
 
       {
-         "input": "riportami tutte le frasi che contengono la Mario Rossi",
+         "input": ["riportami tutte le frasi che contengono la Mario Rossi"],
          "reasoning": "",
          "output": "Mario Rossi"
       },
 
       {
-         "input": "quante e quali persone sono menzionate nella sentenza?",
+         "input": ["quante e quali persone sono menzionate nella sentenza?"],
          "reasoning": "",
          "output": "altro"
       },
 
       {
-         "input": "chi ha promosso l’azione giudiziaria?",
+         "input": ["chi ha promosso l’azione giudiziaria?"],
          "reasoning": "",
          "output": "attore"
       },
 
       {
-         "input": "contro chi è stata proposta la causa?",
+         "input": ["contro chi è stata proposta la causa?"],
          "reasoning": "",
          "output": "convenuto"
       },
 
       {
-         "input": "chi sono le parti coinvolte nel processo?",
+         "input": ["chi sono le parti coinvolte nel processo?"],
          "reasoning": "",
          "output": "parte"
       },
 
       {
-         "input": "chi ha presentato il ricorso in appello?",
+         "input": ["chi ha presentato il ricorso in appello?"],
          "reasoning": "",
          "output": "appellante"
       },
 
       {
-         "input": "chi ha fatto ricorso in cassazione?",
+         "input": ["chi ha fatto ricorso in cassazione?"],
          "reasoning": "",
          "output": "ricorrente"
       },
 
       {
-         "input": "chi ha ricevuto il ricorso in appello?",
+         "input": ["chi ha ricevuto il ricorso in appello?"],
          "reasoning": "",
          "output": "appellato"
       },
 
       {
-         "input": "chi ha ricevuto il ricorso in cassazione?",
+         "input": ["chi ha ricevuto il ricorso in cassazione?"],
          "reasoning": "",
          "output": "controricorrente"
       },
 
       {
-         "input": "chi può provare quanto successo?",
+         "input": ["chi può provare quanto successo?"],
          "reasoning": "",
          "output": "testimone"
       },
 
       {
-         "input": "i genitori di Mario sono ancora vivi?",
+         "input": ["i genitori di Mario sono ancora vivi?"],
          "reasoning": "",
          "output": "altro"
       }

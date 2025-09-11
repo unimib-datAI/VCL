@@ -30,22 +30,22 @@
         },
         {
             "input": "estrai dalla sentenza di 1 livello i valori economici espressi in euro",
-            "reasoning": "'sentenza di 1 livello' e' sinonimo di sentenza di primo grado. la richiesta e' diretta e specifica.",
+            "reasoning": "'sentenza di 1 livello' è sinonimo di sentenza di primo grado. la richiesta è diretta e specifica.",
             "output": "['sentenza di primo grado']"
         },
         {
             "input": "riassumi in 50 parole la memoria",
-            "reasoning": "il termine 'memoria' in ambito legale si riferisce alla memoria giudiziale. l’obiettivo e' sintetizzarne il contenuto.",
+            "reasoning": "il termine 'memoria' in ambito legale si riferisce alla memoria giudiziale. l’obiettivo è sintetizzarne il contenuto.",
             "output": "['memoria giudiziale']"
         },
         {
             "input": "trova precedenti su persona mario rossi",
-            "reasoning": "non e' indicato alcun documento specifico. poich� si cercano precedenti, occorre analizzare tutti i documenti disponibili nel contesto.",
+            "reasoning": "non è indicato alcun documento specifico. poichè si cercano precedenti, occorre analizzare tutti i documenti disponibili nel contesto.",
             "output": "['contesto']"
         },
         {
             "input": "calcola la differenza matematica tra 100 e 50",
-            "reasoning": "la query e' di natura aritmetica e non ha alcuna rilevanza legale. il sistema rag non e' necessario.",
+            "reasoning": "la query è di natura aritmetica e non ha alcuna rilevanza legale. il sistema rag non è necessario.",
             "output": "['None']"
         },
         {
@@ -55,17 +55,17 @@
         },
         {
             "input": "analizza il percorso logico della sentenza e fornisci la risposta tramite elenco puntato",
-            "reasoning": "la query menziona una sentenza, ma non specifica il grado. per eseguire l’analisi richiesta e' necessario accedere al contesto per disambiguare quale sentenza è necessario analizzare tra 'sentenza di primo grado' e 'sentenza di secondo grado'.",
+            "reasoning": "la query menziona una sentenza, ma non specifica il grado. per eseguire l’analisi richiesta è necessario accedere al contesto per disambiguare quale sentenza è necessario analizzare tra 'sentenza di primo grado' e 'sentenza di secondo grado'.",
             "output": "['contesto']"
         },
         {
             "input": "come si cucina la pasta?",
-            "reasoning": "domanda completamente fuori dominio legale. non richiede analisi documentale n� coinvolge il sistema rag.",
+            "reasoning": "domanda completamente fuori dominio legale. non richiede analisi documentale nè coinvolge il sistema rag.",
             "output": "['None']"
         },
         {
             "input": "confronta i passaggi logici dei documenti",
-            "reasoning": "la query e' generica e non specifica quali documenti. per soddisfarla, e' necessario analizzare il contesto nel suo complesso.",
+            "reasoning": "la query è generica e non specifica quali documenti. per soddisfarla, è necessario analizzare il contesto nel suo complesso.",
             "output": "['contesto']"
         }
     ],

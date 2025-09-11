@@ -497,6 +497,15 @@ class Graph:
 
         # Add few-shot examples if available
         if template["examples"]:
+            template["examples"] = [
+                {
+                    "input": "\n".join(example["input"]),
+                    "reasoning": example["reasoning"],
+                    "output": example["output"],
+                }
+                for example in template["examples"]
+            ]
+            
             example_prompt = ChatPromptTemplate.from_messages(
                 [
                     HumanMessagePromptTemplate.from_template("{input}"),

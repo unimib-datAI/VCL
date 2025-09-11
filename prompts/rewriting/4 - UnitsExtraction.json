@@ -15,32 +15,32 @@
    
    "examples": [
       {
-         "input": "quanto è lungo il testo?",
+         "input": ["quanto è lungo il testo?"],
          "reasoning": "",
          "output": "numero di caratteri"
       },
       {
-         "input": "e invece quante parole ci sono?",
+         "input": ["e invece quante parole ci sono?"],
          "reasoning": "",
          "output": "numero di parole"
       },
       {
-         "input": "quante frasi sono?",
+         "input": ["quante frasi sono?"],
          "reasoning": "",
          "output": "numero di frasi"
       },
       {
-         "input": "ma quanto è lunga la frase?",
+         "input": ["ma quanto è lunga la frase?"],
          "reasoning": "",
          "output": "numero di caratteri"
       },
       {
-         "input": "quante volte viene menzionato l'articolo 412 c.c.?",
+         "input": ["quante volte viene menzionato l'articolo 412 c.c.?"],
          "reasoning": "",
          "output": "numero di entità"
       },
       {
-         "input": "i periodi quanti sono?",
+         "input": ["i periodi quanti sono?"],
          "reasoning": "",
          "output": "numero di frasi"
       }

@@ -1,15 +1,66 @@
 {
-    "system": [
-      "Sei un agente e il tuo compito è individuare se la query contiene condizioni sul formato della risposta (es. \"in un elenco puntato\", \"massimo 100 parole\", \"in una tabella\") per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Non sono quindi coinvolti in questa fase i dettagli sui dati, ma solo le informazioni strutturali della risposta. Il tuo compito è quello di analizzare la domanda e restituire esclusivamente la descrizione (breve) della condizione aggiuntiva rilevata. La risposta può rimanere vuota ('') se nessun vincolo è necessario."
-    ],
+  "system": [
+    "Sei un agente e il tuo compito è individuare se la query contiene condizioni sul formato della risposta (es. \"in un elenco puntato\", \"massimo 100 parole\", \"in una tabella\") per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Non sono quindi coinvolti in questa fase i dettagli sui dati, ma solo le informazioni strutturali della risposta. Il tuo compito è quello di analizzare la domanda e restituire esclusivamente la descrizione (breve) della condizione aggiuntiva rilevata. La risposta può rimanere vuota ('') se nessun vincolo è necessario."
+  ],
 
-    "human": [
-      "Analizza la seguente query e individua la condizione sulla struttura della risposta: \"{query}\""
-    ],
+  "human": [
+    "Analizza la seguente query e individua la condizione sulla struttura della risposta: \"{query}\""
+  ],
 
-    "examples": [],
+  "examples": [
+    {
+        "input": ["Elencami in una lista puntata tutti i motivi del ricorso."],
+        "reasoning": "La query richiede che i motivi del ricorso siano presentati in un formato specifico, ovvero in una lista puntata.",
+        "output": "in una lista puntata"
+    },
+    {
+        "input": ["Riassumi la vicenda in massimo 100 parole."],
+        "reasoning": "La query impone un limite alla lunghezza della risposta, specificando che il riassunto deve essere contenuto entro 100 parole.",
+        "output": "massimo 100 parole"
+    },
+    {
+        "input": ["Qual è la decisione finale del giudice?"],
+        "reasoning": "La query è una richiesta generica di informazione e non pone alcun vincolo sul formato della risposta.",
+        "output": "''"
+    },
+    {
+        "input": ["Crea una tabella che metta a confronto le richieste dell'attore e le difese del convenuto."],
+        "reasoning": "La query specifica che la risposta deve essere organizzata in un formato tabellare per facilitare il confronto tra le due parti.",
+        "output": "in una tabella"
+    },
+    {
+        "input": ["Spiegami in modo semplice e conciso le basi giuridiche della sentenza."],
+        "reasoning": "La query richiede che la spiegazione sia fornita in un modo che sia facile da comprendere, implicando l'uso di un linguaggio semplice e conciso.",
+        "output": "spiegato in modo semplice e conciso"
+    },
+    {
+        "input": ["Spiegami i motivi di diritto della sentenza come se fossi in terza elementare."],
+        "reasoning": "La query richiede che la spiegazione sia adattata a un livello di comprensione molto semplice, come quello di un bambino in terza elementare.",
+        "output": "spiegato con un linguaggio molto semplice (come per un bambino)"
+    },
+    {
+        "input": ["Voglio solo i punti chiave della motivazione, nient'altro."],
+        "reasoning": "La query specifica che la risposta deve essere limitata ai punti chiave della motivazione, escludendo qualsiasi altra informazione superflua.",
+        "output": "solo i punti chiave"
+    },
+    {
+        "input": ["Chi sono le parti coinvolte nel processo?"],
+        "reasoning": "La query è una richiesta generica di informazione e non pone alcun vincolo sul formato della risposta.",
+        "output": "''"
+    },
+    {
+        "input": ["Metti in ordine cronologico i fatti, usando un elenco numerato."],
+        "reasoning": "La query richiede che i fatti siano presentati in un ordine specifico (cronologico) e in un formato strutturato (elenco numerato).",
+        "output": "in un elenco numerato"
+    },
+    {
+        "input": ["Rispondimi in una sola frase."],
+        "reasoning": "La query impone un vincolo chiaro sulla lunghezza della risposta, specificando che deve essere contenuta in una singola frase.",
+        "output": "in una sola frase"
+    }
+  ],
 
-    "params": [
-      "query"
-    ]
+  "params": [
+    "query"
+  ]
 }

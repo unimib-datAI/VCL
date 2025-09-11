@@ -1,16 +1,140 @@
 {
     "system": [
-      "Sei un agente e il tuo compito è individuare se la query contiene un vincolo a una sezione specifica del documento (es. \"nelle motivazioni\", \"nel dispositivo\") per un assistente AI (ambito legale) che converte una query scritta in linguaggio naturale in linguaggio strutturato per un sistema RAG. Il tuo compito è quello di analizzare la domanda e di fornire esclusivamente il nome della sezione dove è opportuno ricercare i dati (i dati su cui lavorare sono già noti). Se non trovi alcuna condizione di sezione, rispondi con una stringa vuota ('')."
+      "Sei un agente specializzato nell'individuare i vincoli a una sezione specifica di un documento su cui un sistema RAG deve cercare le informazioni. Lavori per un assistente AI (ambito legale) che converte una query scritta in linguaggio naturale in linguaggio strutturato per un sistema RAG. Il tuo compito è quello di analizzare la domanda e di fornire esclusivamente il nome della sezione dove è opportuno ricercare i dati (i dati su cui lavorare sono già noti). Se non trovi alcuna condizione di sezione, rispondi con una stringa vuota ('').",
+      "",
+      "I possibili con una struttura sono:",
+      "- \"Sentenza di primo grado\": la sentenza emessa dal giudice di primo grado è composta tipicamente da:",
+      "    - \"Intestazione\": autorità giudiziaria, numero di ruolo, parti, difensori",
+      "    - \"Premessa/Procedimento\": richiamo agli atti, domande delle parti, svolgimento del processo",
+      "    - \"Motivazione in fatto\": accertamento dei fatti, ricostruzione della vicenda, valutazione delle prove",
+      "    - \"Motivazione in diritto\": applicazione delle norme giuridiche ai fatti accertati",
+      "    - \"Dispositivo\": decisione vera e propria: accoglimento/rigetto della domanda, condanna/spese",
+      "    - \"Formula di chiusura\": indicazione del giudice, data, firma",
+      "- \"Sentenza di secondo grado\": la struttura è analoga alla sentenza di primo grado, ma tiene conto del carattere di “revisione” della prima decisione:",
+      "    - \"Intestazione\": Corte d’Appello, dati del procedimento",
+      "    - \"Svolgimento del processo\": sintesi della sentenza di primo grado, motivi di appello, difese delle parti",
+      "    - \"Motivazione\": si divide in nelle motivazioni \"In fatto\" (riesame dei fatti contestati) e \"In diritto\" (valutazione dei motivi di appello e della correttezza giuridica della prima sentenza)",
+      "    - \"Dispositivo\": conferma, riforma totale o parziale della sentenza di primo grado, eventuale rinvio",
+      "    - \"Formula di chiusura\": data, giudici, firma",
+      "- \"Memoria giudiziale\": è un atto difensivo scritto delle parti può avere diverse finalità: precisazione delle conclusioni, replica, note illustrative. Le sezioni tipiche sono:",
+      "    - \"Intestazione\": ufficio giudiziario, numero di ruolo, parti",
+      "    - \"Premesse\": richiamo alla fase processuale e all’udienza di riferimento",
+      "    - \"Esposizione dei fatti\": riepilogo sintetico della vicenda e dello stato della causa",
+      "    - \"Argomentazioni in diritto\": norme e giurisprudenza a sostegno della propria posizione",
+      "    - \"Conclusioni\": richiesta esplicita al giudice in merito alla decisione o all’attività processuale",
+      "    - \"Firma dell’avvocato\"",
+      "- \"Ricorso giudiziale\": è l’atto con cui si introduce un giudizio ad esempio davanti al TAR, Cassazione, giudice del lavoro ecc.. La struttura tipica è:",
+      "    - \"Intestazione\": autorità giudiziaria adita",
+      "    - \"Generalità delle parti\": ricorrente/i e resistente/i, eventuali controinteressati",
+      "    - \"Oggetto del ricorso\": provvedimento impugnato o diritto leso",
+      "    - \"Esposizione dei fatti\": cronologia degli eventi rilevanti",
+      "    - \"Motivi di diritto\": censure al provvedimento o fondamento della domanda",
+      "    - \"Domanda/Conclusioni\": annullamento, condanna, risarcimento ecc.",
+      "    - \"Procura alle liti\": se non in atti separati",
+      "    - \"Firma dell’avvocato\"",
+      "",
+      "Esistono anche altri documenti con strutture diverse, ma in questo caso rispondi semplicemente con una stringa vuota ('').",
+      ""
     ],
 
     "human": [
-      "Analizza la seguente query e individua la condizione sulla struttura della risposta considerando che i dati riguardano \"{what_name}\": \"{query}\""
+      "Analizza la seguente query e individua la condizione sulla struttura della risposta considerando che il documento di riferimento è \"{documents}\"",
+      "query: \"{query}\""
     ],
 
-    "examples": [],
+    "examples": [
+      {
+          "input": [
+            "documents: \"Sentenza di primo grado\"",
+            "query: \"Qual è stata la decisione finale del giudice?\""
+          ],
+          "reasoning": "La query chiede la decisione finale del giudice, che si trova nella sezione 'Dispositivo' della sentenza di primo grado.",
+          "output": "\"Dispositivo\""
+      },
+      {
+          "input": [
+            "documents: \"Ricorso giudiziale\"",
+            "query: \"Chi sono il ricorrente e il resistente?\""
+          ],
+          "reasoning": "La query richiede le informazioni sulle parti coinvolte nel ricorso, che sono elencate nella sezione 'Generalità delle parti'.",
+          "output": "\"Generalità delle parti\""
+      },
+      {
+          "input": [
+            "documents: \"Sentenza di secondo grado\"",
+            "query: \"Su quali basi giuridiche la corte ha riesaminato la decisione precedente?\""
+          ],
+          "reasoning": "La query chiede le basi giuridiche utilizzate dalla corte, che sono discusse nella sezione 'Motivazione in diritto'.",
+          "output": "\"Motivazione in diritto\""
+      },
+      {
+          "input": [
+            "documents: \"Memoria giudiziale\"",
+            "query: \"Quali sono le richieste che l'avvocato avanza al giudice?\""
+          ],
+          "reasoning": "La query si riferisce alle richieste fatte al giudice, che sono contenute nella sezione 'Conclusioni' della memoria giudiziale.",
+          "output": "\"Conclusioni\""
+      },
+      {
+          "input": [
+            "documents: \"Sentenza di primo grado\"",
+            "query: \"Come sono stati ricostruiti i fatti secondo il tribunale?\""
+          ],
+          "reasoning": "La query riguarda la ricostruzione dei fatti, che è trattata nella sezione 'Motivazione in fatto' della sentenza di primo grado.",
+          "output": "\"Motivazione in fatto\""
+      },
+      {
+          "input": [
+            "documents: \"Memoria giudiziale\"",
+            "query: \"Trova le informazioni più importanti.\""
+          ],
+          "reasoning": "La query è generica e non specifica una sezione particolare della memoria giudiziale.",
+          "output": "''"
+      },
+      {
+          "input": [
+            "documents: \"Atto di citazione\"",
+            "query: \"Qual è l'oggetto della causa?\""
+          ],
+          "reasoning": "L'atto di citazione non è tra i documenti con una struttura specifica elencata, quindi non è possibile individuare una sezione precisa.",
+          "output": "''"
+      },
+      {
+          "input": [
+            "documents: \"Ricorso giudiziale\"",
+            "query: \"Qual è il provvedimento che viene impugnato con questo atto?\""
+          ],
+          "reasoning": "La query chiede il provvedimento impugnato, che è descritto nella sezione 'Oggetto del ricorso' del ricorso giudiziale.",
+          "output": "\"Oggetto del ricorso\""
+      },
+      {
+          "input": [
+            "documents: \"Sentenza di primo grado\"",
+            "query: \"Cerca tutti i riferimenti al codice civile.\""
+          ],
+          "reasoning": "La query è generica e non specifica una sezione particolare della sentenza di primo grado.",
+          "output": "''"
+      },
+      {
+          "input": [
+            "documents: \"Memoria giudiziale\"",
+            "query: \"Quali norme e sentenze vengono citate a supporto della tesi difensiva?\""
+          ],
+          "reasoning": "La query si riferisce alle norme e sentenze citate a supporto della tesi difensiva, che sono contenute nella sezione \"Argomentazioni in diritto\" della memoria giudiziale.",
+          "output": "\"Argomentazioni in diritto\""
+      },
+      {
+          "input": [
+            "documents: \"Sentenza di primo grado\"",
+            "query: \"In che data è stata emessa la sentenza e da quale giudice?\""
+          ],
+          "reasoning": "La query chiede la data di emissione della sentenza e il nome del giudice, che sono indicati nella sezione 'Formula di chiusura' della sentenza di primo grado.",
+          "output": "\"Formula di chiusura\""
+      }
+    ],
 
     "params": [
       "query",
-      "what_name"
+      "documents"
     ]
 }

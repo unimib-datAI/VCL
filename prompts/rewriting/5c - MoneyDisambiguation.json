@@ -29,7 +29,88 @@
       "Analizza la seguente richiesta relativa a 'denaro' considerando che rappresenta un comando di tipo \"{command}\" (\"{description_command}\") sul documento \"{documents}\": \"{query}\""
     ],
     
-    "examples": [],
+    "examples": [
+    {
+        "input": [
+            "query: Estrai tutti i valori monetari presenti in questo atto.",
+            "documents: Sentenza di primo grado"
+        ],
+        "reasoning": "L'utente richiede tutti i valori monetari senza specificare alcuna limitazione.",
+        "output": "tutte"
+    },
+    {
+        "input": [
+            "query: Ci sono importi superiori a 5.000 euro nel documento?",
+            "documents: Decreto ingiuntivo"
+        ],
+        "reasoning": "L'utente richiede importi di una specifica valuta (euro) con una condizione di soglia (superiori a 5.000).",
+        "output": "altro"
+    },
+    {
+        "input": [
+            "query: Verifica se è presente la cifra esatta di 1.250,00 €.",
+            "documents: Fattura"
+        ],
+        "reasoning": "L'utente richiede un valore economico specifico, che include sia l'importo numerico che la valuta.",
+        "output": "1.250,00 €"
+    },
+    {
+        "input": [
+            "query: A quanto ammonta la tassa di iscrizione a ruolo?",
+            "documents: Ricorso giudiziale"
+        ],
+        "reasoning": "L'utente richiede un importo specifico legato alle spese processuali, in particolare il contributo unificato.",
+        "output": "spese processuali/contributo unificato"
+    },
+    {
+        "input": [
+            "query: Qual è il compenso totale liquidato dal giudice al legale?",
+            "documents: Sentenza"
+        ],
+        "reasoning": "L'utente richiede un importo specifico legato al compenso degli avvocati.",
+        "output": "compenso degli avvocati"
+    },
+    {
+        "input": [
+            "query: Estrai il valore degli accessori di legge come IVA e CPA.",
+            "documents:  parcella avvocato"
+        ],
+        "reasoning": "L'utente richiede un importo specifico legato agli accessori di legge, che sono una sottocategoria del compenso degli avvocati.",
+        "output": "compenso degli avvocati/accessori di legge"
+    },
+    {
+        "input": [
+            "query: Quanto è costata la consulenza del perito nominato dal tribunale?",
+            "documents: Sentenza di secondo grado"
+        ],
+        "reasoning": "L'utente richiede un importo specifico legato alle spese processuali, in particolare le spese di CTU.",
+        "output": "spese processuali/spese di CTU"
+    },
+    {
+        "input": [
+            "query: Qual è l'importo che la parte soccombente deve rimborsare per le spese di giudizio?",
+            "documents: Dispositivo della sentenza"
+        ],
+        "reasoning": "L'utente richiede un importo specifico legato alla regolazione delle spese.",
+        "output": "regolazione delle spese"
+    },
+    {
+        "input": [
+            "query: A quanto ammonta il risarcimento per il danno morale?",
+            "documents: Sentenza di risarcimento"
+        ],
+        "reasoning": "L'utente richiede un importo specifico legato al risarcimento per danno morale, che non rientra nelle altre categorie specifiche.",
+        "output": "altro/risarcimento per danno morale"
+    },
+    {
+        "input": [
+            "query: Estrai l'importo relativo al rimborso forfettario del 15% sulle spese legali.",
+            "documents: Sentenza"
+        ],
+        "reasoning": "L'utente richiede un importo specifico legato alle spese generali forensi, che sono una sottocategoria del compenso degli avvocati.",
+        "output": "compenso degli avvocati/spese generali forensi"
+    }
+],
 
     "params": [
         "query",

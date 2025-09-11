@@ -40,7 +40,72 @@
       "Analizza la seguente richiesta relativa a una fonte considerando che rappresenta un comando di tipo \"{command}\" (\"{description_command}\") sul documento \"{documents}\": \"{query}\""
     ],
 
-    "examples": [],
+    "examples": [
+    {
+        "input": [
+            "query: Cerca sentenze recenti in materia di diritto del lavoro.",
+            "documents: Database giurisprudenziale"
+        ],
+        "reasoning": "L'utente non specifica una fonte particolare, quindi si riferisce a tutte le fonti disponibili.",
+        "output": "altro"
+    },
+    {
+        "input": [
+            "query: Voglio un riassunto della sentenza della Cassazione Civile, Sezioni Unite, numero 28972 del 9 ottobre 2024.",
+            "documents: Sentenza Cass., Sez. Un., 9 ottobre 2024, n. 28972"
+        ],
+        "reasoning": "L'utente richiede una fonte specifica, identificata chiaramente dalla sigla e dal numero della sentenza.",
+        "output": "Cass., Sez. Un., 9 ottobre 2024, n. 28972"
+    },
+    {
+        "input": [
+            "query: Analizza le implicazioni del Decreto Legislativo 24 del 10 marzo 2023.",
+            "documents: Parere legale"
+        ],
+        "reasoning": "L'utente richiede informazioni specifiche su un decreto legislativo identificato chiaramente dalla sua sigla e data.",
+        "output": "D.Lgs. 10 marzo 2023, n. 24"
+    },
+    {
+        "input": [
+            "query: Qual è l'orientamento generale della Corte Costituzionale sul tema?",
+            "documents: Repertorio di giurisprudenza"
+        ],
+        "reasoning": "L'utente non specifica una decisione particolare della Corte Costituzionale, quindi si riferisce a tutte le decisioni di questa fonte.",
+        "output": "altro"
+    },
+    {
+        "input": [
+            "query: Recupera il testo della decisione del T.A.R. Lombardia, Brescia, n. 95 del 30 gennaio 2025.",
+            "documents: Banca dati amministrativa"
+        ],
+        "reasoning": "L'utente richiede una fonte specifica, identificata chiaramente dalla sigla e dal numero della sentenza.",
+        "output": "T.A.R. Lombardia, Brescia, Sez. I, 30 gennaio 2025, n. 95"
+    },
+    {
+        "input": [
+            "query: Come ha motivato le sue richieste il Pubblico Ministero?",
+            "documents: Sentenza penale"
+        ],
+        "reasoning": "L'utente si riferisce al ruolo del Pubblico Ministero in generale, senza menzionare un caso specifico.",
+        "output": "altro"
+    },
+    {
+        "input": [
+            "query: Cosa dice la Legge Regionale della Lombardia numero 23 dell'11 agosto 2015 in merito?",
+            "documents: Testo normativo"
+        ],
+        "reasoning": "L'utente richiede una fonte specifica, identificata chiaramente dalla sigla e dal numero della legge regionale.",
+        "output": "Legge Regionale Lombardia 11 agosto 2015, n. 23"
+    },
+    {
+        "input": [
+            "query: Confronta la sentenza della Corte d'Appello di Milano, n. 1234/2024, con la giurisprudenza della CEDU.",
+            "documents: Database giurisprudenziale"
+        ],
+        "reasoning": "L'utente richiede due fonti specifiche, identificate chiaramente dalle loro sigle e numeri.",
+        "output": "Corte d'Appello di Milano, Sez. I, 5 giugno 2024, n. 1234"
+    }
+],
     
     "params": [
         "query",

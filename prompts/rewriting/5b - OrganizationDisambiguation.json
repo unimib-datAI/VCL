@@ -22,67 +22,67 @@
     
     "examples": [
         {
-            "input": "quale azienda ha avuto ragione?",
+            "input": ["quale azienda ha avuto ragione?"],
             "reasoning": "",
             "output": "parte vittoriosa"
         },
         {
-            "input": "quale azienda ha perso?",
+            "input": ["quale azienda ha perso?"],
             "reasoning": "",
             "output": "parte soccombente"
         },
         {
-            "input": "riportami tutte le frasi che contengono il riferimento all'azienda Vodafone",
+            "input": ["riportami tutte le frasi che contengono il riferimento all'azienda Vodafone"],
             "reasoning": "",
             "output": "Vodafone"
         },
         {
-            "input": "quante e quali aziende sono menzionate nella sentenza?",
+            "input": ["quante e quali aziende sono menzionate nella sentenza?"],
             "reasoning": "",
             "output": "tutte"
         },
         {
-            "input": "quale azienda ha promosso l’azione giudiziaria?",
+            "input": ["quale azienda ha promosso l’azione giudiziaria?"],
             "reasoning": "",
             "output": "attore"
         },
         {
-            "input": "contro quale azienda è stata proposta la causa?",
+            "input": ["contro quale azienda è stata proposta la causa?"],
             "reasoning": "",
             "output": "convenuto"
         },
         {
-            "input": "quali aziende sono le parti coinvolte nel processo?",
+            "input": ["quali aziende sono le parti coinvolte nel processo?"],
             "reasoning": "",
             "output": "parte"
         },
         {
-            "input": "quale azienda ha presentato il ricorso in appello?",
+            "input": ["quale azienda ha presentato il ricorso in appello?"],
             "reasoning": "",
             "output": "appellante"
         },
         {
-            "input": "quale azienda ha fatto ricorso in cassazione?",
+            "input": ["quale azienda ha fatto ricorso in cassazione?"],
             "reasoning": "",
             "output": "ricorrente"
         },
         {
-            "input": "quale azienda ha ricevuto il ricorso in appello?",
+            "input": ["quale azienda ha ricevuto il ricorso in appello?"],
             "reasoning": "",
             "output": "appellato"
         },
         {
-            "input": "quale azienda ha ricevuto il ricorso in cassazione?",
+            "input": ["quale azienda ha ricevuto il ricorso in cassazione?"],
             "reasoning": "",
             "output": "controricorrente"
         },
         {
-            "input": "quale azienda può provare quanto successo?",
+            "input": ["quale azienda può provare quanto successo?"],
             "reasoning": "",
             "output": "testimone"
         },
         {
-            "input": "per quale azineda lavora Mario",
+            "input": ["per quale azineda lavora Mario"],
             "reasoning": "",
             "output": "altro/azienda dove Mario è lavoratore"
         }

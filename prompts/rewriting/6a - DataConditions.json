@@ -7,7 +7,80 @@
       "Analizza la seguente query e individua la condizione sulla struttura della risposta considerando che i dati riguardano \"{what_name}\": \"{query}\""
     ],
 
-    "examples": [],
+    "examples": [
+      {
+          "input": [
+              "query: trova precedenti su persona mario rossi",
+              "what_name: precedente"
+          ],
+          "reasoning": "La query richiede di trovare precedenti specifici relativi a una persona, in questo caso 'mario rossi'. Pertanto, la condizione sui dati è che i precedenti devono essere riferiti esclusivamente a questa persona.",
+          "output": "precedente deve essere riferito solo a persona mario rossi"
+      },
+      {
+          "input": [
+              "query: estrai dalla sentenza s1 i valori economici espressi in euro",
+              "what_name: denaro"
+          ],
+          "reasoning": "La query specifica che i valori economici da estrarre devono essere espressi in euro. Quindi, la condizione sui dati è che si devono considerare solo i valori in questa valuta.",
+          "output": "solo i valori espressi in euro"
+      },
+      {
+          "input": [
+              "query: cerca sentenze in materia di diritto del lavoro pubblicate dopo il 2022",
+              "what_name: sentenza"
+          ],
+          "reasoning": "La query contiene un chiaro vincolo temporale, richiedendo solo i documenti successivi a una data specifica (l'anno 2022).",
+          "output": "pubblicate dopo il 2022"
+      },
+      {
+          "input": [
+              "query: trova tutte le normative sul commercio, ma non quelle regionali",
+              "what_name: normativa"
+          ],
+          "reasoning": "La query contiene una condizione di esclusione esplicita, chiedendo di scartare le normative che hanno una specifica fonte (regionale).",
+          "output": "escludendo le normative regionali"
+      },
+      {
+          "input": [
+              "query: riassumi l'atto di citazione",
+              "what_name: atto"
+          ],
+          "reasoning": "La query è una richiesta generica di riepilogo e non pone alcun filtro o condizione sui dati da analizzare.",
+          "output": ""
+      },
+      {
+          "input": [
+              "query: voglio solo le decisioni del Tribunale di Milano",
+              "what_name: decisione"
+          ],
+          "reasoning": "La query impone un vincolo sull'origine del dato, filtrando le decisioni in base all'autorità giudiziaria che le ha emesse.",
+          "output": "emesse solo dal Tribunale di Milano"
+      },
+      {
+          "input": [
+              "query: mostrami la giurisprudenza degli ultimi 5 anni in tema di appalti pubblici",
+              "what_name: giurisprudenza"
+          ],
+          "reasoning": "La query contiene un vincolo temporale relativo ('ultimi 5 anni') e un vincolo tematico ('appalti pubblici'). La condizione combinata è rilevante.",
+          "output": "degli ultimi 5 anni in tema di appalti pubblici"
+      },
+      {
+          "input": [
+              "query: quali sono le conclusioni dell'avvocato Bianchi?",
+              "what_name: conclusioni"
+          ],
+          "reasoning": "La query non pone un vincolo sui dati da cercare, ma chiede un'informazione specifica all'interno dei dati già noti.",
+          "output": ""
+      },
+      {
+          "input": [
+              "query: cerca i ricorsi presentati dall'azienda 'Alfa S.r.l.'",
+              "what_name: ricorso"
+          ],
+          "reasoning": "La query richiede di filtrare i documenti in base alla parte che li ha presentati, ovvero l'azienda 'Alfa S.r.l.'.",
+          "output": "presentati da 'Alfa S.r.l.'"
+      }
+    ],
 
     "params": [
       "query",
