@@ -20,7 +20,6 @@ import os
 import time
 import json
 
-from pathlib import Path
 from typing import Literal
 from typing_extensions import TypedDict
 
@@ -82,7 +81,6 @@ class Graph:
         """
         Initialize the graph and register nodes.
         """
-        self.project_root = Path(__file__).resolve().parent
         if cfg is None:
             cfg = Config.get_instance()
 
@@ -90,6 +88,7 @@ class Graph:
         self.logger = cfg.logger
         self.storage = cfg.storage
         self.llm = cfg.llm
+        self.project_root = cfg.project_root
 
         # Build state graph and register nodes
         graph_builder = StateGraph(State)

@@ -38,9 +38,6 @@ class Generator:
         logger: Logger instance for structured logging.
     """
 
-    # Path to the directory containing generator prompt templates
-    path = os.path.join("prompts", "generator")
-
     def __init__(self, cfg: Config):
         """
         Initialize the Generator with configuration settings.
@@ -53,6 +50,9 @@ class Generator:
         self.seconds = cfg.seconds
         self.parsers = StrOutputParser()
         self.logger = cfg.logger
+        self.project_root = cfg.project_root
+        # Path to the directory containing generator prompt templates
+        self.path = os.path.join(self.project_root, "prompts", "generator")
 
     def generate(self, op: dict, docs: list[dict], query: str) -> str:
         """

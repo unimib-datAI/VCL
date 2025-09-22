@@ -44,6 +44,7 @@ class Retrieval:
         self.storage = cfg.storage
         self.rag = False  # TODO: switch to cfg.rag once RAG is implemented
         self.logger = cfg.logger
+        self.project_root = cfg.project_root
 
     def execute(self, operation: dict, id_user: str) -> list[dict]:
         """
@@ -107,7 +108,7 @@ class Retrieval:
                     )
                 else:
                     # 2. Fallback: filesystem documents/<doc>.json
-                    path_file = os.path.join("documents", f"{d}.json")
+                    path_file = os.path.join(self.project_root, "documents", f"{d}.json")
 
                     if os.path.exists(path_file):
                         file = read_file(path_file)

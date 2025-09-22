@@ -19,6 +19,8 @@ import json
 import logging
 import threading
 
+from pathlib import Path
+
 from utils.LLM import LLM
 from utils.storage import Storage
 
@@ -52,6 +54,7 @@ class Config:
     max_iterations: int = 3
     url: str = "http://127.0.0.1:8000/chat"
     headers: dict = {"Content-Type": "application/json"}
+    project_root = Path(__file__).resolve().parent.parent
 
     # Logging setup
     LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
