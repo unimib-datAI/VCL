@@ -85,5 +85,7 @@
     "params": [
       "query",
       "what_name"
-    ]
+    ],
+
+    "output": "data_condition"
 }

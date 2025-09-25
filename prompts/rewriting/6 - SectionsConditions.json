@@ -136,5 +136,7 @@
     "params": [
       "query",
       "documents"
-    ]
+    ],
+
+   "output": "section_condition"
 }

@@ -207,6 +207,6 @@ marimo/_lsp/
 __marimo__/
 
 #DQL Files
-outputs/
-documents/
-settings/
+documents/**/*.json
+/**/*.csv
+/**/*.txt

@@ -288,5 +288,7 @@
 
 	"params": [
 		"query"
-	]
+	],
+
+	"output": "documents"
 }

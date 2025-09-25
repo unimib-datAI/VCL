@@ -111,4 +111,6 @@ class Rewriting:
             iteration=1,  # Tracks rewrite iteration
             feedback="",  # Feedback for iterative improvement
             response={},  # Placeholder for final response
+            previous_iteration={},  # Previous iteration state
+            score= 0  # Evaluation score
         )

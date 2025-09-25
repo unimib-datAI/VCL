@@ -93,5 +93,7 @@
         "command",
         "description_command",
         "documents"
-    ]
+    ],
+
+   "output": "what_description"
 }

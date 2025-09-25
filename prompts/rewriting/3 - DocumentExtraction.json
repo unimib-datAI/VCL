@@ -72,5 +72,7 @@
 
     "params": [
         "query"
-    ]
+    ],
+
+    "output": "documents"
 }

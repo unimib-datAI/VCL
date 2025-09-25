@@ -33,8 +33,6 @@ class Generator:
         path (str): Directory path where prompt templates are stored.
         llm: The initialized LLM instance from Config.
         rag (bool): Whether to use Retrieval-Augmented Generation.
-        seconds (int): Delay (in seconds) after each LLM call.
-        parsers (StrOutputParser): Output parser for extracting raw text from LLM responses.
         logger: Logger instance for structured logging.
     """
 
@@ -47,8 +45,6 @@ class Generator:
         """
         self.llm = cfg.llm
         self.rag = cfg.rag
-        self.seconds = cfg.seconds
-        self.parsers = StrOutputParser()
         self.logger = cfg.logger
         self.project_root = cfg.project_root
         # Path to the directory containing generator prompt templates
@@ -64,8 +60,8 @@ class Generator:
         3. Loads the appropriate prompt template for the operation.
         4. Dynamically appends conditions if present.
         5. Constructs the context from retrieved documents.
-        6. Builds and runs the LangChain prompt → LLM → parser chain.
-        7. Logs results, waits the configured delay, and returns output.
+        6. Runs the LangChain prompt → LLM → parser chain.
+        7. Logs results, and returns output.
 
         Args:
             op (dict): Operation definition (contains command, what, how, etc.).
@@ -129,10 +125,10 @@ class Generator:
         prompt = ChatPromptTemplate.from_messages(
             [("system", template["system"]), ("human", template["human"])]
         )
-        chain = prompt | self.llm | self.parsers
+        
+        # Call the LLM with the constructed prompt and context
+        result = self.llm.invoke(prompt, {"query": query, "context": context})
 
-        # Run the chain with query and context
-        result = chain.invoke({"query": query, "context": context})
         self.logger.info(
             json.dumps(
                 {
@@ -142,9 +138,6 @@ class Generator:
                 }
             )
         )
-
-        # Apply configured delay before finishing
-        time.sleep(self.seconds)
 
         self.logger.info(
             json.dumps(

@@ -17,7 +17,7 @@ state transitions are logged in structured JSON for full traceability.
 """
 
 import os
-import time
+import copy
 import json
 
 from typing import Literal
@@ -28,7 +28,6 @@ from langgraph.graph import StateGraph
 
 from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
 from langchain.prompts.chat import HumanMessagePromptTemplate, AIMessagePromptTemplate
-from langchain_core.output_parsers import StrOutputParser
 
 from utils.config import Config
 from utils.file_manager import read_file
@@ -55,6 +54,8 @@ class State(TypedDict):
     data_condition: str  # Constraints on data
     response_condition: str  # Constraints on response formatting
     iteration: int  # Iteration count for evaluation loop
+    previous_iteration: dict  # Previous iteration state
+    score: int  # Evaluation score
     feedback: str  # Feedback from evaluator
     response: dict  # Final structured response
 
@@ -75,6 +76,8 @@ class Graph:
         storage: Storage layer (Redis).
         llm: Chat model (LangChain interface).
         graph: Compiled LangGraph pipeline.
+        project_root: Path project
+        minimum_score: Minimum rewrite grade needed to complete the process
     """
 
     def __init__(self, cfg: Config = None):
@@ -89,6 +92,7 @@ class Graph:
         self.storage = cfg.storage
         self.llm = cfg.llm
         self.project_root = cfg.project_root
+        self.minimum_score = cfg.minimum_score
 
         # Build state graph and register nodes
         graph_builder = StateGraph(State)
@@ -171,7 +175,7 @@ class Graph:
         """
 
         result = self.chain("3 - DocumentExtraction", state)
-        result = self.cfg.str_in_list(result)
+        result = self.llm.str_in_list(result)
 
         id_result = self.storage.get_new_id(state["thread_id"])
 
@@ -198,7 +202,7 @@ class Graph:
 
         if chat:
             doc = self.chain("3a - DocumentDisambiguation", state)
-            doc = self.cfg.str_in_list(doc)
+            doc = self.llm.str_in_list(doc)
         else:
             # Default fallback set of documents
             doc = [
@@ -414,12 +418,20 @@ class Graph:
         - If score < threshold, reiterate pipeline (max iterations).
         - Otherwise, terminate with final result.
         """
-
+        previous_iteration = copy.deepcopy(state)
+        previous_score = state["score"]
+        
         result = self.chain("7 - EvaluationResult", state)
-        result = self.cfg.str_in_dict(result)
+        result = self.llm.str_in_dict(result)
+        
+        result["voto"] = int(result["voto"]) if result["voto"].isdigit() else 0
 
-        if int(result["voto"]) < 8 and state["iteration"] <= self.cfg.max_iteration:
-            goto, action = "intentClassification", "reiterate"
+        if result["voto"] < self.minimum_score and state["iteration"] <= self.cfg.max_iterations:
+            if not previous_iteration == {} and result["voto"] <= previous_score:
+                # Avoid infinite loops if no improvement
+                goto, action = "__end__", "end"
+            else:
+                goto, action = "intentClassification", "reiterate"
         else:
             goto, action = "__end__", "end"
 
@@ -428,7 +440,6 @@ class Graph:
                 {
                     "step": "evaluationResult",
                     "score": result["voto"],
-                    "feedback": result["motivazione"],
                     "action": action,
                     "next_node": goto,
                 }
@@ -441,6 +452,7 @@ class Graph:
                 "iteration": state["iteration"] + 1,
                 "feedback": result["motivazione"],
                 "score": result["voto"],
+                "previous_iteration": previous_iteration
             },
         )
 
@@ -473,10 +485,12 @@ class Graph:
                 input_template.update({str(p): str(state[p])})
 
         # Add feedback loop context if previous iteration failed
-        if not (state["response"] == {}) and ("EvaluationResult" not in file):
-            response_clean = (
-                str(state["response"]).replace("{", "{{").replace("}", "}}")
-            )
+        if not (state["previous_iteration"] == {}) and ("EvaluationResult" not in file):
+            old_response = state["previous_iteration"][template["output"]]
+            
+            if "entità" in old_response:
+                old_response = state["previous_iteration"]["what_type"]
+                            
             template[
                 "system"
             ] = f"""
@@ -485,7 +499,7 @@ class Graph:
                 
                 [FEEDBACK]
                 Considera che per la query è già stato generato un possibile output:
-                {response_clean}
+                \"{str(old_response)}\"
                 
                 Questo output ha ricevuto però una valutazione non sufficiente per i nostri standard.
                 La motivazione è stata:
@@ -528,15 +542,5 @@ class Graph:
                 [("system", template["system"]), ("human", template["human"])]
             )
 
-        # Build chain and invoke
-        chain = prompt | self.llm | StrOutputParser()
-        result = chain.invoke(input_template)
-        time.sleep(self.cfg.seconds)
-
-        # Post-process: lower-case, strip unwanted tokens
-        result = result.lower()
-        if "risultato:" in result:
-            result = result[result.index("risultato:") + 11 :]
-        if result == "''":
-            result = ""
-        return result.strip()
+        # Invoke LLM and return result
+        return self.llm.invoke(prompt, input_template, lower=True)

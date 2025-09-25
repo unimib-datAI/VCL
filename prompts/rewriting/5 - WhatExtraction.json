@@ -97,5 +97,7 @@
       "query",
       "command",
       "documents"
-   ]
+   ],
+
+   "output": "what_name"
 }

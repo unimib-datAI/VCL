@@ -62,5 +62,7 @@
 
   "params": [
     "query"
-  ]
+  ],
+
+  "output": "response_condition"
 }

@@ -25,10 +25,11 @@ def parse_args():
     Returns:
         argparse.Namespace: A namespace containing the parsed arguments:
             - api_key (str, optional): API Key for Gemini.
-            - seconds (int, optional): Wait time after each LLM call.
+            - wait (int, optional): Wait time after each LLM call.
             - rag (bool): Whether to retrieve relevant chunks only or full documents.
             - max_iterations (int, optional): Maximum rewrite attempts for a query.
             - save_image (bool): Whether to save the rewrite graph image.
+            - minimum_score (int): Minimum rewrite grade needed to complete the process
     """
     parser = argparse.ArgumentParser(
         description="DQL", formatter_class=argparse.RawTextHelpFormatter
@@ -63,6 +64,13 @@ def parse_args():
         dest="max_iterations",
         required=False,
         help="Maximum number of rewrite attempts for a query.",
+    )
+    parser.add_argument(
+        "-minimum_score",
+        action="store",
+        dest="minimum_score",
+        required=False,
+        help="Minimum rewrite grade needed to complete the process.",
     )
     parser.add_argument(
         "-save_image",

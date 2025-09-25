@@ -14,10 +14,16 @@ Dependencies:
 """
 
 # pylint: disable=invalid-name
+import ast
+import json
 import os
 import threading
+import time
+
 from pathlib import Path
 from langchain.chat_models import init_chat_model
+from langchain_core.output_parsers import StrOutputParser
+from langchain.prompts import ChatPromptTemplate
 
 from utils.file_manager import read_file, write_file
 
@@ -40,14 +46,18 @@ class LLM:
     # Default LLM model and provider
     model_name: str = "gemini-2.0-flash"
     provider: str = "google_genai"
+    
+    # Default output parser
+    parser = StrOutputParser()
 
-    def __init__(self, api_key: str = None):
+    def __init__(self, api_key: str = None, seconds: int = 5):
         """
         Initialize the LLM class.
 
         Args:
             api_key (str, optional): API key for the LLM provider.
                 If not provided, it is read from `settings/api_key.txt`.
+            seconds (int): Delay between LLM calls.
 
         Raises:
             ValueError: If no API key is provided or found in the settings file.
@@ -70,9 +80,13 @@ class LLM:
 
         # Initialize the LLM model from LangChain
         self.llm = init_chat_model(self.model_name, model_provider=self.provider)
+        self.seconds = seconds
+        
+        # Mark as initialized
+        self._initialized = True
 
     @classmethod
-    def get_instance(cls, api_key: str = None):
+    def get_instance(cls, api_key: str = None, seconds: int = 5):
         """
         Retrieve the singleton instance of the LLM.
 
@@ -81,6 +95,7 @@ class LLM:
         Args:
             api_key (str, optional): API key to initialize the model.
                 If not provided, will attempt to load from file.
+            seconds (int): Delay between LLM calls.
 
         Returns:
             LLM: The singleton instance of the LLM class.
@@ -89,5 +104,74 @@ class LLM:
             with cls._lock:
                 # Double-checked locking to prevent race conditions
                 if cls._instance is None:
-                    cls._instance = cls(api_key)
+                    cls._instance = cls(api_key, seconds)
         return cls._instance
+    
+    @staticmethod
+    def str_in_dict(output: str) -> dict:
+        """
+        Safely extract and parse a JSON object from a string.
+
+        Args:
+            output (str): A string containing a JSON object.
+
+        Returns:
+            dict: The parsed dictionary, or an empty dict if parsing fails.
+        """
+        try:
+            # Find the first and last curly braces and extract substring
+            output = output[output.index("{") : output.rfind("}") + 1]
+            return json.loads(output)
+        except (ValueError, json.JSONDecodeError):
+            return {}
+
+    @staticmethod
+    def str_in_list(output: str) -> list:
+        """
+        Safely extract and parse a Python list from a string.
+
+        Args:
+            output (str): A string containing a Python list.
+
+        Returns:
+            list: The parsed list, or an empty list if parsing fails.
+        """
+        try:
+            # Find the first and last square brackets and extract substring
+            output = output[output.index("[") : output.rfind("]") + 1]
+            return ast.literal_eval(output)
+        except (ValueError, SyntaxError):
+            return []
+        
+    def invoke(self, prompt: ChatPromptTemplate, input_template, lower: bool = False) -> str:
+        """
+        Invoke the LLM with a given prompt and return the response.
+
+        Args:
+            prompt (str): The input prompt to send to the LLM.
+            input_template: The input template to format the prompt.
+            lower (bool): Whether to convert the response to lowercase.
+
+        Returns:
+            str: The response from the LLM.
+        """
+        chain = prompt | self.llm | self.parser
+        result = chain.invoke(input_template)
+        time.sleep(self.seconds)
+
+        # Post-process: lower-case, strip unwanted tokens
+        if lower:
+            result = result.lower()
+            
+        if "risultato:" in result.lower():
+            result = result[result.lower().index("risultato:") + 11 :]
+            
+        if "risposta:" in result.lower():
+            result = result[result.lower().index("risposta:") + 10 :]
+            
+        result = result.strip()
+        
+        if result == "''":
+            result = ""
+        
+        return result

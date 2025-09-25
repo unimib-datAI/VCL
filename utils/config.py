@@ -42,6 +42,7 @@ class Config:
         logger (Logger): Global application logger.
         command_map (dict): Maps single-letter keys to query operation commands.
         command_descriptions (dict): Descriptions of supported query commands.
+        minimum_score (int): Minimum rewrite grade needed to complete the process
     """
 
     _instance = None  # Holds the singleton instance
@@ -50,7 +51,6 @@ class Config:
     # Default configuration values
     DB_URL: str = "http://10.0.0.108:9201"
     rag: bool = False
-    seconds: int = 5
     max_iterations: int = 3
     url: str = "http://127.0.0.1:8000/chat"
     headers: dict = {"Content-Type": "application/json"}
@@ -84,6 +84,8 @@ class Config:
         "calcola": "Esegue calcoli basati su elementi presenti nel testo",
         "altro": "",
     }
+    
+    minimum_score = 8
 
     @classmethod
     def get_instance(cls, opts: argparse.Namespace = None):
@@ -114,6 +116,7 @@ class Config:
             return
 
         api_key = None
+        seconds = 5
         if opts:
             # Override API key if provided
             if getattr(opts, "api_key", None):
@@ -123,18 +126,19 @@ class Config:
                 self.rag = bool(opts.rag)
             # Override wait seconds if valid
             if getattr(opts, "seconds", None) is not None and int(opts.seconds) >= 0:
-                self.seconds = int(opts.seconds)
+                seconds = int(opts.seconds)
+            # Override minimum score if valid
+            if getattr(opts, "minimum_score", None) is not None and int(opts.minimum_score) > 0:
+                self.minimum_score = int(opts.minimum_score)
             # Override max_iterations if valid
             if (
                 getattr(opts, "max_iterations", None) is not None
                 and int(opts.max_iterations) >= 0
             ):
-                self.max_iterations = int(
-                    getattr(opts, "max_iterations", self.max_iterations)
-                )
+                self.max_iterations = int(opts.max_iterations)
 
         # Initialize external dependencies
-        self.llm = LLM.get_instance(api_key=api_key).llm
+        self.llm = LLM.get_instance(api_key=api_key, seconds=seconds)
         self.storage = Storage.get_instance()
 
         # Mark as initialized
@@ -165,39 +169,3 @@ class Config:
         if len(key) == 1:
             key = self.get_command_from_key(key)
         return self.command_descriptions.get(key, "")
-
-    @staticmethod
-    def str_in_dict(output: str) -> dict:
-        """
-        Safely extract and parse a JSON object from a string.
-
-        Args:
-            output (str): A string containing a JSON object.
-
-        Returns:
-            dict: The parsed dictionary, or an empty dict if parsing fails.
-        """
-        try:
-            # Find the first and last curly braces and extract substring
-            output = output[output.index("{") : output.rfind("}") + 1]
-            return json.loads(output)
-        except (ValueError, json.JSONDecodeError):
-            return {}
-
-    @staticmethod
-    def str_in_list(output: str) -> list:
-        """
-        Safely extract and parse a Python list from a string.
-
-        Args:
-            output (str): A string containing a Python list.
-
-        Returns:
-            list: The parsed list, or an empty list if parsing fails.
-        """
-        try:
-            # Find the first and last square brackets and extract substring
-            output = output[output.index("[") : output.rfind("]") + 1]
-            return ast.literal_eval(output)
-        except (ValueError, SyntaxError):
-            return []
