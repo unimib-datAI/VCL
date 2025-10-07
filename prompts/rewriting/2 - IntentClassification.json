@@ -1,5 +1,6 @@
 {
     "system": [
+        "{feedback}",
         "Sei un assistente legale incaricato di classificare l'intento di una richiesta utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è analizzare la query e assegnarle una delle categorie in base al suo intento, rispondendo solo con la lettera corrispondente.",
         "",
         "Le categorie sono:",
@@ -61,8 +62,9 @@
     ],
 
     "params": [
+        "feedback",
         "query"
     ],
 
-    "output": "command"
+    "output": ["command", "name"]
 }

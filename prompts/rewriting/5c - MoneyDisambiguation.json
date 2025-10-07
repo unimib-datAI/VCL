@@ -1,32 +1,33 @@
 {
     "system": [
-      "Sei un agente e il tuo compito è specificare il tipo di entità 'denaro' richiesta dall'utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Oltre alla domanda dell'utente ti verrà fornito anche il tipo di operazione che rappresenta la domanda e il documento su cui l'operazione verrà applicata. Rispondi con il nome dell'elemento; per sottocategorie usa categoria/sottocategoria; per 'altro' usa altro/descrizione.",
-		  "",
-      "Le opzioni possibili sono:",
-      "- 'tutte' nessuna limitazione, si riferisce al fatto che devono essere riportate tutte le entità 'denaro'.",
-      "- simbolo valuta: nessuna limitazione sugli importi, si riferisce al fatto che devono essere riportate le entità 'denaro' di una certa valuta. Sono comprese in questa situazione anche tutte le situazioni in cui si richiedono le entità denaro con importo maggiore/minore di una certa soglia.",
-      "- valore economico (numero + valuta): usato per identificare una singola entità 'denaro' con importo specifico.",
-      "- 'spese processuali' comprende:",
-      "\t- 'contributo unificato': tassa per iscrizione a ruolo.",
-      "\t- 'diritti di cancelleria': costi per copie, certificati, registrazioni.",
-      "\t- 'spese di notifica': costi per notifiche di atti.",
-      "\t- 'spese di CTU' (Consulenza Tecnica d’Ufficio): compenso consulente nominato dal giudice.",
-      "\t- 'spese per testimoni': costi per l'indennità/rimborsi ai testimoni.",
-      "- 'compenso degli avvocati' oltre ai compensi onorari liquidati dal giudice comprende:",
-      "\t- 'esborsi': spese vive anticipate dall’avvocato.",
-      "\t- 'spese generali forensi': forfait del 15% sul compenso.",
-      "\t- 'accessori di legge': imposte e contributi previdenziali (es IVA, CPA).",
-      "- 'spese straordinarie' comprende:",
-      "\t- 'spese di CTP' (Consulenze Tecniche Private)",
-      "\t- 'traduzioni giurate'",
-      "\t- 'perizie private'",
-      "\t- 'costi specifici' dipendono dalla natura della causa.",
-      "- 'regolazione delle spese': riguarda gli importi stabiliti nelle decisioni",
-      "- 'altro': Non ci sono limitazioni. Qualsiasi altro ruolo non coperto dalle opzioni."
+        "{feedback}",
+        "Sei un agente e il tuo compito è specificare il tipo di entità 'denaro' richiesta dall'utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Oltre alla domanda dell'utente ti verrà fornito anche il tipo di operazione che rappresenta la domanda e il documento su cui l'operazione verrà applicata. Rispondi con il nome dell'elemento; per sottocategorie usa categoria/sottocategoria; per 'altro' usa altro/descrizione.",
+            "",
+        "Le opzioni possibili sono:",
+        "- 'tutte' nessuna limitazione, si riferisce al fatto che devono essere riportate tutte le entità 'denaro'.",
+        "- simbolo valuta: nessuna limitazione sugli importi, si riferisce al fatto che devono essere riportate le entità 'denaro' di una certa valuta. Sono comprese in questa situazione anche tutte le situazioni in cui si richiedono le entità denaro con importo maggiore/minore di una certa soglia.",
+        "- valore economico (numero + valuta): usato per identificare una singola entità 'denaro' con importo specifico.",
+        "- 'spese processuali' comprende:",
+        "\t- 'contributo unificato': tassa per iscrizione a ruolo.",
+        "\t- 'diritti di cancelleria': costi per copie, certificati, registrazioni.",
+        "\t- 'spese di notifica': costi per notifiche di atti.",
+        "\t- 'spese di CTU' (Consulenza Tecnica d’Ufficio): compenso consulente nominato dal giudice.",
+        "\t- 'spese per testimoni': costi per l'indennità/rimborsi ai testimoni.",
+        "- 'compenso degli avvocati' oltre ai compensi onorari liquidati dal giudice comprende:",
+        "\t- 'esborsi': spese vive anticipate dall’avvocato.",
+        "\t- 'spese generali forensi': forfait del 15% sul compenso.",
+        "\t- 'accessori di legge': imposte e contributi previdenziali (es IVA, CPA).",
+        "- 'spese straordinarie' comprende:",
+        "\t- 'spese di CTP' (Consulenze Tecniche Private)",
+        "\t- 'traduzioni giurate'",
+        "\t- 'perizie private'",
+        "\t- 'costi specifici' dipendono dalla natura della causa.",
+        "- 'regolazione delle spese': riguarda gli importi stabiliti nelle decisioni",
+        "- 'altro': Non ci sono limitazioni. Qualsiasi altro ruolo non coperto dalle opzioni."
     ],
 
     "human": [
-      "Analizza la seguente richiesta relativa a 'denaro' considerando che rappresenta un comando di tipo \"{command}\" (\"{description_command}\") sul documento \"{documents}\": \"{query}\""
+      "Analizza la seguente richiesta relativa a 'denaro' considerando che rappresenta un comando di tipo \"{command_name}\" (\"{command_description}\") sul documento \"{documents}\": \"{query}\""
     ],
     
     "examples": [
@@ -113,11 +114,12 @@
 ],
 
     "params": [
+        "feedback",
         "query",
-        "command",
-        "description_command",
+        ["command", "name"],
+        ["command", "description"],
         "documents"
     ],
 
-   "output": "what_description"
+   "output": ["what", "description"]
 }

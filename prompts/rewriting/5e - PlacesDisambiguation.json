@@ -1,5 +1,6 @@
 {
     "system": [
+        "{feedback}",
 		"Sei un agente e il tuo compito è specificare il tipo di 'luogo' richiesta dall'utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Rispondi solo con il nome dell'elemento.",
 		"",
         "Le possibili opzioni sono:",
@@ -15,82 +16,83 @@
     ],
 
     "human": [
-        "Analizza la seguente richiesta relativa a un luogo considerando che rappresenta un comando di tipo \"{command}\" (\"{description_command}\") sul documento \"{documents}\": \"{query}\""
+        "Analizza la seguente richiesta relativa a un luogo considerando che rappresenta un comando di tipo \"{command_name}\" (\"{command_description}\") sul documento \"{documents}\": \"{query}\""
     ],
 
     "examples": [
-    {
-        "input": [
-            "query: Cerca tutte le sentenze emesse dal Tribunale di Milano in materia di locazioni.",
-            "documents: Database giurisprudenziale"
-        ],
-        "reasoning": "L'utente richiede tutte le sentenze emesse da un tribunale specifico, quindi si riferisce alla sede del tribunale.",
-        "output": "Tribunale di Milano"
-    },
-    {
-        "input": [
-            "query: Qual è l'indirizzo della Corte d'Appello che ha emesso la sentenza?",
-            "documents: Sentenza di secondo grado"
-        ],
-        "reasoning": "",
-        "output": "sede tribunale/corte"
-    },
-    {
-        "input": [
-            "query: In che via è avvenuto il sinistro stradale?",
-            "documents: Relazione di incidente"
-        ],
-        "reasoning": "L'utente chiede il luogo specifico dove si è verificato un evento (il sinistro stradale), quindi si riferisce al luogo del fatto.",
-        "output": "luogo del fatto"
-    },
-    {
-        "input": [
-            "query: Recupera l'indirizzo di residenza della parte attrice.",
-            "documents: Atto di citazione"
-        ],
-        "reasoning": "L'utente richiede l'indirizzo di residenza di una delle parti coinvolte nel procedimento, quindi si riferisce al luogo di residenza, domicilio o sede legale delle parti.",
-        "output": "luogo di residenza domicilio o sede legale delle parti"
-    },
-    {
-        "input": [
-            "query: Dove ha lo studio l'avvocato difensore?",
-            "documents: Mandato difensivo"
-        ],
-        "reasoning": "L'utente chiede l'indirizzo dello studio legale di un avvocato specifico, quindi si riferisce al luogo di residenza, domicilio o sede legale dell'avvocato.",
-        "output": "luogo di residenza domicilio o sede legale dell'avvocato"
-    },
-    {
-        "input": [
-            "query: In quale istituto penitenziario si trova l'imputato?",
-            "documents: Ordinanza di custodia cautelare"
-        ],
-        "reasoning": "L'utente chiede il luogo specifico dove è detenuta una persona, quindi si riferisce alla struttura detentiva.",
-        "output": "luogo struttura detentiva"
-    },
-    {
-        "input": [
-            "query: A quale indirizzo deve essere notificato l'atto per il testimone Mario Rossi?",
-            "documents: Lista testimoni"
-        ],
-        "reasoning": "L'utente richiede l'indirizzo di notifica di un testimone specifico, quindi si riferisce al luogo di residenza, domicilio o sede legale dei testimoni.",
-        "output": "luogo di residenza domicilio o sede legale dei testimoni"
-    },
-    {
-        "input": [
-            "query: Dove si trova l'immobile oggetto del pignoramento?",
-            "documents: Atto di pignoramento immobiliare"
-        ],
-        "reasoning": "L'utente chiede il luogo specifico dove si trova un immobile, quindi si riferisce al luogo del fatto.",
-        "output": "altro"
-    }
-],
+        {
+            "input": [
+                "query: Cerca tutte le sentenze emesse dal Tribunale di Milano in materia di locazioni.",
+                "documents: Database giurisprudenziale"
+            ],
+            "reasoning": "L'utente richiede tutte le sentenze emesse da un tribunale specifico, quindi si riferisce alla sede del tribunale.",
+            "output": "Tribunale di Milano"
+        },
+        {
+            "input": [
+                "query: Qual è l'indirizzo della Corte d'Appello che ha emesso la sentenza?",
+                "documents: Sentenza di secondo grado"
+            ],
+            "reasoning": "",
+            "output": "sede tribunale/corte"
+        },
+        {
+            "input": [
+                "query: In che via è avvenuto il sinistro stradale?",
+                "documents: Relazione di incidente"
+            ],
+            "reasoning": "L'utente chiede il luogo specifico dove si è verificato un evento (il sinistro stradale), quindi si riferisce al luogo del fatto.",
+            "output": "luogo del fatto"
+        },
+        {
+            "input": [
+                "query: Recupera l'indirizzo di residenza della parte attrice.",
+                "documents: Atto di citazione"
+            ],
+            "reasoning": "L'utente richiede l'indirizzo di residenza di una delle parti coinvolte nel procedimento, quindi si riferisce al luogo di residenza, domicilio o sede legale delle parti.",
+            "output": "luogo di residenza domicilio o sede legale delle parti"
+        },
+        {
+            "input": [
+                "query: Dove ha lo studio l'avvocato difensore?",
+                "documents: Mandato difensivo"
+            ],
+            "reasoning": "L'utente chiede l'indirizzo dello studio legale di un avvocato specifico, quindi si riferisce al luogo di residenza, domicilio o sede legale dell'avvocato.",
+            "output": "luogo di residenza domicilio o sede legale dell'avvocato"
+        },
+        {
+            "input": [
+                "query: In quale istituto penitenziario si trova l'imputato?",
+                "documents: Ordinanza di custodia cautelare"
+            ],
+            "reasoning": "L'utente chiede il luogo specifico dove è detenuta una persona, quindi si riferisce alla struttura detentiva.",
+            "output": "luogo struttura detentiva"
+        },
+        {
+            "input": [
+                "query: A quale indirizzo deve essere notificato l'atto per il testimone Mario Rossi?",
+                "documents: Lista testimoni"
+            ],
+            "reasoning": "L'utente richiede l'indirizzo di notifica di un testimone specifico, quindi si riferisce al luogo di residenza, domicilio o sede legale dei testimoni.",
+            "output": "luogo di residenza domicilio o sede legale dei testimoni"
+        },
+        {
+            "input": [
+                "query: Dove si trova l'immobile oggetto del pignoramento?",
+                "documents: Atto di pignoramento immobiliare"
+            ],
+            "reasoning": "L'utente chiede il luogo specifico dove si trova un immobile, quindi si riferisce al luogo del fatto.",
+            "output": "altro"
+        }
+    ],
     
     "params": [
+        "feedback",
         "query",
-        "command",
-        "description_command",
+        ["command", "name"],
+        ["command", "description"],
         "documents"
     ],
 
-   "output": "what_description"
+   "output": ["what", "description"]
 }

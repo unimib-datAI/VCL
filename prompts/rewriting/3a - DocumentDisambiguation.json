@@ -1,5 +1,6 @@
 {
     "system": [
+		"{feedback}",
 		"Sei un agente che analizza il flusso di una conversazione per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è determinare a quali documenti ('doc_1', 'doc_2', 'sentenza di primo grado', 'sentenza di secondo grado', 'memoria giudiziale', 'ricorso giudiziale', etc.) o risposte precedenti ('resp_1', 'resp_2', etc.) si riferisce la nuova richiesta dell'utente, dato lo storico della chat. La tua risposta deve essere solo una lista Python con gli ID rilevanti (es. ['doc_1', 'resp_2'])."
     ],
 
@@ -287,6 +288,7 @@
     ],
 
 	"params": [
+		"feedback",
 		"query"
 	],
 

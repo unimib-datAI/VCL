@@ -1,5 +1,6 @@
 {
    "system": [
+      "{feedback}",
 		"Sei un agente e il tuo compito è identificare l'elemento principale su cui deve agire un comando nel documento (comando e documento già noti) per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Rispondi esclusivamente con il nome dell'elemento individuato.",
 		"",
       "Le possibili opzioni sono:",
@@ -22,7 +23,7 @@
    ],
 
    "human": [
-      "Dato il comando \"{command}\" e il documento \"{documents}\", analizza la seguente richiesta: \"{query}\""
+      "Dato il comando \"{command_name}\" e il documento \"{documents}\", analizza la seguente richiesta: \"{query}\""
    ],
 
    "examples": [
@@ -94,10 +95,11 @@
    ],
 
    "params": [
+      "feedback",
       "query",
-      "command",
+      ["command", "name"],
       "documents"
    ],
 
-   "output": "what_name"
+   "output": ["what", "name"]
 }

@@ -25,23 +25,23 @@
 	"human": [
 		"Interazione da Valutare:",
 		"- Domanda originale: \"{query}\"",
-		"- Comando identificato: \"{command}\"",
+		"- Comando identificato: \"{command_name}\"",
 		"- Documenti identificati: \"{documents}\"",
 		"- Elemento target: \"{what_name}\"",
-		"- Condizione di sezione: \"{section_condition}\"",
-		"- Condizione sui dati: \"{data_condition}\"",
-		"- Condizione sulla risposta: \"{response_condition}\""
+		"- Condizione di sezione: \"{how_section}\"",
+		"- Condizione sui dati: \"{how_data}\"",
+		"- Condizione sulla risposta: \"{how_response}\""
 	],
 
     "examples": [],
 
 	"params": [
 		"query",
-		"command",
+		["command", "name"],
 		"documents",
-		"what_name",
-		"section_condition",
-		"data_condition",
-		"response_condition"
+		["what", "name"],
+		["how", "section"],
+		["how", "data"],
+		["how", "response"]
 	]
 }

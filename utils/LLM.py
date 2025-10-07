@@ -23,7 +23,8 @@ import time
 from pathlib import Path
 from langchain.chat_models import init_chat_model
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import ChatPromptTemplate
+from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
+from langchain.prompts.chat import HumanMessagePromptTemplate, AIMessagePromptTemplate
 
 from utils.file_manager import read_file, write_file
 
@@ -142,6 +143,89 @@ class LLM:
             return ast.literal_eval(output)
         except (ValueError, SyntaxError):
             return []
+        
+    def invoke_from_file(self, file_name, inputs, lower: bool = False) -> str:
+        template = read_file(file_name)
+        
+        if "system" in template.keys():
+            template["system"] = "\n".join(template["system"])
+        
+        if "human" in template.keys():
+            template["human"] = "\n".join(template["human"])
+            
+        if "params" in template.keys():
+            # Fill input template from state
+            input_template = {}
+            for p in template["params"]:
+                if p == "chat" and "thread_id" in inputs.keys():
+                    chat = self.storage.chat_in_str(inputs["thread_id"])
+                    input_template.update({str(p): str(chat)})
+                elif p == "feedback":
+                    feedback = ""
+                    # Add feedback loop context if previous iteration failed
+                    if "previous_iteration" in inputs.keys() and not (inputs["previous_iteration"] == {}) and ("EvaluationResult" not in file_name):
+                        old_response = inputs["previous_iteration"][template["output"]]
+                        
+                        if "entità" in old_response:
+                            old_response = inputs["previous_iteration"]["what_type"]
+                                        
+                        feedback = f"""
+                        [FEEDBACK]
+                        Considera che per la query è già stato generato un possibile output:
+                        \"{str(old_response)}\"
+                        
+                        Questo output ha ricevuto però una valutazione non sufficiente per i nostri standard.
+                        La motivazione è stata:
+                        \"{inputs['feedback']}\".
+                        
+                        Non devi ricostruire l'intero output.
+                        Nella risposta tieni conto del feedback."""
+        
+                    input_template.update({"feedback": feedback})
+                else:
+                    if type(p) == list:
+                        input_template.update({str("_".join(p)): str(inputs[p[0]][p[1]])})
+                    else:
+                        input_template.update({str(p): str(inputs[p])})
+
+        # Add few-shot examples if available
+        if "examples" in template.keys() and not template["examples"] == []:
+            template["examples"] = [
+                {
+                    "input": "\n".join(example["input"]).strip(),
+                    "reasoning": example["reasoning"],
+                    "output": str(example["output"]),
+                }
+                for example in template["examples"]
+            ]
+            
+            example_prompt = ChatPromptTemplate.from_messages(
+                [
+                    HumanMessagePromptTemplate.from_template("{input}"),
+                    AIMessagePromptTemplate.from_template(
+                        "Ragionamento: {reasoning}\nRisultato: {output}"
+                    ),
+                ]
+            )
+            
+            few_shot_prompt = FewShotChatMessagePromptTemplate(
+                example_prompt=example_prompt, examples=template["examples"]
+            )
+            
+            prompt = ChatPromptTemplate.from_messages(
+                [
+                    ("system", template["system"]),
+                    few_shot_prompt,
+                    ("human", template["human"]),
+                ]
+            )
+        else:
+            prompt = ChatPromptTemplate.from_messages(
+                [("system", template["system"]), ("human", template["human"])]
+            )
+
+        # Invoke LLM and return result
+        return self.invoke(prompt, input_template, lower=True)
         
     def invoke(self, prompt: ChatPromptTemplate, input_template, lower: bool = False) -> str:
         """

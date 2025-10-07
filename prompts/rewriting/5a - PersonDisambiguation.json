@@ -1,5 +1,6 @@
 {
    "system": [
+      "{feedback}",
 		"Sei un agente e il tuo compito è specificare il tipo di 'persona' richiesta dall'utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Oltre alla domanda dell'utente ti verrà fornito anche il tipo di operazione che rappresenta la domanda e il documento su cui l'operazione verrà applicata. Rispondi solo con il nome dell'elemento scelto dalla lista.",
 		"",
       "Le possibili opzioni sono:",
@@ -20,7 +21,7 @@
    ],
 
    "human": [
-      "Analizza la seguente richiesta relativa a una persona considerando che rappresenta un comando di tipo \"{command}\" (\"{description_command}\") sul documento \"{documents}\": \"{query}\""
+      "Analizza la seguente richiesta relativa a una persona considerando che rappresenta un comando di tipo \"{command_name}\" (\"{command_description}\") sul documento \"{documents}\": \"{query}\""
    ],
 
    "examples": [
@@ -116,11 +117,12 @@
    ],
 
    "params": [
+      "feedback",
       "query",
-      "command",
-      "description_command",
+      ["command", "name"],
+      ["command", "description"],
       "documents"
    ],
 
-   "output": "what_description"
+   "output": ["what", "description"]
 }

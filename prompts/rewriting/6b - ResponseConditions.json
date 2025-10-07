@@ -1,5 +1,6 @@
 {
   "system": [
+    "{feedback}",
     "Sei un agente e il tuo compito è individuare se la query contiene condizioni sul formato della risposta (es. \"in un elenco puntato\", \"massimo 100 parole\", \"in una tabella\") per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Non sono quindi coinvolti in questa fase i dettagli sui dati, ma solo le informazioni strutturali della risposta. Il tuo compito è quello di analizzare la domanda e restituire esclusivamente la descrizione (breve) della condizione aggiuntiva rilevata. La risposta può rimanere vuota ('') se nessun vincolo è necessario."
   ],
 
@@ -61,8 +62,9 @@
   ],
 
   "params": [
+    "feedback",
     "query"
   ],
 
-  "output": "response_condition"
+  "output": ["how", "response"]
 }

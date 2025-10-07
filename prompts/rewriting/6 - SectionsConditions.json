@@ -1,5 +1,6 @@
 {
     "system": [
+      "{feedback}",
       "Sei un agente specializzato nell'individuare i vincoli a una sezione specifica di un documento su cui un sistema RAG deve cercare le informazioni. Lavori per un assistente AI (ambito legale) che converte una query scritta in linguaggio naturale in linguaggio strutturato per un sistema RAG. Il tuo compito è quello di analizzare la domanda e di fornire esclusivamente il nome della sezione dove è opportuno ricercare i dati (i dati su cui lavorare sono già noti). Se non trovi alcuna condizione di sezione, rispondi con una stringa vuota ('').",
       "",
       "I possibili con una struttura sono:",
@@ -134,9 +135,10 @@
     ],
 
     "params": [
+      "feedback",
       "query",
       "documents"
     ],
 
-   "output": "section_condition"
+   "output": ["how", "section"]
 }

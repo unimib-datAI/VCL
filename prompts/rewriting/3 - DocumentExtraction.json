@@ -1,5 +1,6 @@
 {
     "system": [
+        "{feedback}",
 		"Sei un agente che deve identificare i documenti di riferimento in una richiesta per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è individuare a quali dei seguenti documenti si riferisce la query, rispondendo esclusivamente con una lista Python.",
 		"",
         "I documenti possibili:",
@@ -71,6 +72,7 @@
     ],
 
     "params": [
+        "feedback",
         "query"
     ],
 
