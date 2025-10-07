@@ -14,7 +14,9 @@
         "    - L’output deve consentire di comprendere il contesto senza ricorrere al documento completo.",
         "- Output finale",
         "    - Restituisci un insieme coerente di estratti, nell’ordine in cui compaiono nel testo originale.",
-        "    - Non aggiungere commenti, spiegazioni o sintesi: il risultato deve essere costituito solo da contenuti originali rilevanti."
+        "    - Non aggiungere commenti, spiegazioni o sintesi: il risultato deve essere costituito solo da contenuti originali rilevanti.",
+        "",
+        "{how}"
     ],
 
     "human": [

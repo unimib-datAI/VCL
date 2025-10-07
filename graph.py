@@ -42,7 +42,6 @@ class State(TypedDict):
 
     query: str       # Original query text
     id_user: str    # User identifier
-    id_request: str  # Request identifier
     command: dict
     documents: list # List of documents retrieved/generated    
     unit: str    # Optional unit information
@@ -80,7 +79,7 @@ class Graph:
             cfg = Config.get_instance()
 
         self.cfg = cfg
-        self.logger = cfg.logger
+        self.logger = cfg.get_logger("Graph")
         self.storage = cfg.storage
         self.llm = cfg.llm
         self.project_root = cfg.project_root
@@ -103,7 +102,7 @@ class Graph:
         self.graph = graph_builder.compile()
         
     @staticmethod
-    def initial_state(task: dict, id_user: str, id_request: str) -> State:
+    def initial_state(task: dict, id_user: str) -> State:
         """
         Create the initial state for the graph invocation.
 
@@ -118,14 +117,13 @@ class Graph:
         return State(
             query=task["prompt"],        # Original query text
             id_user=id_user,    # User identifier
-            id_request=id_request, # Request identifier
             
             command={
-                "name": task["command"],    # Placeholder for generated command
+                "name": task["structured_query"]["command"],    # Placeholder for generated command
                 "description": ""           # Placeholder for command description
             },
             
-            documents=[f"{str(id_request)}_{d}" for d in task["dependences"]], # List of documents retrieved/generated
+            documents=task["structured_query"]["documents"], # List of documents retrieved/generated
             
             unit="",    # Optional unit information
             
@@ -146,14 +144,12 @@ class Graph:
             score=0
         )
         
-    def start_rewriting_graph(self, data, id_user, id_request):
-        initial_state = self.initial_state(data, id_user, id_request)
+    def start_rewriting_graph(self, data, id_user):
+        initial_state = self.initial_state(data, id_user)
         config = {"configurable": {"thread_id": id_user}}
         response = self.graph.invoke(initial_state, config=config)
         
         final_response = {
-            "id": response["id_request"],
-            "query": response["query"],
             "command": response["command"]["name"],
             "documents": response["documents"],
             "what": response["what"],

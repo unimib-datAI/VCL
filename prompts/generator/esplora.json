@@ -13,7 +13,9 @@
         "    - Mantieni un ordine chiaro all’interno di ogni gruppo.",
         "- Output finale",
         "    - Presenta i gruppi in modo leggibile, separandoli visivamente (ad esempio con intestazioni o elenchi).",
-        "    - Non aggiungere spiegazioni o interpretazioni: il risultato deve consistere solo nelle citazioni originali organizzate per tema."
+        "    - Non aggiungere spiegazioni o interpretazioni: il risultato deve consistere solo nelle citazioni originali organizzate per tema.",
+        "",
+        "{how}"
     ],
     
     "human": [
@@ -28,6 +30,7 @@
 
     "params": [
         "query",
-        "context"
+        "context",
+        "how"
     ]
 }

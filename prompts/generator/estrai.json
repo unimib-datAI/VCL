@@ -21,7 +21,9 @@
         "    - Il risultato deve consentire di ricostruire il ragionamento implicito sottostante al testo originale.",
         "- Output finale",
         "    - Produci un testo completo.",
-        "    - La risposta deve apparire come un’esposizione originale dell’argomento, non come una parafrasi pedissequa."
+        "    - La risposta deve apparire come un’esposizione originale dell’argomento, non come una parafrasi pedissequa.",
+        "",
+        "{how}"
     ],
     
     "human": [
@@ -36,6 +38,7 @@
 
     "params": [
         "query",
-        "context"
+        "context",
+        "how"
     ]
 }

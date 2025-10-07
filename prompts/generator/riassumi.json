@@ -18,7 +18,9 @@
         "    - Mantieni un livello di sintesi che renda il testo autonomamente comprensibile.",
         "- Output finale",
         "    - Produci un testo completo, senza riferimenti al fatto che sia un riassunto.",
-        "    - La risposta deve apparire come un’esposizione originale dell’argomento, non come una parafrasi pedissequa."
+        "    - La risposta deve apparire come un’esposizione originale dell’argomento, non come una parafrasi pedissequa.",
+        "",
+        "{how}"
     ],
     
     "human": [

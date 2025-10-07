@@ -68,7 +68,7 @@ try:
             else:
                 model_answer = {}
                 
-            model_answer = model_answer.get('text', '').strip()
+            model_answer = model_answer.get('result', '').strip()
             
             result = {}
             

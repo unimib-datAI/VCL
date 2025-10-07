@@ -16,7 +16,9 @@
         "    - Le citazioni devono essere riportate fedelmente, senza modifiche di testo, punteggiatura o formattazione.",
         "- Output finale",
         "    - Presenta le similitudini e le differenze in modo chiaro, separandole in sezioni distinte.",
-        "    - Mantieni un linguaggio analitico e obiettivo, senza aggiungere giudizi soggettivi."
+        "    - Mantieni un linguaggio analitico e obiettivo, senza aggiungere giudizi soggettivi.",
+        "",
+        "{how}"
     ],
     
     "human": [
@@ -31,6 +33,7 @@
 
     "params": [
         "query",
-        "context"
+        "context",
+        "how"
     ]
 }

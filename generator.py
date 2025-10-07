@@ -15,15 +15,9 @@ Dependencies:
 """
 
 import os
-import time
-import json
-
-from langchain_core.prompts import ChatPromptTemplate
-from langchain_core.output_parsers import StrOutputParser
+import threading
 
 from utils.config import Config
-from utils.file_manager import read_file
-
 
 class Generator:
     """
@@ -35,6 +29,9 @@ class Generator:
         rag (bool): Whether to use Retrieval-Augmented Generation.
         logger: Logger instance for structured logging.
     """
+    
+    _instance = None  # Holds the singleton instance
+    _lock = threading.Lock()  # Thread lock for safe initialization
 
     def __init__(self, cfg: Config):
         """
@@ -45,12 +42,29 @@ class Generator:
         """
         self.llm = cfg.llm
         self.rag = cfg.rag
-        self.logger = cfg.logger
+        self.logger = cfg.get_logger("Generator")
         self.project_root = cfg.project_root
         # Path to the directory containing generator prompt templates
         self.path = os.path.join(self.project_root, "prompts", "generator")
+        
+    @classmethod
+    def get_instance(cls, cfg: Config):
+        """
+        Retrieve the singleton instance of Config, creating it if necessary.
 
-    def generate(self, op: dict, docs: list[dict], query: str) -> str:
+        Args:
+            opts (argparse.Namespace, optional): Parsed command-line options.
+
+        Returns:
+            Config: The singleton instance of the configuration.
+        """
+        if cls._instance is None:
+            with cls._lock:  # Ensure thread-safe initialization
+                if cls._instance is None:
+                    cls._instance = cls(cfg)
+        return cls._instance
+
+    def generate(self, operation: dict, docs: list[dict], query: str) -> str:
         """
         Generate a response based on an operation, retrieved documents, and user query.
 
@@ -64,88 +78,39 @@ class Generator:
         7. Logs results, and returns output.
 
         Args:
-            op (dict): Operation definition (contains command, what, how, etc.).
+            operation (dict): Operation definition (contains command, what, how, etc.).
             docs (list[dict]): List of retrieved documents for context.
             query (str): User’s input query.
 
         Returns:
             str: Generated response text from the LLM.
         """
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "Generator.generate",
-                    "action": "start",
-                    "operation": op,
-                    "user_query": query,
-                    "num_docs": len(docs),
-                }
-            )
-        )
-
         # Special case: request for the entire document (bypass LLM)
-        if (op["command"] in ["estrai", "cerca"]) and op["what"][
+        if (operation["command"] in ["estrai", "cerca"]) and operation["what"][
             "name"
         ] == "intero documento":
             result = "\n\n".join([d["text"] for d in docs]).strip()
-            self.logger.info(
-                json.dumps(
-                    {
-                        "step": "Generator.generate",
-                        "action": "direct_return",
-                        "reason": "full_document",
-                        "result_length": len(result),
-                    }
-                )
-            )
+            self.logger.info("No need to involve the LLM. Direct return.")
             return result
-
-        # Load the template corresponding to the operation
-        template = read_file(os.path.join(self.path, f"{op['command']}.json"))
-        template["system"] = "\n".join(template["system"])
-        template["human"] = "\n".join(template["human"])
 
         # Add any "how" conditions (constraints) if present
         conditions = ""
-        if op.get("how", {}):
-            conditions = "\nInoltre la risposta deve rispettare le seguenti condizioni:"
-            for condition, value in op["how"].items():
+        if operation.get("how", {}):
+            conditions = "Inoltre la risposta deve rispettare le seguenti condizioni:"
+            for condition, value in operation["how"].items():
                 if value:
                     conditions += f"\n- Condizione {condition}: {value}"
 
-        if conditions.strip() and not conditions.endswith(":"):
-            template["system"] += f"\n{conditions}"
+        if conditions.strip() == "" or conditions.endswith("condizioni:"):
+            conditions = ""
 
         # Build context string from retrieved documents
         context = ""
         for index, doc in enumerate(docs):
             context += f"[Document {index + 1}]\n\n{doc}\n\n"
-
-        # Construct the prompt → LLM → parser chain
-        prompt = ChatPromptTemplate.from_messages(
-            [("system", template["system"]), ("human", template["human"])]
-        )
         
+        self.logger.info("LLM invoked.")
         # Call the LLM with the constructed prompt and context
-        result = self.llm.invoke(prompt, {"query": query, "context": context})
+        result = self.llm.invoke_from_file(os.path.join(self.path, f"{operation["command"]}.json"), {"query": query, "context": context, "how": conditions})
 
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "Generator.generate",
-                    "action": "llm_invoked",
-                    "result_preview": result[:200],  # Only log preview for readability
-                }
-            )
-        )
-
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "Generator.generate",
-                    "action": "end",
-                    "result_length": len(result),
-                }
-            )
-        )
         return result

@@ -19,7 +19,9 @@
         "    - Mantieni un livello di sintesi che renda il testo autonomamente comprensibile.",
         "- Output finale",
         "    - La risposta deve risultare come un testo autonomo e completo, non come un semplice resoconto.",
-        "    - Può includere esempi, analogie e descrizioni che rendano l’argomento più comprensibile e interessante."
+        "    - Può includere esempi, analogie e descrizioni che rendano l’argomento più comprensibile e interessante.",
+        "",
+        "{how}"
     ],
 
     "human": [
@@ -34,6 +36,7 @@
 
     "params": [
         "query",
-        "context"
+        "context",
+        "how"
     ]
 }

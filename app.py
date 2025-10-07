@@ -8,15 +8,17 @@ It provides an endpoint (/chat) for processing chat messages, which involves:
 4. Logging all steps and storing intermediate and final results.
 """
 
-import json
+import os
 import networkx as nx
 from datetime import datetime, timezone
 from fastapi import FastAPI
 from pydantic import BaseModel
 
 from utils.config import Config
+from utils.file_manager import write_file
+
+from decomposer import Decomposer
 from rewriting import Rewriting
-from planner import Planner
 from retrieval import Retrieval
 from generator import Generator
 
@@ -27,26 +29,24 @@ app = FastAPI()
 CFG = Config.get_instance()
 
 # Initialize components
-rewriting = Rewriting(CFG)
-planner = Planner(CFG)
-retrieval = Retrieval(CFG)
-generator = Generator(CFG)
+decomposer = Decomposer.get_instance(CFG)
+rewriting = Rewriting.get_instance(CFG)
+retrieval = Retrieval.get_instance(CFG)
+generator = Generator.get_instance(CFG)
 
-logger = CFG.logger
-
+logger = CFG.get_logger("Main")
 
 class ChatInput(BaseModel):
     """
     Schema for the /chat POST request body.
 
     Attributes:
-        message (str): The user's input message to be processed.
+        query (str): The user's input message to be processed.
         user_id (str): Unique identifier for the conversation thread.
     """
 
-    message: str
+    query: str
     user_id: str
-
 
 @app.post("/chat")
 async def chat(request: ChatInput):
@@ -71,123 +71,60 @@ async def chat(request: ChatInput):
         dict: The final result of the chat operation, including the
             generated text and metadata.
     """
-    timestamp = datetime.now(timezone.utc)
-
     # Log start of chat processing
-    logger.info(
-        json.dumps(
-            {
-                "step": "API.chat",
-                "action": "start",
-                "user_id": request.user_id,
-                "message": request.message,
-                "timestamp": timestamp.isoformat(),
-            }
-        )
-    )
+    logger.info(f"Request Received: \"{request.query}\"")
+    
+    # Save id request
+    timestamp = str(datetime.now(timezone.utc).isoformat())
+    request_id = f"{str(request.user_id)}_{timestamp}"
 
-    # Step 1: Rewriting
-    structured_query_graph = rewriting.rewrite(request.message, request.user_id, f"{str(request.user_id)}_{str(timestamp.isoformat)}")
-    logger.info(
-        json.dumps(
-            {"step": "API.chat", "action": "rewriting_done"}
-        )
+    # Step 1: Decompose
+    logger.info("Step 1 (Decompose): Starting")
+    query_graph = decomposer.decompose(request.query)
+    logger.info("Step 1 (Decompose): Done")
+    
+    i = 1
+    for node in nx.topological_sort(query_graph):
+        node_data = query_graph.nodes[node]["data"]
+        
+        node_data["order"] = i
+        
+        logger.info(f"Starting subtask {str(i)}/{str(query_graph.number_of_nodes())}: \"{node_data["prompt"]}\"")
+        
+        # Step 2: Rewriting
+        logger.info("Step 2 (Rewriting): Starting")
+        node_data["structured_query"] = rewriting.rewrite(node_data, request.user_id)
+        logger.info("Step 2 (Rewriting): Done")
+        
+        # Step 3: Retrieval
+        logger.info("Step 3 (Retrieval): Starting")
+        doc = retrieval.execute(node_data["structured_query"], request.user_id)
+        logger.info("Step 3 (Retrieval): Done")
+        
+        # Step 4: Generation
+        logger.info("Step 4 (Generation): Starting")
+        node_data["result"] = generator.generate(node_data["structured_query"], doc, node_data["prompt"])
+        logger.info("Step 4 (Generation): Done")
+        
+        query_graph.nodes[node]["data"].update(node_data)
+        
+        i += 1
+        
+    final_response = {
+        "id": request_id,
+        "input": request.query,
+        "tasks": [query_graph.nodes[node]["data"] for node in nx.topological_sort(query_graph)],
+        "result": query_graph.nodes[list(nx.topological_sort(query_graph))[-1]]["data"]["result"]
+    }
+    
+    CFG.storage.write(request.user_id, final_response)
+    
+    file_name = str(final_response["id"]).replace(":", "_").replace(".", "_")
+    
+    write_file(
+        os.path.join(CFG.project_root, "documents", "result", f"{file_name}.json"), 
+        final_response
     )
     
-    for node in nx.topological_sort(structured_query_graph):
-        dql = structured_query_graph.nodes[node]["data"]["query"]
-        # Step 2: Planning
-        ops = planner.decompose(dql)
-        logger.info(
-            json.dumps(
-                {
-                    "step": "API.chat",
-                    "action": "planning_done",
-                    "num_operations": len(ops),
-                    "operations": ops,
-                }
-            )
-        )
-
-        # Step 3: Retrieval + Generation per operation
-        for op in ops:
-            logger.info(
-                json.dumps(
-                    {
-                        "step": "API.chat",
-                        "action": "operation_start",
-                        "operation_id": op["id"],
-                        "operation_command": op["command"],
-                    }
-                )
-            )
-
-            doc = retrieval.execute(op, request.user_id)
-            logger.info(
-                json.dumps(
-                    {
-                        "step": "API.chat",
-                        "action": "retrieval_done",
-                        "operation_id": op["id"],
-                        "num_docs": len(doc),
-                    }
-                )
-            )
-
-            text = generator.generate(op, doc, dql["query"])
-            logger.info(
-                json.dumps(
-                    {
-                        "step": "API.chat",
-                        "action": "generation_done",
-                        "operation_id": op["id"],
-                        "result_preview": text[:200],
-                    }
-                )
-            )
-
-            file = {
-                "time": timestamp.isoformat(),
-                "name": op["id"],
-                "dql": op,
-                "documents": op["documents"],
-                "text": text,
-            }
-
-            CFG.storage.write(request.user_id, file)
-            logger.info(
-                json.dumps(
-                    {
-                        "step": "API.chat",
-                        "action": "storage_write",
-                        "operation_id": op["id"],
-                    }
-                )
-            )
-
-        # Step 4: Cleanup DB
-        CFG.storage.clear(request.user_id)
-        logger.info(
-            json.dumps(
-                {
-                    "step": "API.chat",
-                    "action": "storage_cleared",
-                    "user_id": request.user_id,
-                }
-            )
-        )
-
-        # Step 5: Return final result
-        result = CFG.storage.get_last_element(request.user_id)
-        logger.info(
-            json.dumps(
-                {
-                    "step": "API.chat",
-                    "action": "end",
-                    "final_result_preview": result.get("text", "")[:200],
-                    "user_id": request.user_id,
-                }
-            )
-        )
-
-    return result
+    return final_response
+    

@@ -1,6 +1,8 @@
 {
     "system": [
-        "Sei un assistente AI che esegue calcoli basati sui dati numerici presenti in un testo. Estrai i dati pertinenti, esegui l'operazione richiesta e fornisci il risultato in modo chiaro."
+        "Sei un assistente AI che esegue calcoli basati sui dati numerici presenti in un testo. Estrai i dati pertinenti, esegui l'operazione richiesta e fornisci il risultato in modo chiaro.",
+        "",
+        "{how}"
     ],
 
     "human": [
@@ -15,6 +17,7 @@
 
     "params": [
         "query",
-        "context"
+        "context",
+        "how"
     ]
 }

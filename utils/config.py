@@ -14,8 +14,6 @@ Dependencies:
 """
 
 import argparse
-import ast
-import json
 import logging
 import threading
 
@@ -55,11 +53,6 @@ class Config:
     url: str = "http://127.0.0.1:8000/chat"
     headers: dict = {"Content-Type": "application/json"}
     project_root = Path(__file__).resolve().parent.parent
-
-    # Logging setup
-    LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-    logging.basicConfig(level=logging.INFO, format=LOG_FORMAT)
-    logger = logging.getLogger("DQL")
 
     # Mapping from shortcut keys to commands
     command_map = {
@@ -139,10 +132,22 @@ class Config:
 
         # Initialize external dependencies
         self.llm = LLM.get_instance(api_key=api_key, seconds=seconds)
-        self.storage = Storage.get_instance()
+        self.storage = Storage.get_instance(self.get_logger("Storage"), self.project_root)
 
         # Mark as initialized
         self._initialized = True
+        
+    def get_logger(self, name: str, level=logging.INFO) -> logging.Logger:
+        logger = logging.getLogger(name)
+        logger.setLevel(level)
+
+        if not logger.handlers:
+            handler = logging.StreamHandler()
+            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
+            handler.setFormatter(formatter)
+            logger.addHandler(handler)
+
+        return logger
 
     def get_command_from_key(self, key: str) -> str:
         """

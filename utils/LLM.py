@@ -120,10 +120,12 @@ class LLM:
             dict: The parsed dictionary, or an empty dict if parsing fails.
         """
         try:
-            # Find the first and last curly braces and extract substring
             output = output[output.index("{") : output.rfind("}") + 1]
-            return json.loads(output)
-        except (ValueError, json.JSONDecodeError):
+            try:
+                return json.loads(output)
+            except json.JSONDecodeError:
+                return ast.literal_eval(output)
+        except (ValueError, SyntaxError):
             return {}
 
     @staticmethod
@@ -225,7 +227,7 @@ class LLM:
             )
 
         # Invoke LLM and return result
-        return self.invoke(prompt, input_template, lower=True)
+        return self.invoke(prompt, input_template, lower)
         
     def invoke(self, prompt: ChatPromptTemplate, input_template, lower: bool = False) -> str:
         """
