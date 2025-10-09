@@ -26,11 +26,8 @@ from typing_extensions import TypedDict
 from langgraph.types import Command
 from langgraph.graph import StateGraph
 
-from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
-from langchain.prompts.chat import HumanMessagePromptTemplate, AIMessagePromptTemplate
-
 from utils.config import Config
-from utils.file_manager import read_file
+from utils.file_manager import remove_empty_values
 
 
 class State(TypedDict):
@@ -43,11 +40,14 @@ class State(TypedDict):
     query: str       # Original query text
     id_user: str    # User identifier
     command: dict
-    documents: list # List of documents retrieved/generated    
-    unit: str    # Optional unit information
-    what: dict     
+    documents: list # List of documents retrieved/generated
+    
+    what: dict
+    limit: dict
     how: dict
+    
     iteration: int  # Tracks rewrite iteration
+    feedback: str
     score: int
 
 
@@ -88,21 +88,25 @@ class Graph:
         # Build state graph and register nodes
         graph_builder = StateGraph(State)
         graph_builder.add_node("intentClassification", self.intent_classification)
+        
         graph_builder.add_node("documentExtraction", self.document_extraction)
         graph_builder.add_node("documentDisambiguation", self.document_disambiguation)
-        graph_builder.add_node("unitExtraction", self.unit_extraction)
+        
+        graph_builder.add_node("commandRouter", self.command_router)
+        
+        graph_builder.add_node("limitExtraction", self.limit_extraction)
+    
         graph_builder.add_node("whatExtraction", self.what_extraction)
         graph_builder.add_node("entityDisambiguation", self.entity_disambiguation)
-        graph_builder.add_node("sectionsConditions", self.sections_conditions)
-        graph_builder.add_node("dataConditions", self.data_conditions)
-        graph_builder.add_node("responseConditions", self.response_conditions)
+       
+        graph_builder.add_node("additionalConditionsExtraction", self.additional_conditions_extraction)
+        
         graph_builder.add_node("evaluationResult", self.evaluation_result)
+        
         graph_builder.set_entry_point("intentClassification")
-
         self.graph = graph_builder.compile()
         
-    @staticmethod
-    def initial_state(task: dict, id_user: str) -> State:
+    def initial_state(self, task: dict, id_user: str) -> State:
         """
         Create the initial state for the graph invocation.
 
@@ -120,27 +124,17 @@ class Graph:
             
             command={
                 "name": task["structured_query"]["command"],    # Placeholder for generated command
-                "description": ""           # Placeholder for command description
+                "description": self.cfg.get_description_from_command(task["structured_query"]["command"])           # Placeholder for command description
             },
+            
+            what={},
+            limit={},
+            how={},
             
             documents=task["structured_query"]["documents"], # List of documents retrieved/generated
             
-            unit="",    # Optional unit information
-            
-            what = {
-                "name": "", # Type of 'what' requested
-                "type": "", # Optional type of 'entity' requested
-                "description": "" # Optional descriptive fields
-            },        
-            
-            how = {
-                "section": "",  # Section for procedural instructions
-                "data": "",  # Data-related instructions
-                "response": "",  # Response-related instructions
-            },
-            
             iteration=1,  # Tracks rewrite iteration
-            
+            feedback="",
             score=0
         )
         
@@ -152,24 +146,35 @@ class Graph:
         final_response = {
             "command": response["command"]["name"],
             "documents": response["documents"],
-            "what": response["what"],
-            "how": response["how"]
         }
+
+        limit = response.get("limit", {})
+        if not limit == {}:
+            final_response.update({"limit": limit})
+            
+        what = response.get("what", {})
+        if not what == {}:
+            final_response.update({"what": what})
+            
+        how = response.get("how", {})
+        if not how == {}:
+            final_response.update({"how": how})
         
-        return final_response
+        return remove_empty_values(final_response)
 
     # ------------------- NODE DEFINITIONS -------------------
     def intent_classification(
         self, state: State
-    ) -> Command[Literal["documentExtraction", "unitExtraction"]]:
-        print(state)
+    ) -> Command[Literal["documentExtraction"]]:
         """
         Step 1: Map query intent to a command (e.g. cerca, estrai, calcola).
-        If the command requires units (calcola), also trigger unit extraction.
         """
 
-        result = state.get("command", {}).get("name", "altro")
-        if result == "altro" or state.get("iteration", 1) > 1:
+        command_update = state.get("command", {})
+        
+        if command_update.get("name", "altro") == "altro" or state.get("iteration", 1) > 1:
+            state["feedback"] = self.get_feedback_str(state, "2 - IntentClassification.json")
+            
             result = self.llm.invoke_from_file(
                 os.path.join(self.project_root, "prompts", "rewriting", "2 - IntentClassification.json"),
                 state,
@@ -178,23 +183,19 @@ class Graph:
             
             result = self.cfg.get_command_from_key(result)
 
-        goto = ["documentExtraction"]
-        if "calcola" in result:
-            goto.append("unitExtraction")
-
-        self.logger.info(
-            json.dumps(
-                {"step": "intentClassification", "result": result, "next_node": goto}
-            )
-        )
+            self.logger.info(f"Intent Classification: Done")
+            self.logger.info(f"\tResult: {result}")
+            
+            command_update = {
+                "name": result,
+                "description": self.cfg.get_description_from_command(result),
+            }
+        else:
+            self.logger.info(f"Intent Classification: Skipped (at the moment the result of the decomposition phase is sufficient)")
+            self.logger.info(f"\tResult: {command_update.get("name", "altro")}")
         
-        command_update = {
-            "name": result,
-            "description": self.cfg.get_description_from_command(result),
-        }
-
         return Command(
-            goto=goto,
+            goto="documentExtraction",
             update={
                 "command": command_update
             },
@@ -202,13 +203,13 @@ class Graph:
 
     def document_extraction(
         self, state: State
-    ) -> Command[Literal["whatExtraction", "documentDisambiguation"]]:
-        print(state)
+    ) -> Command[Literal["commandRouter", "documentDisambiguation"]]:
         """
         Step 3: Extract candidate documents from the query.
         If 'contesto' appears, disambiguation is needed.
         """
-
+        state["feedback"] = self.get_feedback_str(state, "3 - DocumentExtraction.json")
+        
         result = self.llm.invoke_from_file(
             os.path.join(self.project_root, "prompts", "rewriting", "3 - DocumentExtraction.json"),
             state,
@@ -219,7 +220,7 @@ class Graph:
         id_result = self.storage.get_new_id(state["id_user"])
 
         goto = (
-            "whatExtraction" if "contesto" not in result else "documentDisambiguation"
+            "commandRouter" if "contesto" not in result else "documentDisambiguation"
         )
 
         self.logger.info(
@@ -232,8 +233,7 @@ class Graph:
 
     def document_disambiguation(
         self, state: State
-    ) -> Command[Literal["whatExtraction"]]:
-        print(state)
+    ) -> Command[Literal["commandRouter"]]:
         """
         Step 3a: Resolve ambiguity when multiple document contexts exist.
         """
@@ -262,40 +262,40 @@ class Graph:
             )
         )
 
-        return Command(goto="whatExtraction", update={"documents": doc})
-
-    def unit_extraction(self, state: State) -> Command[Literal["whatExtraction"]]:
-        print(state)
-        """
-        Step 3: Extract unit of measurement (only for 'calcola' commands).
-        """
-
+        return Command(goto="commandRouter", update={"documents": doc})
+    
+    def command_router(self, state: State) -> Command[Literal["additionalConditionsExtraction", "limitExtraction"]]:
+        if state["command"]["name"] in ["cerca", "estrai"]:
+            goto = "whatExtraction"
+        elif state["command"]["name"] in ["riassumi", "espandi"]:
+            goto = "limitExtraction"
+        else:
+            goto = "additionalConditionsExtraction"
+            
+        self.logger.info(f"Command Router: {state["command"]["name"]} -> {goto}")
+        
+        return Command(goto=goto)
+    
+    def limit_extraction(self, state: State) -> Command[Literal["additionalConditionsExtraction"]]:
+        state["feedback"] = self.get_feedback_str(state, "4 - LimitExtraction.json")
+        
         result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "4 - UnitsExtraction.json"),
+            os.path.join(self.project_root, "prompts", "rewriting", "4 - LimitExtraction.json"),
             state,
             True
         )
+        result = self.llm.str_in_dict(result)
 
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "unitExtraction",
-                    "result": result,
-                    "next_node": "whatExtraction",
-                }
-            )
-        )
-
-        return Command(goto="whatExtraction", update={"unit": result})
+        return Command(goto="additionalConditionsExtraction", update={"limit": result})
 
     def what_extraction(
         self, state: State
-    ) -> Command[Literal["entityDisambiguation", "sectionsConditions"]]:
-        print(state)
+    ) -> Command[Literal["entityDisambiguation", "additionalConditionsExtraction"]]:
         """
         Step 5: Extract 'what' (subject). Can be entity or other.
         """
-
+        state["feedback"] = self.get_feedback_str(state, "5 - WhatExtraction.json")
+        
         result = self.llm.invoke_from_file(
             os.path.join(self.project_root, "prompts", "rewriting", "5 - WhatExtraction.json"),
             state,
@@ -312,11 +312,7 @@ class Graph:
         ]:
             goto, what = "entityDisambiguation", {"name": 'entità', "type": result, "description": ""}
         else:
-            goto, what = "sectionsConditions", {"name": result, "type": "", "description": ""}
-
-        self.logger.info(
-            json.dumps({"step": "whatExtraction", "result": what["name"], "next_node": goto})
-        )
+            goto, what = "additionalConditionsExtraction", {"name": result, "type": "", "description": ""}
 
         return Command(
             goto=goto, update={"what": what}
@@ -324,8 +320,7 @@ class Graph:
 
     def entity_disambiguation(
         self, state: State
-    ) -> Command[Literal["sectionsConditions"]]:
-        print(state)
+    ) -> Command[Literal["additionalConditionsExtraction"]]:
         """
         Step 5a: Disambiguate entities depending on type (person, organization, etc.).
         """
@@ -348,6 +343,8 @@ class Graph:
                     result = ""
                     
             if not result == "":
+                state["feedback"] = self.get_feedback_str(state, result)
+                
                 result = self.llm.invoke_from_file(os.path.join(self.project_root, "prompts", "rewriting", result), state, True)
 
                 self.logger.info(
@@ -355,106 +352,45 @@ class Graph:
                         {
                             "step": "entityDisambiguation",
                             "result": result,
-                            "next_node": "sectionsConditions",
+                            "next_node": "additionalConditionsExtraction",
                         }
                     )
                 )
                 
                 new_what.update({'description': result})
 
-        return Command(goto="sectionsConditions", update={"what": new_what})
+        return Command(goto="additionalConditionsExtraction", update={"what": new_what})
 
-    def sections_conditions(
+    def additional_conditions_extraction(
         self, state: State
-    ) -> Command[Literal["dataConditions"]]:
-        print(state)
+    ) -> Command[Literal["evaluationResult"]]:
         """
-        Step 6: Extract constraints about document sections.
+        Step 6: Extract constraints.
         """
-        new_how = state.get("how", {})
+        actual_state = dict(copy.deepcopy(state))
+        actual_state["query_str"] = self.state_in_str(state)
+        actual_state["feedback"] = self.get_feedback_str(actual_state, "6 - AdditionalConditionsExtraction.json")
         
         result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "6 - SectionsConditions.json"),
-            state,
+            os.path.join(self.project_root, "prompts", "rewriting", "6 - AdditionalConditionsExtraction.json"),
+            actual_state,
             True
         )
-
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "sectionsConditions",
-                    "result": result,
-                    "next_node": "dataConditions",
-                }
-            )
-        )
         
-        new_how.update({"section": result})
+        result = remove_empty_values(self.llm.str_in_dict(result))
 
+        self.logger.info(f"Additional Conditions Extraction: found {len(list(result.keys()))} conditions")
+        for key, value in result.items():
+            self.logger.info(f"\t- {key}: {value}")
+                             
         return Command(
-            goto="dataConditions",
-            update={"how": new_how},
-        )
-
-    def data_conditions(self, state: State) -> Command[Literal["responseConditions"]]:
-        print(state)
-        """
-        Step 6a: Extract constraints about data requirements.
-        """
-        new_how = state.get("how", {})
-        
-        result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "6a - DataConditions.json"),
-            state,
-            True
-        )
-
-        self.logger.info(
-            json.dumps(
-                {"step": "dataConditions", "result": result, "next_node": "evaluationResult"}
-            )
-        )
-
-        new_how.update({"data": result})
-        
-        return Command(
-            goto="responseConditions", 
-            update={"how": new_how},)
-
-    def response_conditions(self, state: State) -> Command[Literal["evaluationResult"]]:
-        print(state)
-        """
-        Step 6b: Extract constraints about response formatting.
-        """
-        new_how = state.get("how", {})
-        
-        result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "6b - ResponseConditions.json"),
-            state,
-            True
-        )
-
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "responseConditions",
-                    "result": result,
-                    "next_node": "evaluationResult",
-                }
-            )
-        )
-
-        new_how.update({"response": result})
-        
-        return Command(
-            goto="evaluationResult", 
-            update={"how": new_how},
+            goto="evaluationResult",
+            update={"how": result},
         )
 
     def evaluation_result(
         self, state: State
     ) -> Command[Literal["intentClassification", "__end__"]]:
-        print(state)
         """
         Step 8: Evaluate the generated response.
         - If score < threshold, reiterate pipeline (max iterations).
@@ -465,7 +401,7 @@ class Graph:
         
         result = self.llm.invoke_from_file(
             os.path.join(self.project_root, "prompts", "rewriting", "7 - EvaluationResult.json"),
-            state,
+            {"query_str": self.state_in_str(state)},
             True
         )
         
@@ -481,24 +417,78 @@ class Graph:
                 goto, action = "intentClassification", "reiterate"
         else:
             goto, action = "__end__", "end"
-
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "evaluationResult",
-                    "score": result["voto"],
-                    "action": action,
-                    "next_node": goto,
-                }
-            )
-        )
+            
+        self.logger.info(f"Evaluation Result: from {previous_score} to {result["voto"]} -> {action}")
 
         return Command(
             goto=goto,
             update={
                 "iteration": state["iteration"] + 1,
-                "feedback": result["motivazione"],
+                "previous_iteration_comment": result["motivazione"],
                 "score": result["voto"],
                 "previous_iteration": previous_iteration
             },
         )
+    
+    @staticmethod
+    def state_in_str(state: State) -> str:
+        """
+        Generate a human-readable string representation of the current state.
+
+        Args:
+            state (State): The state dictionary to stringify.
+
+        Returns:
+            str: A descriptive summary of the current state.
+        """
+        result = []
+
+        if state.get("query"):
+            result.append(f'- Original question: "{state["query"]}"')
+
+        if state.get("command", {}).get("name"):
+            result.append(f'- Identified command: "{state["command"]["name"]}"')
+
+        if state.get("documents"):
+            result.append(f'- Retrieved documents: {state["documents"]}')
+
+        if state.get("what"):
+            result.append(f'- Target element: {state["what"]}')
+
+        if state.get("limit"):
+            result.append(f'- Response length constraint: {state["limit"]}')
+
+        if state.get("how"):
+            how = state["how"]
+            if how.get("section"):
+                result.append(f'- Section condition: "{how["section"]}"')
+            if how.get("data"):
+                result.append(f'- Data condition: "{how["data"]}"')
+            if how.get("response"):
+                result.append(f'- Response condition: "{how["response"]}"')
+
+        return "\n".join(result)
+    
+    @staticmethod
+    def get_feedback_str(state, file_name):
+        feedback = ""
+        # Add feedback loop context if previous iteration failed
+        if "previous_iteration" in state.keys() and not (state["previous_iteration"] == {}) and ("EvaluationResult" not in file_name):
+            old_response = state["previous_iteration"][state["output"]]
+            
+            if "entità" in old_response:
+                old_response = state["previous_iteration"]["what_type"]
+                            
+            feedback = f"""
+            [FEEDBACK]
+            Considera che per la query è già stato generato un possibile output:
+            \"{str(old_response)}\"
+            
+            Questo output ha ricevuto però una valutazione non sufficiente per i nostri standard.
+            La motivazione è stata:
+            \"{state['previous_iteration_comment']}\".
+            
+            Non devi ricostruire l'intero output.
+            Nella risposta tieni conto del feedback."""
+            
+        return feedback

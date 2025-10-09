@@ -162,28 +162,6 @@ class LLM:
                 if p == "chat" and "thread_id" in inputs.keys():
                     chat = self.storage.chat_in_str(inputs["thread_id"])
                     input_template.update({str(p): str(chat)})
-                elif p == "feedback":
-                    feedback = ""
-                    # Add feedback loop context if previous iteration failed
-                    if "previous_iteration" in inputs.keys() and not (inputs["previous_iteration"] == {}) and ("EvaluationResult" not in file_name):
-                        old_response = inputs["previous_iteration"][template["output"]]
-                        
-                        if "entità" in old_response:
-                            old_response = inputs["previous_iteration"]["what_type"]
-                                        
-                        feedback = f"""
-                        [FEEDBACK]
-                        Considera che per la query è già stato generato un possibile output:
-                        \"{str(old_response)}\"
-                        
-                        Questo output ha ricevuto però una valutazione non sufficiente per i nostri standard.
-                        La motivazione è stata:
-                        \"{inputs['feedback']}\".
-                        
-                        Non devi ricostruire l'intero output.
-                        Nella risposta tieni conto del feedback."""
-        
-                    input_template.update({"feedback": feedback})
                 else:
                     if type(p) == list:
                         input_template.update({str("_".join(p)): str(inputs[p[0]][p[1]])})

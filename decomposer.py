@@ -43,12 +43,11 @@ class Decomposer():
         
         query = self.llm.invoke_from_file(
             os.path.join(self.project_root, "prompts", "rewriting", f"1 - CorrectionQuery.json"),
-            {"query": query},
-            True
+            {"query": query}
         )
         
         query_decomposed = self.llm.invoke_from_file(
-            os.path.join("prompts", "rewriting", "0 - Decomposition.json"), 
+            os.path.join("prompts", "rewriting", "2 - Decomposition.json"), 
             {"query": query}
         )
         
