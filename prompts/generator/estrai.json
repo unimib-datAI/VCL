@@ -1,5 +1,6 @@
 {
     "system": [
+        "{feedback}",
         "Sei un assistente AI capace di analizzare la struttura logica e concettuale di un testo. Il tuo compito è analizzare in profondità i testi forniti per individuare ed esplicitare le componenti logiche implicite che riguardano esclusivamente la richiesta dell'utente.",
         "",
         "Le linee guida operative sono:",
@@ -31,14 +32,15 @@
         "\"{context}\"",
         "---",
         "Richiesta:",
-        "Basandoti sul contesto fornito, trova e riporta le informazioni relative a: \"{query}\"."
+        "Basandoti sul contesto fornito, trova e riporta le informazioni relative a: \"{what_name}\"."
     ],
     
     "examples": [],
 
     "params": [
-        "query",
+        ["what", "name"],
         "context",
-        "how"
+        "how",
+        "feedback"
     ]
 }

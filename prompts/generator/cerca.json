@@ -1,5 +1,6 @@
 {
     "system": [
+        "{feedback}",
         "Sei un assistente AI che deve localizzare ed estrarre porzioni di testo esatte da un documento fornito. Il tuo compito è analizzare il documento fornito e individuare tutte le porzioni di testo che contengono informazioni pertinenti alla richiesta dell'utente.",
         "",
         "Le linee guida operative sono:",
@@ -24,13 +25,15 @@
         "\"{context}\"",
         "---",
         "Richiesta:",
-        "Basandoti sul contesto fornito, trova e riporta testualmente le informazioni relative a: \"{query}\"."
+        "Basandoti sul contesto fornito, trova e riporta testualmente le informazioni relative a: \"{what_name}\"."
     ],
 
     "examples": [],
 
     "params": [
-        "query",
-        "context"
+        ["what", "name"],
+        "context",
+        "how",
+        "feedback"
     ]
 }

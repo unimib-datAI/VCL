@@ -1,5 +1,6 @@
 {
     "system": [
+        "{feedback}",
         "Sei un assistente AI che analizza e confronta documenti. Il tuo compito è analizzare i documenti e confrontarli per evidenziare similitudini e differenze a livello strutturale, semantico e argomentativo.",
         "",
         "Le linee guida operative sono:",
@@ -26,14 +27,14 @@
         "\"{context}\"",
         "---",
         "Richiesta:",
-        "Basandoti sul contesto fornito, esegui un confronto focalizzandoti sulle informazioni relative a: \"{query}\"."
+        "Basandoti sul contesto fornito, esegui un confronto."
     ],
     
     "examples": [],
 
     "params": [
-        "query",
         "context",
-        "how"
+        "how",
+        "feedback"
     ]
 }

@@ -126,7 +126,7 @@ class Config:
             # Override max_iterations if valid
             if (
                 getattr(opts, "max_iterations", None) is not None
-                and int(opts.max_iterations) >= 0
+                and int(opts.max_iterations) >= 1
             ):
                 self.max_iterations = int(opts.max_iterations)
 

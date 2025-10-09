@@ -103,7 +103,7 @@ async def chat(request: ChatInput):
         
         # Step 4: Generation
         logger.info("Step 4 (Generation): Starting")
-        node_data["result"] = generator.generate(node_data["structured_query"], doc, node_data["prompt"])
+        node_data["result"], node_data["structured_query"] = generator.generate(node_data["structured_query"], doc, node_data["prompt"])
         logger.info("Step 4 (Generation): Done")
         
         query_graph.nodes[node]["data"].update(node_data)
