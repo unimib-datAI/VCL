@@ -4,64 +4,26 @@
         "Sei un assistente legale incaricato di classificare l'intento di una richiesta utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è analizzare la query e assegnarle una delle categorie in base al suo intento, rispondendo solo con la lettera corrispondente.",
         "",
         "Le categorie sono:",
-        "- 'a': l'utente vuole localizzare ed estrarre porzioni di testo esatte dal documento. La risposta deve contenere solo le porzioni del testo originale, senza alcuna rielaborazione.",
-        "- 'b': l'utente chiede una sintesi del documento o di una sua parte per condensarne le informazioni.",
-        "- 'c': l'utente vuole mettere a paragone due o più documenti per evidenziare somiglianze e differenze.",
-        "- 'd': l'utente vuole estrarre componenti logiche o concettuali (es. percorso argomentativo, sillogismi) dal testo. Si trattano quindi di informazioni non esplicitamente presenti nel testo. In questo caso le risposte possono essere riformulate. In caso di dubbio, scegli questa opzione.",
-        "- 'e': l'utente vuole una raccolta tematica di tutti i riferimenti a un argomento specifico.",
-        "- 'f': l'utente vuole arricchire un testo aggiungendo dettagli, esempi o spiegazioni.",
-        "- 'g': l'utente richiede un'operazione numerica basata su dati nel testo.",
-        "- 'h': l'intento non corrisponde a nessuna delle opzioni precedenti."
+        "- 'a': Individua nel testo entità, concetti o frasi semanticamente affini, superando la ricerca per parole chiave grazie alla comprensione del significato e del contesto d’uso dei termini.",
+		"- 'b': genera una versione più breve e coerente di un testo, mantenendo i concetti essenziali e scartando i dettagli irrilevanti tramite sintesi estrattiva o astrattiva.",
+		"- 'c': Isola dal testo una parte autonoma di significato (come il “fatto” o la “motivazione”), utile per concentrarsi su sezioni specifiche di un documento complesso.",
+		"- 'd': Ricostruisce una sequenza di eventi o passaggi di ragionamento, rendendo esplicita la struttura logica o temporale implicita nel testo.",
+		"- 'e': Analizza due testi per evidenziarne similitudini e differenze di contenuto, linguaggio o logica, utile per comparare atti o argomentazioni giuridiche.",
+		"- 'f': Combina più testi o versioni di uno stesso documento eliminando incoerenze e duplicazioni, producendo un testo unico e coerente.",
+		"- 'g': Controlla la correttezza, coerenza e pertinenza di riferimenti, norme o argomentazioni rispetto al contenuto complessivo del testo.",
+		"- 'h': Esamina un testo per valutarne la struttura, la completezza e la solidità logico-giuridica, individuando punti di forza e debolezza.",
+		"- 'i': Riordina frasi o paragrafi disposti in modo caotico secondo una sequenza logica, cronologica o tematica coerente.",
+		"- 'j': Assegna a ciascun elemento testuale una categoria predefinita (es. domanda, fatto, norma, dispositivo) spiegando il criterio di appartenenza.",
+        "- 'k': l'intento non corrisponde a nessuna delle opzioni precedenti."
     ],
 
     "human": [
         "Classifica l'intento della seguente query: \"{query}\""
     ],
 
-    "examples": [
-        {
-            "input": ["trova le parti della sentenza in cui si definisce la responsabilità contrattuale del medico."],
-            "reasoning": "la richiesta mira a localizzare nel documento solo le sezioni pertinenti, senza alterarle o riformularle. l'obiettivo è estrarre direttamente le porzioni rilevanti.",
-            "output": "a"
-        },
-        {
-            "input": ["riassumi il contenuto del ricorso per cassazione in un testo di massimo 300 parole, evidenziando solo gli argomenti principali."],
-            "reasoning": "la richiesta è orientata a condensare il contenuto, mantenendo i punti chiave e rispettando un limite di parole. non si richiede una riformulazione logica profonda, ma una sintesi.",
-            "output": "b"
-        },
-        {
-            "input": ["confronta le motivazioni della sentenza di primo grado con quelle della sentenza d'appello per evidenziarne le differenze giuridiche."],
-            "reasoning": "la query esplicita la necessità di un confronto tra due fonti, con attenzione alle differenze giuridiche. il confronto è l'azione principale richiesta.",
-            "output": "c"
-        },
-        {
-            "input": ["estrai la struttura logica e il sillogismo giuridico implicito usato dal giudice nella sentenza s2."],
-            "reasoning": "l'obiettivo è ricostruire la logica implicita, cioè strutture non immediatamente evidenti nel testo, e che possono richiedere interpretazione e riformulazione",
-            "output": "d"
-        },
-        {
-            "input": ["trova tutte le citazioni della normativa europea nella motivazione della sentenza."],
-            "reasoning": "la query chiede di identificare e raggruppare tutti i riferimenti a un tema specifico (normativa europea), senza analisi o riformulazioni.",
-            "output": "e"
-        },
-        {
-            "input": ["espandi questa memoria difensiva fino a 1500 parole, includendo esempi giurisprudenziali e chiarimenti dottrinali."],
-            "reasoning": "la richiesta è di ampliare un testo aggiungendo contenuto coerente e rilevante, mantenendo lo stesso significato ma con più dettagli.",
-            "output": "f"
-        },
-        {
-            "input": ["calcola il numero di precedenti presenti nella sentenza di primo grado."],
-            "reasoning": "richiesta che implica un conteggio o una quantificazione basata su dati specifici nel testo.",
-            "output": "g"
-        },
-        {
-            "input": ["traduce questa sentenza in inglese mantenendo la terminologia legale corretta."],
-            "reasoning": "l'obiettivo è la traduzione, operazione che non rientra nelle altre categorie previste. è un caso residuale.",
-            "output": "h"
-        }
-    ],
-
-    "params": [
+    "examples": [],
+    
+   "params": [
         "feedback",
         "query"
     ],

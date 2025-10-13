@@ -159,14 +159,10 @@ class LLM:
             # Fill input template from state
             input_template = {}
             for p in template["params"]:
-                if p == "chat" and "thread_id" in inputs.keys():
-                    chat = self.storage.chat_in_str(inputs["thread_id"])
-                    input_template.update({str(p): str(chat)})
+                if type(p) == list:
+                    input_template.update({str("_".join(p)): str(inputs[p[0]][p[1]])})
                 else:
-                    if type(p) == list:
-                        input_template.update({str("_".join(p)): str(inputs[p[0]][p[1]])})
-                    else:
-                        input_template.update({str(p): str(inputs[p])})
+                    input_template.update({str(p): str(inputs[p])})
 
         # Add few-shot examples if available
         if "examples" in template.keys() and not template["examples"] == []:

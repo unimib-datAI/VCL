@@ -56,26 +56,32 @@ class Config:
 
     # Mapping from shortcut keys to commands
     command_map = {
-        "a": "cerca",
-        "b": "riassumi",
-        "c": "confronta",
-        "d": "estrai",
-        "e": "esplora",
-        "f": "espandi",
-        "g": "calcola",
-        "h": "altro",
+		"a": "cerca",
+		"b": "riassumi",
+		"c": "estrai semantico",
+		"d": "estrai logico",
+		"e": "confronta",
+		"f": "integra",
+		"g": "verifica",
+		"h": "analizza",
+		"i": "riorganizza",
+		"j": "classifica",
+        "k": "altro",
     }
 
     # Descriptions for commands
     command_descriptions = {
-        "cerca": "Cerca porzioni del documento che contengano le informazioni richieste...",
-        "riassumi": "Riassume il contenuto in modo chiaro e conciso...",
-        "confronta": "Confronta due documenti per evidenziare similitudini e differenze...",
-        "estrai": "Analizza il documento per estrarre componenti logiche implicite...",
-        "esplora": "Identifica e raggruppa tutte le citazioni o riferimenti...",
-        "espandi": "Espande un testo fino a un certo numero di parole...",
-        "calcola": "Esegue calcoli basati su elementi presenti nel testo",
-        "altro": "",
+        "cerca": "Individua nel testo entità, concetti o frasi semanticamente affini, superando la ricerca per parole chiave grazie alla comprensione del significato e del contesto d’uso dei termini.",
+		"riassumi": "genera una versione più breve e coerente di un testo, mantenendo i concetti essenziali e scartando i dettagli irrilevanti tramite sintesi estrattiva o astrattiva.",
+		"estrai semantico": "Isola dal testo una parte autonoma di significato (come il “fatto” o la “motivazione”), utile per concentrarsi su sezioni specifiche di un documento complesso.",
+		"estrai logico": "Ricostruisce una sequenza di eventi o passaggi di ragionamento, rendendo esplicita la struttura logica o temporale implicita nel testo.",
+		"confronta": "Analizza due testi per evidenziarne similitudini e differenze di contenuto, linguaggio o logica, utile per comparare atti o argomentazioni giuridiche.",
+		"integra": "Combina più testi o versioni di uno stesso documento eliminando incoerenze e duplicazioni, producendo un testo unico e coerente.",
+		"verifica": "Controlla la correttezza, coerenza e pertinenza di riferimenti, norme o argomentazioni rispetto al contenuto complessivo del testo.",
+		"analizza": "Esamina un testo per valutarne la struttura, la completezza e la solidità logico-giuridica, individuando punti di forza e debolezza.",
+		"riorganizza": "Riordina frasi o paragrafi disposti in modo caotico secondo una sequenza logica, cronologica o tematica coerente.",
+		"classifica": "Assegna a ciascun elemento testuale una categoria predefinita (es. domanda, fatto, norma, dispositivo) spiegando il criterio di appartenenza.",
+        "altro": "l'intento non corrisponde a nessuna delle opzioni precedenti."
     }
     
     minimum_score = 8

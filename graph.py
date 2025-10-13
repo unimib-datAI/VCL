@@ -19,6 +19,7 @@ state transitions are logged in structured JSON for full traceability.
 import os
 import copy
 import json
+import re
 
 from typing import Literal
 from typing_extensions import TypedDict
@@ -40,7 +41,14 @@ class State(TypedDict):
     query: str       # Original query text
     id_user: str    # User identifier
     command: dict
+    
     documents: list # List of documents retrieved/generated
+    explicit_documents: list
+    implicit_documents: list
+    task_documents: list
+    
+    order: dict
+    classes: list
     
     what: dict
     limit: dict
@@ -89,12 +97,17 @@ class Graph:
         graph_builder = StateGraph(State)
         graph_builder.add_node("intentClassification", self.intent_classification)
         
-        graph_builder.add_node("documentExtraction", self.document_extraction)
-        graph_builder.add_node("documentDisambiguation", self.document_disambiguation)
+        graph_builder.add_node("documentsParallelizer", self.documents_parallelizer)
+        graph_builder.add_node("explicitDocumentsExtraction", self.explicit_documents_extraction)
+        graph_builder.add_node("implicitDocumentsExtraction", self.implicit_documents_extraction)
+        graph_builder.add_node("taskDocumentsExtraction", self.task_documents_extraction)
+        graph_builder.add_node("documentsAggregator", self.documents_aggregator)
         
         graph_builder.add_node("commandRouter", self.command_router)
         
         graph_builder.add_node("limitExtraction", self.limit_extraction)
+        graph_builder.add_node("classesExtraction", self.classes_extraction)
+        graph_builder.add_node("orderExtraction", self.order_extraction)
     
         graph_builder.add_node("whatExtraction", self.what_extraction)
         graph_builder.add_node("entityDisambiguation", self.entity_disambiguation)
@@ -119,23 +132,29 @@ class Graph:
             State: A dictionary representing the initial state for the Graph.
         """
         return State(
-            query=task["prompt"],        # Original query text
-            id_user=id_user,    # User identifier
+            query = task["prompt"],        # Original query text
+            id_user = id_user,    # User identifier
             
-            command={
+            command = {
                 "name": task["structured_query"]["command"],    # Placeholder for generated command
                 "description": self.cfg.get_description_from_command(task["structured_query"]["command"])           # Placeholder for command description
             },
             
-            what={},
-            limit={},
-            how={},
+            what = {},
+            limit = {},
+            how = {},
             
-            documents=task["structured_query"]["documents"], # List of documents retrieved/generated
+            order = {},
+            classes = [],
             
-            iteration=1,  # Tracks rewrite iteration
-            feedback="",
-            score=0
+            documents = [],               # List of documents retrieved/generated
+            explicit_documents = [],
+            implicit_documents = [],
+            task_documents = task["structured_query"]["documents"],
+            
+            iteration = 1,  # Tracks rewrite iteration
+            feedback = "",
+            score = 0
         )
         
     def start_rewriting_graph(self, data, id_user):
@@ -147,25 +166,21 @@ class Graph:
             "command": response["command"]["name"],
             "documents": response["documents"],
         }
-
-        limit = response.get("limit", {})
-        if not limit == {}:
-            final_response.update({"limit": limit})
-            
-        what = response.get("what", {})
-        if not what == {}:
-            final_response.update({"what": what})
-            
-        how = response.get("how", {})
-        if not how == {}:
-            final_response.update({"how": how})
+        
+        for data in ["limit", "what", "how", "order"]:
+            if not response.get(data, {}) == {}:
+                final_response.update({data: response[data]})
+                
+        for data in ["classes"]:
+            if not response.get(data, []) == []:
+                final_response.update({data: response[data]})
         
         return remove_empty_values(final_response)
 
     # ------------------- NODE DEFINITIONS -------------------
     def intent_classification(
         self, state: State
-    ) -> Command[Literal["documentExtraction"]]:
+    ) -> Command[Literal["documentsParallelizer"]]:
         """
         Step 1: Map query intent to a command (e.g. cerca, estrai, calcola).
         """
@@ -173,102 +188,146 @@ class Graph:
         command_update = state.get("command", {})
         
         if command_update.get("name", "altro") == "altro" or state.get("iteration", 1) > 1:
-            state["feedback"] = self.get_feedback_str(state, "2 - IntentClassification.json")
+            state["feedback"] = self.get_feedback_str(state, "3 - IntentClassification.json")
             
             result = self.llm.invoke_from_file(
-                os.path.join(self.project_root, "prompts", "rewriting", "2 - IntentClassification.json"),
+                os.path.join(self.project_root, "prompts", "rewriting", "3 - IntentClassification.json"),
                 state,
                 True
             )
             
             result = self.cfg.get_command_from_key(result)
 
-            self.logger.info(f"Intent Classification: Done")
-            self.logger.info(f"\tResult: {result}")
-            
             command_update = {
                 "name": result,
                 "description": self.cfg.get_description_from_command(result),
             }
+            
+            status = "Done"
         else:
-            self.logger.info(f"Intent Classification: Skipped (at the moment the result of the decomposition phase is sufficient)")
-            self.logger.info(f"\tResult: {command_update.get("name", "altro")}")
+            status = "Skipped"
+        
+        self.logger.info(f"Intent Classification: {command_update.get("name", "altro")} - {status}")
         
         return Command(
-            goto="documentExtraction",
+            goto="documentsParallelizer",
             update={
                 "command": command_update
             },
         )
-
-    def document_extraction(
-        self, state: State
-    ) -> Command[Literal["commandRouter", "documentDisambiguation"]]:
-        """
-        Step 3: Extract candidate documents from the query.
-        If 'contesto' appears, disambiguation is needed.
-        """
-        state["feedback"] = self.get_feedback_str(state, "3 - DocumentExtraction.json")
         
-        result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "3 - DocumentExtraction.json"),
-            state,
-            True
-        )
-        result = self.llm.str_in_list(result)
+    def documents_parallelizer(
+        self, state: State
+    ) -> Command[Literal["explicitDocumentsExtraction", "implicitDocumentsExtraction", "taskDocumentsExtraction"]]:
+        
+        self.logger.info("Document Parallelizer: Starting")
+        
+        return Command(goto=["explicitDocumentsExtraction", "implicitDocumentsExtraction", "taskDocumentsExtraction"])
 
-        id_result = self.storage.get_new_id(state["id_user"])
-
-        goto = (
-            "commandRouter" if "contesto" not in result else "documentDisambiguation"
-        )
-
-        self.logger.info(
-            json.dumps(
-                {"step": "documentExtraction", "result": result, "next_node": goto}
+    def explicit_documents_extraction(
+        self, state: State
+    ) -> Command[Literal["documentsAggregator"]]:
+        
+        explicit_documents = state.get("explicit_documents", [])
+        
+        if not explicit_documents or state.get("iteration", 1) > 1:
+            explicit_documents = self.llm.invoke_from_file(
+                os.path.join(self.project_root, "prompts", "rewriting", "4 - ExplicitDocumentsExtraction.json"),
+                state,
+                True
             )
-        )
+            
+            explicit_documents = self.llm.str_in_list(explicit_documents)
+            
+            status = "Done"
+        else:
+            status = "Skipped"
+        
+        self.logger.info(f"Explicit Documents Extraction: {explicit_documents} - {status}")
+        
+        return Command(goto="documentsAggregator", update={"explicit_documents": explicit_documents})
+    
+    def implicit_documents_extraction(
+        self, state: State
+    ) -> Command[Literal["documentsAggregator"]]:
+        
+        implicit_documents = state.get("implicit_documents", [])
+        
+        if not implicit_documents or state.get("iteration", 1) > 1:
+            chat = self.storage.read(state["id_user"])
+            
+            state["chat"] = str(chat)
+            
+            if not(chat is None or chat == []):
+                implicit_documents = self.llm.invoke_from_file(
+                    os.path.join(self.project_root, "prompts", "rewriting", "4 - ImplicitDocumentsExtraction.json"),
+                    state,
+                    True
+                )
+                
+                implicit_documents = self.llm.str_in_list(implicit_documents)
+                status = "Done"
+            else:
+                status = "Skipped (empty chat history)"
+        else:
+            status = "Skipped"
+        
+        self.logger.info(f"Implicit Documents Extraction: {implicit_documents} - {status}")
+        
+        return Command(goto="documentsAggregator", update={"implicit_documents": implicit_documents})
+    
+    def task_documents_extraction(
+        self, state: State
+    ) -> Command[Literal["documentsAggregator"]]:
+        task_documents = state.get("task_documents", [])
+        
+        if not task_documents or state.get("iteration", 1) > 1:
+            # Regular expression to match [<number>]
+            # (\d+) captures one or more digits representing the task ID
+            pattern = r"\[(\d+)\]"
 
-        return Command(goto=goto, update={"documents": result, "id_result": id_result})
-
-    def document_disambiguation(
+            # Find all matches and capture the task number
+            task_documents = re.findall(pattern, state["query"])
+            
+            status = "Done"
+        else:
+            status = "Skipped"
+        
+        self.logger.info(f"Implicit Documents Extraction: {task_documents} - {status}")
+            
+        return Command(goto="documentsAggregator", update={"task_documents": task_documents})
+    
+    def documents_aggregator(
         self, state: State
     ) -> Command[Literal["commandRouter"]]:
-        """
-        Step 3a: Resolve ambiguity when multiple document contexts exist.
-        """
+        
+        self.logger.info("Document Parallelizer: Done")
+        
+        result = state["explicit_documents"] + state["implicit_documents"] + state["task_documents"]
+        result = [
+            f"task_{str(id).strip()}" if (str(id).strip().isdigit() or isinstance(id, int)) else str(id).strip()
+            for id in result
+        ]
 
-        chat = self.storage.read(state["id_user"])
-
-        if chat:
-            doc = self.chain("3a - DocumentDisambiguation", state)
-            doc = self.llm.str_in_list(doc)
-        else:
-            # Default fallback set of documents
-            doc = [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale",
-            ]
-
-        self.logger.info(
-            json.dumps(
-                {
-                    "step": "documentDisambiguation",
-                    "result": doc,
-                    "next_node": "whatExtraction",
-                }
-            )
-        )
-
-        return Command(goto="commandRouter", update={"documents": doc})
+        result = list(set(result))
+        
+        self.logger.info(f"Document Aggregator: {result}")
+        
+        return Command(goto=["commandRouter"], update={"documents": result})
     
-    def command_router(self, state: State) -> Command[Literal["additionalConditionsExtraction", "limitExtraction"]]:
+    def command_router(self, state: State) -> Command[Literal["additionalConditionsExtraction", 
+                                                              "limitExtraction", 
+                                                              "whatExtraction",
+                                                              "classesExtraction",
+                                                              "orderExtraction"]]:
         if state["command"]["name"] in ["cerca", "estrai"]:
             goto = "whatExtraction"
         elif state["command"]["name"] in ["riassumi", "espandi"]:
             goto = "limitExtraction"
+        elif state["command"]["name"] == "classifica":
+            goto = "classesExtraction"
+        elif state["command"]["name"] == "riorganizza":
+            goto = "orderExtraction"
         else:
             goto = "additionalConditionsExtraction"
             
@@ -277,16 +336,47 @@ class Graph:
         return Command(goto=goto)
     
     def limit_extraction(self, state: State) -> Command[Literal["additionalConditionsExtraction"]]:
-        state["feedback"] = self.get_feedback_str(state, "4 - LimitExtraction.json")
+        state["feedback"] = self.get_feedback_str(state, "5 - LimitExtraction.json")
         
         result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "4 - LimitExtraction.json"),
+            os.path.join(self.project_root, "prompts", "rewriting", "5 - LimitExtraction.json"),
             state,
             True
         )
         result = self.llm.str_in_dict(result)
+        
+        self.logger.info(f"Limit Extraction: {str(result)} - Done")
 
         return Command(goto="additionalConditionsExtraction", update={"limit": result})
+    
+    def classes_extraction(self, state: State) -> Command[Literal["additionalConditionsExtraction"]]:
+        state["feedback"] = self.get_feedback_str(state, "5 - ClassesExtraction.json")
+        
+        result = self.llm.invoke_from_file(
+            os.path.join(self.project_root, "prompts", "rewriting", "5 - ClassesExtraction.json"),
+            state,
+            True
+        )
+        result = self.llm.str_in_list(result)
+        
+        self.logger.info(f"Classes Extraction: {str(result)} - Done")
+
+        return Command(goto="additionalConditionsExtraction", update={"classes": result})
+    
+    def order_extraction(self, state: State) -> Command[Literal["additionalConditionsExtraction"]]:
+        state["feedback"] = self.get_feedback_str(state, "5 - OrderExtraction.json")
+        
+        result = self.llm.invoke_from_file(
+            os.path.join(self.project_root, "prompts", "rewriting", "5 - OrderExtraction.json"),
+            state,
+            True
+        )
+        
+        result = self.llm.str_in_dict(result)
+        
+        self.logger.info(f"Order Extraction: {str(result)} - Done")
+
+        return Command(goto="additionalConditionsExtraction", update={"order": result})
 
     def what_extraction(
         self, state: State
@@ -294,10 +384,10 @@ class Graph:
         """
         Step 5: Extract 'what' (subject). Can be entity or other.
         """
-        state["feedback"] = self.get_feedback_str(state, "5 - WhatExtraction.json")
+        state["feedback"] = self.get_feedback_str(state, "6 - WhatExtraction.json")
         
         result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "5 - WhatExtraction.json"),
+            os.path.join(self.project_root, "prompts", "rewriting", "6 - WhatExtraction.json"),
             state,
             True
         )
@@ -313,6 +403,8 @@ class Graph:
             goto, what = "entityDisambiguation", {"name": 'entità', "type": result, "description": ""}
         else:
             goto, what = "additionalConditionsExtraction", {"name": result, "type": "", "description": ""}
+            
+        self.logger.info(f"What Extraction: {str(what)} - Done")
 
         return Command(
             goto=goto, update={"what": what}
@@ -330,15 +422,15 @@ class Graph:
             result = ""
             match state["what"]["type"]:
                 case "persona":
-                    result = "5a - PersonDisambiguation.json"
+                    result = "6a - PersonDisambiguation.json"
                 case "organizzazione":
-                    result = "5b - OrganizationDisambiguation.json"
+                    result = "6b - OrganizationDisambiguation.json"
                 case "denaro":
-                    result = "5c - MoneyDisambiguation.json"
+                    result = "6c - MoneyDisambiguation.json"
                 case "fonte":
-                    result = "5d - SourcesDisambiguation.json"
+                    result = "6d - SourcesDisambiguation.json"
                 case "luogo":
-                    result = "5e - PlacesDisambiguation.json"
+                    result = "6e - PlacesDisambiguation.json"
                 case _:
                     result = ""
                     
@@ -358,6 +450,14 @@ class Graph:
                 )
                 
                 new_what.update({'description': result})
+                
+                status = "Done"
+            else:
+                status = "Skipped (unknown entity type)"
+        else:
+            status = "Skipped (empty what)"
+        
+        self.logger.info(f"Entity Disambiguation: {str(new_what)} - {status}")
 
         return Command(goto="additionalConditionsExtraction", update={"what": new_what})
 
@@ -369,10 +469,10 @@ class Graph:
         """
         actual_state = dict(copy.deepcopy(state))
         actual_state["query_str"] = self.state_in_str(state)
-        actual_state["feedback"] = self.get_feedback_str(actual_state, "6 - AdditionalConditionsExtraction.json")
+        actual_state["feedback"] = self.get_feedback_str(actual_state, "7 - AdditionalConditionsExtraction.json")
         
         result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "6 - AdditionalConditionsExtraction.json"),
+            os.path.join(self.project_root, "prompts", "rewriting", "7 - AdditionalConditionsExtraction.json"),
             actual_state,
             True
         )
@@ -400,7 +500,7 @@ class Graph:
         previous_score = state["score"]
         
         result = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", "7 - EvaluationResult.json"),
+            os.path.join(self.project_root, "prompts", "rewriting", "8 - EvaluationResult.json"),
             {"query_str": self.state_in_str(state)},
             True
         )
@@ -409,7 +509,7 @@ class Graph:
         
         result["voto"] = int(result["voto"]) if result["voto"].isdigit() else 0
 
-        if result["voto"] < self.minimum_score and state["iteration"] <= self.cfg.max_iterations:
+        if result["voto"] < self.minimum_score and state["iteration"] < self.cfg.max_iterations:
             if not previous_iteration == {} and result["voto"] <= previous_score:
                 # Avoid infinite loops if no improvement
                 goto, action = "__end__", "end"

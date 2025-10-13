@@ -104,10 +104,10 @@ class Generator:
             state.update({"limit": operation.get("limit", {})})
         else:
             if operation.get("command", "") in ["riassumi", "espandi"]:
-                lenghts = [text_analysis(d) for d in docs]
-                answer_lenght = int(0.5 * (sum(lenghts) / len(lenghts)))
+                lengths = [text_analysis(d) for d in docs]
+                answer_length = int(0.5 * (sum(lengths) / max(len(lengths), 1)))
                 
-                operation.update({"limit": {"sign": "~", "number": answer_lenght, "unit": "parole"}})
+                operation.update({"limit": {"sign": "~", "number": answer_length, "unit": "parole"}})
             
         # Call the LLM with the constructed prompt and context
         result = ""
@@ -119,8 +119,7 @@ class Generator:
             else:
                 state["feedback"] = ""
                 
-            self.logger.info("LLM: Attempt {i}")
-            print(state)
+            self.logger.info(f"LLM: Attempt {i}")
             result = self.llm.invoke_from_file(os.path.join(self.path, f"{operation["command"]}.json"), state)
             i += 1
 

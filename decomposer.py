@@ -69,7 +69,7 @@ class Decomposer():
         
         for task in tasks:
             DG.add_node(task["id"], data={
-                    "id": task['id'], 
+                    "id": f"task_{task['id']}", 
                     "prompt": task['prompt'], 
                     "structured_query": {
                         "command": task["command"], 

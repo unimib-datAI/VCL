@@ -90,19 +90,7 @@ class Storage:
         if data is None:
             return []
 
-        data = json.loads(data)
-        now = datetime.now(timezone.utc)
-
-        # Filter out documents older than 60 minutes
-        filtered = []
-        for d in data:
-            t = datetime.fromisoformat(d["time"])
-            if t.tzinfo is None:
-                t = t.replace(tzinfo=timezone.utc)
-            if int(abs((now - t).total_seconds() / 60)) < 60:
-                filtered.append(d)
-
-        return filtered
+        return data
 
     def write(
         self, key: str, element: dict, data: Optional[List[Dict[str, Any]]] = None
@@ -120,8 +108,8 @@ class Storage:
             data = self.read(key)
 
         data.append(element)
-        # Save data with TTL of 30 minutes
-        self.r.set(key, json.dumps(data), ex=1800)
+        # Save data with TTL of 60 minutes
+        self.r.set(key, json.dumps(data), ex=3600)
 
     def chat_in_str(self, key: str) -> str:
         """
@@ -137,87 +125,15 @@ class Storage:
 
         chat_str = ""
         if data:
-            for index, doc in enumerate(data):
-                chat_str += f"""
-                RICHIESTA/DOMANDA {index + 1}:
-                - time: {doc["time"]}
-                - query: \"{doc.get("query", "")}\"
-                - ID doc input: \"{doc.get("docRef", "")}\"
-                - ID doc response: \"{doc.get("docOut", "")}\"
-                """
+            chat_str = str([{
+                "index": index + 1,
+                "query": {doc.get("query", "")},
+                "used_documents": doc.get("used_documents", ""),
+                "id": doc.get("id", "")
+                } for index, doc in enumerate(data)])
 
         return chat_str
 
-    def get_new_id(self, key: str, data: Optional[List[Dict[str, Any]]] = None):
-        """
-        Generate a new unique document ID for a chat session.
-
-        Args:
-            key (str): Redis key representing the chat session.
-            data (list, optional): Existing data to base ID generation on.
-
-        Returns:
-            str: Newly generated document ID.
-        """
-        if data is None:
-            data = self.read(key)
-
-        id_doc = "0"
-        if len(data) > 0:
-            last_doc_id = data[-1]["name"]
-            id_doc = str(int(last_doc_id[last_doc_id.rindex("_") + 1 :]) + 1)
-
-        new_id = f"doc_{id_doc}"
-        return new_id
-
-    def get_last_element(self, key: str):
-        """
-        Get the most recent element from Redis.
-
-        Args:
-            key (str): Redis key to read from.
-
-        Returns:
-            dict | None: Last element if exists, otherwise None.
-        """
-        data = self.read(key)
-        if not data:
-            return None
-
-        return data[-1]
-
-    def get_element(self, key1: str, key2: str):
-        """
-        Retrieve a specific element by its name field.
-
-        Args:
-            key1 (str): Redis key to read from.
-            key2 (str): Document ID to search for.
-
-        Returns:
-            dict | None: Found element or None if not found.
-        """
-        data = self.read(key1)
-        if not data:
-            return None
-
-        for d in data:
-            if str(d["name"]) == key2:
-                return d
-            
-        return None
-
-    def clear(self, key: str):
-        """
-        Clear intermediate elements but keep base-level entries.
-
-        Args:
-            key (str): Redis key to clear.
-        """
-        data = self.read(key)
-        # Keep only elements with names containing a single underscore
-        new_data = [d for d in data if str(d["name"]).count("_") == 1]
-        self.r.set(key, json.dumps(new_data), ex=1800)
 
     def deep_clear(self, key: str):
         """

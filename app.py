@@ -117,6 +117,9 @@ async def chat(request: ChatInput):
         "result": query_graph.nodes[list(nx.topological_sort(query_graph))[-1]]["data"]["result"]
     }
     
+    doc_used = [doc for task in final_response["tasks"] for doc in task.get("structured_query", {}).get("documents", [])]
+    final_response["used_documents"] = list(set(doc_used))
+    
     CFG.storage.write(request.user_id, final_response)
     
     file_name = str(final_response["id"]).replace(":", "_").replace(".", "_")
