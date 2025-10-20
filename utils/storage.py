@@ -90,7 +90,7 @@ class Storage:
         if data is None:
             return []
 
-        return data
+        return json.loads(data)
 
     def write(
         self, key: str, element: dict, data: Optional[List[Dict[str, Any]]] = None
@@ -133,6 +133,22 @@ class Storage:
                 } for index, doc in enumerate(data)])
 
         return chat_str
+    
+    def get_element(self, key: str, element_id: str) -> Optional[Dict[str, Any]]:
+        """
+        Retrieve a specific element from Redis by its unique ID.
+
+        Args:
+            key (str): Redis key to read from.
+            element_id (str): Unique ID of the element to retrieve.
+        Returns:
+            Optional[Dict[str, Any]]: The element with the specified ID, or None if not found.
+        """
+        data = self.read(key)
+        for element in data:
+            if element.get("id", "") == element_id:
+                return element
+        return None
 
 
     def deep_clear(self, key: str):

@@ -17,6 +17,7 @@ Dependencies:
 """
 
 import os
+import networkx as nx
 import threading
 
 from elasticsearch import Elasticsearch
@@ -81,7 +82,7 @@ class Retrieval:
                     cls._instance = cls(cfg)
         return cls._instance
 
-    def execute(self, operation: dict, id_user: str) -> list[dict]:
+    def execute(self, operation: dict, graph, id_user: str) -> list[dict]:
         """
         Execute document retrieval for the given operation.
 
@@ -109,9 +110,17 @@ class Retrieval:
             for doc in operation.get("documents", []):
                 doc_name = self.doc_map.get(doc, doc)
                 
-                self.logger.info(f"Attempting to retrieve '{doc_name}' via ElasticSearch...")
+                # 1. Check if the document is already in the graph nodes
+                self.logger.info(f"Attempting to retrieve '{doc_name}' via Graph...")
+                doc = self.get_from_graph(graph, doc_name)
+                if doc:
+                    docs.append(doc)
+                    self.logger.info(f"Document '{doc_name}' successfully retrieved from Graph.")
+                    continue
+                else:
+                    self.logger.info(f"'{doc_name}' not found in Graph. Trying from ElasticSearch...")
 
-                # 1. Try to retrieve from ElasticSearch (currently optional/experimental)
+                # 2. Try to retrieve from ElasticSearch (currently optional/experimental)
                 doc = self.get_from_elastic_search(doc_name)
 
                 if doc:
@@ -121,7 +130,7 @@ class Retrieval:
 
                 self.logger.info(f"'{doc_name}' not found in ElasticSearch. Trying Redis storage...")
 
-                # 2. Try to retrieve from Redis cache
+                # 3. Try to retrieve from Redis cache
                 doc = self.get_from_redis(id_user, doc_name)
 
                 if doc:
@@ -131,16 +140,34 @@ class Retrieval:
 
                 self.logger.info(f"'{doc_name}' not found in Redis. Trying local filesystem...")
 
-                # 3. Try to retrieve from local filesystem
+                # 4. Try to retrieve from local filesystem
                 doc = self.get_from_local_system(doc_name)
 
                 if doc:
                     docs.append(doc)
                     self.logger.info(f"Document '{doc_name}' successfully retrieved from local system.")
-                else:
-                    self.logger.warning(f"Document '{doc_name}' could not be found in any source. Skipping.")
+                    continue
+                
+                # 5. If all retrieval methods fail, assume it's direct text input
+                docs.append({"name": f"doc_{len(docs)}", "text": doc_name})
+                self.logger.warning(f"'{doc_name}' could be directly the sentence on which to apply the command")
 
         return docs
+    
+    def get_from_graph(self, graph, doc_name: str) -> dict | None:
+        """
+        Attempt to retrieve a document by name from the graph nodes.
+
+        Args:
+            graph (nx.DiGraph): The directed graph containing task nodes.
+            doc_name (str): Name of the document to retrieve.
+        Returns:
+            dict | None: Document with fields {"name", "text"} if found, otherwise None.
+        """
+        for n, attr in graph.nodes(data=True):
+            if attr.get("data", {}).get("id") == doc_name and "result" in attr.get("data", {}):
+                return {"name": doc_name, "text": attr["data"]["result"]}
+        return None
 
     def get_from_elastic_search(self, file_name: str) -> dict | None:
         """

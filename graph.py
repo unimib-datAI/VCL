@@ -167,15 +167,21 @@ class Graph:
             "documents": response["documents"],
         }
         
-        for data in ["limit", "what", "how", "order"]:
-            if not response.get(data, {}) == {}:
-                final_response.update({data: response[data]})
-                
-        for data in ["classes"]:
-            if not response.get(data, []) == []:
-                final_response.update({data: response[data]})
+        for data in [("limit", ["riassumi"]), 
+                     ("what", ["cerca", "estrai"]), 
+                     ("classes", ["classifica"]), 
+                     ("order", ["riorganizza"])]:
+            if not response.get(data[0], {}) == {} or final_response.get("command") in data[1]:
+                final_response.update({data[0]: response[data[0]]})
         
-        return remove_empty_values(final_response)
+        how = response.get("how", {})
+        for key in how:
+            if not how[key] == "":
+                if "how" not in final_response:
+                    final_response["how"] = {}
+                final_response["how"].update({key: how[key]})
+        
+        return final_response
 
     # ------------------- NODE DEFINITIONS -------------------
     def intent_classification(
@@ -293,7 +299,7 @@ class Graph:
         else:
             status = "Skipped"
         
-        self.logger.info(f"Implicit Documents Extraction: {task_documents} - {status}")
+        self.logger.info(f"Task Documents Extraction: {task_documents} - {status}")
             
         return Command(goto="documentsAggregator", update={"task_documents": task_documents})
     

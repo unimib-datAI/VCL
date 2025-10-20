@@ -19,6 +19,8 @@ Functions:
 import os
 import json
 import spacy
+import subprocess
+import sys
 from typing import Union
 
 
@@ -124,6 +126,7 @@ def text_analysis(text: str, key: str = "parole") -> int:
         - Returns 0 if the key is invalid.
     """
     # Load the Italian spaCy model
+    ensure_spacy_model("it_core_news_sm")
     nlp = spacy.load("it_core_news_sm")
 
     # Validate key
@@ -144,3 +147,13 @@ def text_analysis(text: str, key: str = "parole") -> int:
     if key == "frasi":
         # Count sentences detected by spaCy
         return len(list(doc.sents))
+    
+    
+def ensure_spacy_model(model_name: str):
+    """
+    Checks whether a spaCy template is installed, and installs it if necessary.
+    """
+    try:
+        spacy.load(model_name)
+    except OSError:
+        subprocess.check_call([sys.executable, "-m", "spacy", "download", model_name])

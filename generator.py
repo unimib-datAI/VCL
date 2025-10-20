@@ -104,7 +104,7 @@ class Generator:
             state.update({"limit": operation.get("limit", {})})
         else:
             if operation.get("command", "") in ["riassumi", "espandi"]:
-                lengths = [text_analysis(d) for d in docs]
+                lengths = [text_analysis(d["text"]) for d in docs]
                 answer_length = int(0.5 * (sum(lengths) / max(len(lengths), 1)))
                 
                 operation.update({"limit": {"sign": "~", "number": answer_length, "unit": "parole"}})
@@ -120,7 +120,11 @@ class Generator:
                 state["feedback"] = ""
                 
             self.logger.info(f"LLM: Attempt {i}")
-            result = self.llm.invoke_from_file(os.path.join(self.path, f"{operation["command"]}.json"), state)
+            try:
+                result = self.llm.invoke_from_file(os.path.join(self.path, f"{operation["command"]}.json"), state)
+            except Exception as e:
+                result = self.llm.invoke_from_file(os.path.join(self.path, f"estrai.json"), state)
+                
             i += 1
 
         return result, operation
