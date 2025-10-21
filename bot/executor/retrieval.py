@@ -25,8 +25,8 @@ from elasticsearch.exceptions import (
     TransportError, AuthenticationException, AuthorizationException, ApiError
 )
 
-from utils.config import Config
-from utils.file_manager import read_file
+from bot.utils.config import Config
+from bot.utils.file_manager import read_file
 
 
 class Retrieval:

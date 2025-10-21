@@ -2,7 +2,7 @@ import networkx as nx
 import os
 import threading
 
-from utils.config import Config
+from bot.utils.config import Config
 
 class Decomposer():
     _instance = None  # Holds the singleton instance

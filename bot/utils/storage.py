@@ -21,7 +21,7 @@ from typing import List, Dict, Any, Optional
 from pathlib import Path
 from upstash_redis import Redis
 
-from utils.file_manager import read_file
+from bot.utils.file_manager import read_file
 
 # Root path of the project (two levels up from this file)
 project_root = Path(__file__).resolve().parent.parent

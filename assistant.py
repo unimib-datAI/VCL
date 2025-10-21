@@ -12,11 +12,12 @@ import os
 import networkx as nx
 from datetime import datetime, timezone
 
-from utils.config import Config
-from utils.file_manager import write_file
+from bot.utils.config import Config
+from bot.utils.file_manager import write_file
 
 from bot.preprocessor.preprocessor import Preprocessor
 from bot.translator.rewriting import Rewriting
+from bot.planner.planner import Planner
 from bot.executor.executor import Executor
 
 class Assistant():
@@ -26,8 +27,9 @@ class Assistant():
     # Initialize components
     rewriting = Rewriting.get_instance(CFG)
     generator = Executor(CFG)
-    
     preprocessor = Preprocessor(CFG)
+    planner = Planner(CFG)
+    
 
     logger = CFG.get_logger("Main")
 
@@ -51,9 +53,19 @@ class Assistant():
         structured_query = self.rewriting.rewrite({"prompt": prompt})
         self.logger.info("Step 2 (Rewriting): Done")
         
-        self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Starting")
-        result = self.generator.generate(structured_query)
-        self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")
+        try:
+            self.logger.info("Step 3 (Planner): Starting")
+            operations = self.planner.decompose(structured_query)
+            self.logger.info("Step 3 (Planner): Done")
+        except Exception as e:
+            self.logger.error(f"Planner Error: {e}")
+            operations = [structured_query]
+        
+        for operation in operations:
+            self.logger.info(f"Executing operation ID: {operation['id']} with command: {operation['command']}")
+            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Starting")
+            result = self.generator.generate(structured_query)
+            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")
         
         return result
     

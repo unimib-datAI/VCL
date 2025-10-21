@@ -19,8 +19,8 @@ import threading
 
 from pathlib import Path
 
-from utils.LLM import LLM
-from utils.storage import Storage
+from bot.utils.LLM import LLM
+from bot.utils.storage import Storage
 
 
 class Config:
@@ -52,7 +52,7 @@ class Config:
     max_iterations: int = 3
     url: str = "http://127.0.0.1:8000/chat"
     headers: dict = {"Content-Type": "application/json"}
-    project_root = Path(__file__).resolve().parent.parent
+    project_root = Path(__file__).resolve().parent.parent.parent
 
     # Mapping from shortcut keys to commands
     command_map = {
@@ -139,7 +139,7 @@ class Config:
                 self.max_iterations = int(opts.max_iterations)
 
         # Initialize external dependencies
-        self.llm = LLM.get_instance(api_key=api_key, seconds=seconds)
+        self.llm = LLM.get_instance(api_key=api_key, seconds=seconds, project_root=self.project_root)
         self.storage = Storage.get_instance(self.get_logger("Storage"), self.project_root)
 
         # Mark as initialized

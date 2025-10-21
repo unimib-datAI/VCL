@@ -2,7 +2,7 @@ import os
 
 from spellchecker import SpellChecker
 
-from utils.config import Config
+from bot.utils.config import Config
 
 class SpellingChecker:
     def __init__(self, cfg: Config):

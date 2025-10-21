@@ -26,7 +26,7 @@ from langchain_core.output_parsers import StrOutputParser
 from langchain.prompts import ChatPromptTemplate, FewShotChatMessagePromptTemplate
 from langchain.prompts.chat import HumanMessagePromptTemplate, AIMessagePromptTemplate
 
-from utils.file_manager import read_file, write_file
+from bot.utils.file_manager import read_file, write_file
 
 
 class LLM:
@@ -51,7 +51,7 @@ class LLM:
     # Default output parser
     parser = StrOutputParser()
 
-    def __init__(self, api_key: str = None, seconds: int = 5):
+    def __init__(self, api_key: str = None, seconds: int = 5, project_root = None):
         """
         Initialize the LLM class.
 
@@ -64,7 +64,7 @@ class LLM:
             ValueError: If no API key is provided or found in the settings file.
         """
         # Path where the API key is stored
-        api_path = Path(__file__).parent.parent / "settings" / "api_key.txt"
+        api_path = project_root / "settings" / "api_key.txt"
 
         # If no API key was provided, try reading it from the file
         if not api_key and os.path.exists(api_path) and os.path.isfile(api_path):
@@ -87,7 +87,7 @@ class LLM:
         self._initialized = True
 
     @classmethod
-    def get_instance(cls, api_key: str = None, seconds: int = 5):
+    def get_instance(cls, api_key: str = None, seconds: int = 5, project_root = None):
         """
         Retrieve the singleton instance of the LLM.
 
@@ -105,7 +105,7 @@ class LLM:
             with cls._lock:
                 # Double-checked locking to prevent race conditions
                 if cls._instance is None:
-                    cls._instance = cls(api_key, seconds)
+                    cls._instance = cls(api_key, seconds, project_root)
         return cls._instance
     
     @staticmethod

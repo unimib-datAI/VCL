@@ -17,8 +17,8 @@ Dependencies:
 import os
 
 from bot.executor.retrieval import Retrieval
-from utils.config import Config
-from utils.file_manager import text_analysis
+from bot.utils.config import Config
+from bot.utils.file_manager import text_analysis
 
 class Executor:
     def __init__(self, cfg: Config):

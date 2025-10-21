@@ -1,5 +1,5 @@
 from bot.preprocessor.spelling_checker import SpellingChecker
-from utils.config import Config
+from bot.utils.config import Config
 
 class Preprocessor:
     """

@@ -15,7 +15,7 @@ Dependencies:
 import threading
 
 from bot.translator.graph import Graph
-from utils.config import Config
+from bot.utils.config import Config
 
 
 class Rewriting:
