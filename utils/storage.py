@@ -134,19 +134,19 @@ class Storage:
 
         return chat_str
     
-    def get_element(self, key: str, element_id: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve a specific element from Redis by its unique ID.
-
-        Args:
-            key (str): Redis key to read from.
-            element_id (str): Unique ID of the element to retrieve.
-        Returns:
-            Optional[Dict[str, Any]]: The element with the specified ID, or None if not found.
-        """
+    def get_element_by_id(self, key: str, element_id: str) -> Optional[Dict[str, Any]]:
+        return self.get_element(key, "id", element_id)
+    
+    def get_element_by_type(self, key: str, element_type: str) -> Optional[Dict[str, Any]]:
+        return self.get_element(key, "type_doc", element_type)
+    
+    def get_element_by_name(self, key: str, element_name: str) -> Optional[Dict[str, Any]]:
+        return self.get_element(key, "name", element_name)
+    
+    def get_element(self, key: str, field: str, element: str) -> Optional[Dict[str, Any]]:
         data = self.read(key)
         for element in data:
-            if element.get("id", "") == element_id:
+            if element.get(field, "") == element:
                 return element
         return None
 

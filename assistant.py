@@ -17,8 +17,7 @@ from utils.file_manager import write_file
 
 from bot.preprocessor.preprocessor import Preprocessor
 from bot.translator.rewriting import Rewriting
-from retrieval import Retrieval
-from generator import Generator
+from bot.executor.executor import Executor
 
 class Assistant():
     # Load the global configuration
@@ -26,8 +25,7 @@ class Assistant():
 
     # Initialize components
     rewriting = Rewriting.get_instance(CFG)
-    retrieval = Retrieval.get_instance(CFG)
-    generator = Generator.get_instance(CFG)
+    generator = Executor(CFG)
     
     preprocessor = Preprocessor(CFG)
 
@@ -36,6 +34,9 @@ class Assistant():
     def chat(self, prompt: str, user_id: str):
         # Log start of chat processing
         self.logger.info(f"Request Received: \"{prompt}\"")
+        
+        # Set user ID in configuration
+        self.CFG.set_user_id(user_id)
         
         # Save id request
         timestamp = str(datetime.now(timezone.utc).isoformat())
@@ -47,10 +48,14 @@ class Assistant():
         self.logger.info("Step 1 (Preprocessing): Done")
         
         self.logger.info("Step 2 (Rewriting): Starting")
-        structured_query = self.rewriting.rewrite({"prompt": prompt}, user_id)
+        structured_query = self.rewriting.rewrite({"prompt": prompt})
         self.logger.info("Step 2 (Rewriting): Done")
         
-        return prompt
+        self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Starting")
+        result = self.generator.generate(structured_query)
+        self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")
+        
+        return result
     
     def __init__(self):
         pass

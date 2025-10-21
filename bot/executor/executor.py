@@ -15,78 +15,25 @@ Dependencies:
 """
 
 import os
-import threading
 
+from bot.executor.retrieval import Retrieval
 from utils.config import Config
 from utils.file_manager import text_analysis
 
-class Generator:
-    """
-    Class responsible for generating LLM responses using prompts and retrieved documents.
-
-    Attributes:
-        path (str): Directory path where prompt templates are stored.
-        llm: The initialized LLM instance from Config.
-        rag (bool): Whether to use Retrieval-Augmented Generation.
-        logger: Logger instance for structured logging.
-    """
-    
-    _instance = None  # Holds the singleton instance
-    _lock = threading.Lock()  # Thread lock for safe initialization
-
+class Executor:
     def __init__(self, cfg: Config):
-        """
-        Initialize the Generator with configuration settings.
-
-        Args:
-            cfg (Config): Shared configuration object providing LLM, logger, etc.
-        """
+        self.CFG = cfg
         self.llm = cfg.llm
-        self.rag = cfg.rag
         self.logger = cfg.get_logger("Generator")
-        self.project_root = cfg.project_root
-        # Path to the directory containing generator prompt templates
-        self.path = os.path.join(self.project_root, "prompts", "generator")
-        self.max_iterations = cfg.max_iterations
         
-    @classmethod
-    def get_instance(cls, cfg: Config):
-        """
-        Retrieve the singleton instance of Config, creating it if necessary.
+        self.path = os.path.join(cfg.project_root, "prompts", "generator")
+        
+        self.max_iterations = cfg.max_iterations
 
-        Args:
-            opts (argparse.Namespace, optional): Parsed command-line options.
-
-        Returns:
-            Config: The singleton instance of the configuration.
-        """
-        if cls._instance is None:
-            with cls._lock:  # Ensure thread-safe initialization
-                if cls._instance is None:
-                    cls._instance = cls(cfg)
-        return cls._instance
-
-    def generate(self, operation: dict, docs: list[dict], query: str) -> str:
-        """
-        Generate a response based on an operation, retrieved documents, and user query.
-
-        Workflow:
-        1. Logs start of generation.
-        2. Handles special case where the entire document is requested directly.
-        3. Loads the appropriate prompt template for the operation.
-        4. Dynamically appends conditions if present.
-        5. Constructs the context from retrieved documents.
-        6. Runs the LangChain prompt → LLM → parser chain.
-        7. Logs results, and returns output.
-
-        Args:
-            operation (dict): Operation definition (contains command, what, how, etc.).
-            docs (list[dict]): List of retrieved documents for context.
-            query (str): User’s input query.
-
-        Returns:
-            str: Generated response text from the LLM.
-        """
+    def generate(self, operation: dict) -> str:
+        # Retrieve documents for the operation
+        docs = Retrieval(self.CFG).execute(operation)
+        
         # Special case: request for the entire document (bypass LLM)
         if (operation["command"] in ["estrai", "cerca"]) and operation.get("what", {}).get("name", "") == "intero documento":
             result = "\n\n".join([d["text"] for d in docs]).strip()

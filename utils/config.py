@@ -85,6 +85,8 @@ class Config:
     }
     
     minimum_score = 8
+    
+    user_id = "default_user"
 
     @classmethod
     def get_instance(cls, opts: argparse.Namespace = None):
@@ -180,3 +182,12 @@ class Config:
         if len(key) == 1:
             key = self.get_command_from_key(key)
         return self.command_descriptions.get(key, "")
+    
+    def set_user_id(self, user_id: str):
+        """
+        Set the user/session identifier for scoping storage operations.
+
+        Args:
+            user_id (str): The user/session identifier.
+        """
+        self.user_id = user_id

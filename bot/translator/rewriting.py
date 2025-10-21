@@ -43,6 +43,7 @@ class Rewriting:
         self.llm = cfg.llm
         self.logger = cfg.get_logger("Rewriting")
         self.project_root = cfg.project_root
+        self.user_id = cfg.user_id
         
     @classmethod
     def get_instance(cls, cfg: Config):
@@ -61,7 +62,7 @@ class Rewriting:
                     cls._instance = cls(cfg)
         return cls._instance
 
-    def rewrite(self, query_data: dict, id_user: str) -> dict:
+    def rewrite(self, query_data: dict) -> dict:
         """
         Rewrite the input query into a structured form using the Graph.
 
@@ -75,7 +76,7 @@ class Rewriting:
         """
         
         # Invoke the graph to perform the rewriting
-        response = self.graph.start_rewriting_graph(query_data, id_user)
+        response = self.graph.start_rewriting_graph(query_data, self.user_id)
 
         # Return the structured rewritten response
         return response
