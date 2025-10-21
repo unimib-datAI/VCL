@@ -12,14 +12,9 @@ Dependencies:
 - graph.State: Provides the State object used in the Graph.
 - utils.config.Config: Provides global configuration and logging.
 """
-
-import networkx as nx
-
 import threading
 
-import matplotlib.pyplot as plt
-
-from graph import Graph
+from bot.translator.graph import Graph
 from utils.config import Config
 
 

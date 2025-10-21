@@ -11,14 +11,12 @@ It provides an endpoint (/chat) for processing chat messages, which involves:
 import os
 import networkx as nx
 from datetime import datetime, timezone
-from fastapi import FastAPI
-from pydantic import BaseModel
 
 from utils.config import Config
 from utils.file_manager import write_file
 
 from decomposer import Decomposer
-from rewriting import Rewriting
+from bot.translator.rewriting import Rewriting
 from retrieval import Retrieval
 from generator import Generator
 
