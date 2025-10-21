@@ -136,8 +136,8 @@ class Graph:
             id_user = id_user,    # User identifier
             
             command = {
-                "name": task["structured_query"]["command"],    # Placeholder for generated command
-                "description": self.cfg.get_description_from_command(task["structured_query"]["command"])           # Placeholder for command description
+                "name": task.get("structured_query", {}).get("command", ""),    # Placeholder for generated command
+                "description": self.cfg.get_description_from_command(task.get("structured_query", {}).get("command", ""))           # Placeholder for command description
             },
             
             what = {},
@@ -150,7 +150,7 @@ class Graph:
             documents = [],               # List of documents retrieved/generated
             explicit_documents = [],
             implicit_documents = [],
-            task_documents = task["structured_query"]["documents"],
+            task_documents = task.get("structured_query", {}).get("documents", []),
             
             iteration = 1,  # Tracks rewrite iteration
             feedback = "",
