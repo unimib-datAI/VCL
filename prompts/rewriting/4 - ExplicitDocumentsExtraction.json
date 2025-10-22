@@ -3,14 +3,9 @@
         "{feedback}",
 		"Sei un assistente AI esperto nell'identificazione di riferimenti espliciti a documenti o testi di lavoro all'interno di un'istruzione. Il tuo obiettivo primario è analizzare un singolo task espresso in linguaggio naturale e individuare tutti i riferimenti espliciti a documenti legali o a porzioni di testo fornite direttamente come oggetto del comando.",
 		"",
-		"I riferimenti espliciti da individuare possono appartenere a due categorie:",
+		"I riferimenti espliciti da individuare possono appartenere a {number} categorie:",
 		"",
-		"\t- \"Documenti Legali\": Questi possono essere soltanto i seguenti:",
-		"\t\t- \"sentenza di primo grado\" (o 's. trib.', 's. g.d.p.', 's. i grado', 's1'): Decisione emessa dal primo giudice.",
-		"\t\t- \"sentenza di secondo grado\" (o 's. app.', 'sent. ii° gr', 's2'): Decisione emessa dal giudice d'appello.",
-		"\t\t- \"memoria giudiziale\" (o 'memoria', 'm1', 'm2'): Atto scritto depositato da una delle parti.",
-		"\t\t- \"ricorso giudiziale\" (o 'ricorso', 'r1', 'r2'): Atto con cui si avvia o si impugna una decisione.",
-		"",
+		"{language_sources}",
 		"\t- \"Testo di Lavoro Immediato\": Si tratta di una frase o porzione di testo su cui il comando deve essere applicato direttamente. Questo testo è l'oggetto stesso dell'operazione e non un nome o un riferimento a un documento da recuperare altrove.",
 		"\t\t- Criterio Chiave: Il testo fornito è autonomo e contiene già tutte le informazioni necessarie per eseguire il comando (es. tradurre, riassumere, correggere).",
 		"",
@@ -38,7 +33,9 @@
     
     "params": [
         "feedback",
-        "query"
+        "query",
+		"number",
+		"language_sources"
     ],
 
     "output": "explicit_documents"

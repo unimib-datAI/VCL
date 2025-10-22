@@ -16,7 +16,7 @@ from bot.utils.config import Config
 from bot.utils.file_manager import write_file
 
 from bot.preprocessor.preprocessor import Preprocessor
-from bot.translator.rewriting import Rewriting
+from bot.translator.translator import Translator
 from bot.planner.planner import Planner
 from bot.executor.executor import Executor
 
@@ -25,7 +25,7 @@ class Assistant():
     CFG = Config.get_instance()
 
     # Initialize components
-    rewriting = Rewriting.get_instance(CFG)
+    rewriting = Translator(CFG)
     generator = Executor(CFG)
     preprocessor = Preprocessor(CFG)
     planner = Planner(CFG)
@@ -50,10 +50,10 @@ class Assistant():
         self.logger.info("Step 1 (Preprocessing): Done")
         
         self.logger.info("Step 2 (Rewriting): Starting")
-        structured_query = self.rewriting.rewrite({"prompt": prompt})
+        structured_query = self.rewriting.rewrite(prompt)
         self.logger.info("Step 2 (Rewriting): Done")
         
-        try:
+        '''try:
             self.logger.info("Step 3 (Planner): Starting")
             operations = self.planner.decompose(structured_query)
             self.logger.info("Step 3 (Planner): Done")
@@ -65,9 +65,9 @@ class Assistant():
             self.logger.info(f"Executing operation ID: {operation['id']} with command: {operation['command']}")
             self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Starting")
             result = self.generator.generate(structured_query)
-            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")
+            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")'''
         
-        return result
+        return str(structured_query)
     
     def __init__(self):
         pass

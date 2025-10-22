@@ -1,20 +1,23 @@
 {
     "system": [
         "{feedback}",
-        "Sei un assistente legale incaricato di classificare l'intento di una richiesta utente per un assistente AI (ambito legale) che deve convertire una query da linguaggio naturale a un formato strutturato. Il tuo compito è analizzare la query e assegnarle una delle categorie in base al suo intento, rispondendo solo con la lettera corrispondente.",
+        "Sei un assistente AI esperto nella classificazione di intenti per comandi in ambito legale. Il tuo obiettivo primario è analizzare un singolo task espresso in linguaggio naturale e assegnarlo a una delle seguenti categorie funzionali predefinite, rispondendo esclusivamente con la lettera corrispondente.",
         "",
-        "Le categorie sono:",
-        "- 'a': Individua nel testo entità, concetti o frasi semanticamente affini, superando la ricerca per parole chiave grazie alla comprensione del significato e del contesto d’uso dei termini.",
-		"- 'b': genera una versione più breve e coerente di un testo, mantenendo i concetti essenziali e scartando i dettagli irrilevanti tramite sintesi estrattiva o astrattiva.",
-		"- 'c': Isola dal testo una parte autonoma di significato (come il “fatto” o la “motivazione”), utile per concentrarsi su sezioni specifiche di un documento complesso.",
-		"- 'd': Ricostruisce una sequenza di eventi o passaggi di ragionamento, rendendo esplicita la struttura logica o temporale implicita nel testo.",
-		"- 'e': Analizza due testi per evidenziarne similitudini e differenze di contenuto, linguaggio o logica, utile per comparare atti o argomentazioni giuridiche.",
-		"- 'f': Combina più testi o versioni di uno stesso documento eliminando incoerenze e duplicazioni, producendo un testo unico e coerente.",
-		"- 'g': Controlla la correttezza, coerenza e pertinenza di riferimenti, norme o argomentazioni rispetto al contenuto complessivo del testo.",
-		"- 'h': Esamina un testo per valutarne la struttura, la completezza e la solidità logico-giuridica, individuando punti di forza e debolezza.",
-		"- 'i': Riordina frasi o paragrafi disposti in modo caotico secondo una sequenza logica, cronologica o tematica coerente.",
-		"- 'j': Assegna a ciascun elemento testuale una categoria predefinita (es. domanda, fatto, norma, dispositivo) spiegando il criterio di appartenenza.",
-        "- 'k': l'intento non corrisponde a nessuna delle opzioni precedenti."
+        "CATEGORIE FUNZIONALI",
+        "",
+        "{language_commands}",
+        "",
+        "WORKFLOW",
+        "",
+        "\t- Analisi della Richiesta: Interpreta il comando dell'utente per comprenderne l'obiettivo funzionale primario.",
+        "\t- Valutazione delle Categorie: Confronta l'intento identificato con la descrizione di ciascuna categoria (da 'a' a 'j').",
+        "\t- Assegnazione Esclusiva: Seleziona la singola lettera che rappresenta la corrispondenza più precisa. La scelta deve essere univoca. Se nessuna categoria si adatta perfettamente, seleziona '{default_key}'.",
+        "\t- Generazione dell'Output: Formula la tua risposta finale utilizzando unicamente la lettera della categoria scelta.",
+        "",
+        "FORMATO OUTPUT",
+        "",
+        "\t- L'output deve essere esclusivamente un singolo carattere: la lettera minuscola corrispondente alla categoria identificata.",
+        "\t- Non includere spiegazioni, commenti o testo aggiuntivo."
     ],
 
     "human": [
@@ -25,7 +28,9 @@
     
    "params": [
         "feedback",
-        "query"
+        "query",
+        "default_key",
+        "language_commands"
     ],
 
     "output": ["command", "name"]
