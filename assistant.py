@@ -26,7 +26,7 @@ class Assistant():
 
     # Initialize components
     rewriting = Translator(CFG)
-    generator = Executor(CFG)
+    executor = Executor(CFG)
     preprocessor = Preprocessor(CFG)
     planner = Planner(CFG)
     
@@ -61,14 +61,34 @@ class Assistant():
         except Exception as e:
             self.logger.error(f"Planner Error: {e}")
             operations = [structured_query]
-        '''
-        for operation in operations:
+        
+        for index, operation in enumerate(operations):
             self.logger.info(f"Executing operation ID: {operation['id']} with command: {operation['command']}")
             self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Starting")
-            result = self.generator.generate(structured_query)
-            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")'''
+            operation["order"] = index
+            operation["result"], _ = self.executor.generate(operation, operations)
+            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")
+            
+        final_response = {
+            "id": request_id,
+            "input": prompt,
+            "operations": operations,
+            "result": operations[-1].get("result", "")
+        }
         
-        return str(operations)
+        doc_used = [doc for task in final_response["operations"] for doc in task.get("structured_query", {}).get("from", [])]
+        final_response["used_documents"] = list(set(doc_used))
+        
+        self.CFG.storage.write(user_id, final_response)
+        
+        file_name = str(final_response["id"]).replace(":", "_").replace(".", "_")
+        
+        write_file(
+            os.path.join(self.CFG.project_root, "documents", f"{file_name}.json"), 
+            final_response
+        )
+        
+        return final_response["result"]
     
     def __init__(self):
         pass

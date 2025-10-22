@@ -16,7 +16,7 @@ pip install -r requirements.txt
 6. If you wanna access the Elasticsearch database make sure you are connected to your university's VPN. Otherwise save `S1 - AN.json`, `S2 - AN.json`, `M2 - AN.json`, `R2 - AN.json` in `documents` folder
 7. Run streamlit.
 ```bash
-streamlit run app.py
+streamlit run app.py --server.fileWatcherType=none
 ```
 
 ## System

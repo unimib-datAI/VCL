@@ -15,24 +15,27 @@ Dependencies:
 """
 
 import os
+import re
 
 from bot.executor.retrieval import Retrieval
 from bot.utils.config import Config
 from bot.utils.file_manager import text_analysis
 
 class Executor:
+    pattern = r'(?m)^\s*(#{1,6})\s*(.+)$'
+    
     def __init__(self, cfg: Config):
         self.CFG = cfg
         self.llm = cfg.llm
         self.logger = cfg.get_logger("Generator")
         
-        self.path = os.path.join(cfg.project_root, "prompts", "generator")
+        self.path = os.path.join(cfg.project_root, "documents", "prompts", "generator")
         
         self.max_iterations = cfg.max_iterations
 
-    def generate(self, operation: dict) -> str:
+    def generate(self, operation: dict, operations: list[dict]) -> str:
         # Retrieve documents for the operation
-        docs = Retrieval(self.CFG).execute(operation)
+        docs = Retrieval(self.CFG, operations).execute(operation)
         
         # Special case: request for the entire document (bypass LLM)
         if (operation["command"] in ["estrai", "cerca"]) and operation.get("what", {}).get("name", "") == "intero documento":
@@ -42,7 +45,7 @@ class Executor:
 
         state = {"feedback": ""}
         state.update({"how": self.get_additional_conditions_str(operation.get("how_str"))})
-        state.update({"context": self.get_context_str(docs, operation.get("documents", []))})
+        state.update({"context": self.get_context_str(docs, operation.get("from", []))})
         
         if not operation.get("what", {}) == {}:
             state.update({"what": operation.get("what", {})})
@@ -73,6 +76,8 @@ class Executor:
                 result = self.llm.invoke_from_file(os.path.join(self.path, f"estrai.json"), state)
                 
             i += 1
+            
+        result = re.sub(self.pattern, self.format_heading, result)
 
         return result, operation
     
@@ -184,3 +189,17 @@ class Executor:
             Nella risposta tieni conto del feedback."""
             
         return feedback
+    
+    @staticmethod
+    def format_heading(match):
+        level = len(match.group(1))
+        content = match.group(2).strip()
+
+        if level == 1:
+            return f"**{content}**"
+        elif level == 2:
+            return f"__{content}__"
+        elif level == 3:
+            return f"*{content}*"
+        else:
+            return content

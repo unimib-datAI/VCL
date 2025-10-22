@@ -25,13 +25,13 @@
         "\"{context}\"",
         "---",
         "Richiesta:",
-        "Basandoti sul contesto fornito, trova e riporta testualmente le informazioni relative a: \"{what_name}\"."
+        "Basandoti sul contesto fornito, trova e riporta testualmente le informazioni relative a: \"{what}\"."
     ],
 
     "examples": [],
 
     "params": [
-        ["what", "name"],
+        "what",
         "context",
         "how",
         "feedback"

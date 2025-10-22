@@ -41,20 +41,12 @@ class Retrieval:
         project_root (str): Root path of the project, used for local fallback.
     """
 
-    def __init__(self, cfg: Config, graph: nx.DiGraph = None):
-        """
-        Initialize a new Retrieval instance using shared configuration.
-
-        Args:
-            cfg (Config): Shared application configuration instance.
-            id_user (str, optional): User/session identifier for scoping Redis lookups.
-            graph (nx.DiGraph, optional): Directed graph of tasks for graph-based retrieval.
-        """
+    def __init__(self, cfg: Config, operations: dict = None):
         self.client = Elasticsearch(cfg.DB_URL)
         self.storage = cfg.storage
         
         self.id_user = cfg.user_id
-        self.graph = graph
+        self.operations = operations
         
         self.project_root = cfg.project_root
         
@@ -87,12 +79,12 @@ class Retrieval:
             self.logger.info("RAG mode enabled — retrieval via ElasticSearch or similar not implemented yet.")
             docs = []
         else:
-            for doc in operation.get("documents", []):
+            for doc in operation.get("from", []):
                 added = False
-                for label, method in [("ElasticSearch", self.get_from_elastic_search),
-                                       #("SubTasks Graph", self.get_from_graph),
-                                       ("Redis", self.get_from_redis), 
-                                       ("LocalSystem", self.get_from_local_system)]:
+                for (label, method) in [("Operations List", self.get_from_operations_list),
+                                      ("Redis", self.get_from_redis), 
+                                      ("LocalSystem", self.get_from_local_system),
+                                      ("ElasticSearch", self.get_from_elastic_search)]:
                     self.logger.info(f"Attempting to retrieve '{doc}' via {label}...")
                     doc_file = method(doc)
 
@@ -110,19 +102,10 @@ class Retrieval:
 
         return docs
     
-    def get_from_graph(self, doc: str) -> dict | None:
-        """
-        Attempt to retrieve a document by name from the graph nodes.
-
-        Args:
-            graph (nx.DiGraph): The directed graph containing task nodes.
-            doc (str): Name of the document to retrieve.
-        Returns:
-            dict | None: Document with fields {"name", "text"} if found, otherwise None.
-        """
-        for _, attr in self.graph.nodes(data=True):
-            if attr.get("data", {}).get("id") == doc and "result" in attr.get("data", {}):
-                return {"name": doc, "text": attr["data"]["result"], "type": "task"}
+    def get_from_operations_list(self, doc: str) -> dict | None:
+        for op in self.operations:
+            if op.get("id", "") == doc and "result" in op:
+                return {"name": doc, "text": op.get("result", ""), "type": "operation"}
         return None
 
     def get_from_elastic_search(self, file_type: str) -> dict | None:
@@ -190,24 +173,34 @@ class Retrieval:
         
         return None
 
-    def get_from_local_system(self, file: str) -> dict | None:
+    def get_from_local_system(self, file_name: str) -> dict | None:
         path_folder = os.path.join(self.project_root, "documents")
 
-        for file in os.listdir(path_folder):
+        for fname in os.listdir(path_folder):
             try:
-                path_file = os.path.join(path_folder, file)
-                _, ext = os.path.splitext(file)
-                
-                if os.path.isfile(path_file) and ext in [".json"]:
-                    doc = read_file(path_file)
-                    
-                    if doc.get("name", "") == file:
-                        return {"name": file, "text": doc.get("text", ""), "type": "task"}
-                    
-                    if doc.get("type_doc", "") == file:
-                        return {"name": doc.get("name", ""), "text": doc.get("text", ""), "type": file}
+                if not fname.endswith(".json"):
+                    continue
+
+                path_file = os.path.join(path_folder, fname)
+                doc = read_file(path_file)
+
+                if doc.get("name", "") == file_name:
+                    return {
+                        "name": doc.get("name", ""),
+                        "text": doc.get("text", ""),
+                        "type": doc.get("type_doc", "task"),
+                    }
+
+                if doc.get("type_doc", "") == file_name:
+                    return {
+                        "name": doc.get("name", ""),
+                        "text": doc.get("text", ""),
+                        "type": doc.get("type_doc", "task"),
+                    }
+
             except Exception as e:
+                print(f"Errore leggendo {fname}: {e}")
                 continue
-            
+
         return None
             
