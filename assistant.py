@@ -42,7 +42,7 @@ class Assistant():
         
         # Save id request
         timestamp = str(datetime.now(timezone.utc).isoformat())
-        request_id = f"{str(user_id)}_{timestamp}"
+        request_id = f"{str(self.CFG.user_id)}_{timestamp}"
 
         # Step 1: Decompose
         self.logger.info("Step 1 (Preprocessing): Starting")
@@ -51,23 +51,24 @@ class Assistant():
         
         self.logger.info("Step 2 (Rewriting): Starting")
         structured_query = self.rewriting.rewrite(prompt)
+        structured_query["id"] = request_id
         self.logger.info("Step 2 (Rewriting): Done")
         
-        '''try:
+        try:
             self.logger.info("Step 3 (Planner): Starting")
             operations = self.planner.decompose(structured_query)
             self.logger.info("Step 3 (Planner): Done")
         except Exception as e:
             self.logger.error(f"Planner Error: {e}")
             operations = [structured_query]
-        
+        '''
         for operation in operations:
             self.logger.info(f"Executing operation ID: {operation['id']} with command: {operation['command']}")
             self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Starting")
             result = self.generator.generate(structured_query)
             self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")'''
         
-        return str(structured_query)
+        return str(operations)
     
     def __init__(self):
         pass

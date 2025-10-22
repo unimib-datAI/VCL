@@ -1,0 +1,81 @@
+{
+    "commands": [
+        {
+            "key": "a",
+            "command": "cerca",
+            "description": "Individua nel testo entità, concetti o frasi semanticamente affini, superando la ricerca per parole chiave grazie alla comprensione del significato e del contesto d’uso dei termini.",
+            "default": false,
+            "what": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente"]
+        },
+        {
+            "key": "b",
+            "command": "riassumi",
+            "description": "Genera una versione più breve e coerente di un testo, mantenendo i concetti essenziali e scartando i dettagli irrilevanti tramite sintesi estrattiva o astrattiva.",
+            "default": false,
+            "what": []
+        },
+        {
+            "key": "c",
+            "command": "estrai semantico",
+            "description": "Isola dal testo una parte autonoma di significato (come il 'fatto' o la 'motivazione'), utile per concentrarsi su sezioni specifiche di un documento complesso.",
+            "default": false,
+            "what": ["fatto", "decisioni", "motivi", "richieste", "altro"]
+        },
+        {
+            "key": "d",
+            "command": "estrai logico",
+            "description": "Ricostruisce una sequenza di eventi o passaggi di ragionamento, rendendo esplicita la struttura logica o temporale implicita nel testo.",
+            "default": false,
+            "what": ["sillogismo", "percorso logico", "passaggio logico"]
+        },
+        {
+            "key": "e",
+            "command": "confronta",
+            "description": "Analizza due testi per evidenziarne similitudini e differenze di contenuto, linguaggio o logica, utile per comparare atti o argomentazioni giuridiche.",
+            "default": false,
+            "what": []
+        },
+        {
+            "key": "f",
+            "command": "integra",
+            "description": "Combina più testi o versioni di uno stesso documento eliminando incoerenze e duplicazioni, producendo un testo unico e coerente.",
+            "default": false,
+            "what": []
+        },
+        {
+            "key": "g",
+            "command": "verifica",
+            "description": "Controlla la correttezza, coerenza e pertinenza di riferimenti, norme o argomentazioni rispetto al contenuto complessivo del testo.",
+            "default": false,
+            "what": []
+        },
+        {
+            "key": "h",
+            "command": "analizza",
+            "description": "Esamina un testo per valutarne la struttura, la completezza e la solidità logico-giuridica, individuando punti di forza e debolezza.",
+            "default": false,
+            "what": []
+        },
+        {
+            "key": "i",
+            "command": "riorganizza",
+            "description": "Riordina frasi o paragrafi disposti in modo caotico secondo una sequenza logica, cronologica o tematica coerente.",
+            "default": false,
+            "what": []
+        },
+        {
+            "key": "j",
+            "command": "classifica",
+            "description": "Assegna a ciascun elemento testuale una categoria predefinita (es. domanda, fatto, norma, dispositivo) spiegando il criterio di appartenenza.",
+            "default": false,
+            "what": []
+        },
+        {
+            "key": "k",
+            "command": "altro",
+            "description": "l'intento non corrisponde a nessuna delle opzioni precedenti.",
+            "default": false,
+            "what": ["*"]
+        }
+    ]
+}

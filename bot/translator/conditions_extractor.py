@@ -22,7 +22,7 @@ class ConditionsExtractor:
             if query_dict.get("query", "").strip():
                 conditions = self.llm.str_in_dict(
                     self.llm.invoke_from_file(
-                        os.path.join(self.project_root, "prompts", "rewriting", "7 - AdditionalConditionsExtraction.json"),
+                        os.path.join(self.project_root, "documents", "prompts", "rewriting", "7 - AdditionalConditionsExtraction.json"),
                         query_dict,
                         True
                     )

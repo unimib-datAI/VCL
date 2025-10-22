@@ -42,7 +42,7 @@ class Decomposer():
         self.logger.info(f"Correction and Decomposition by LLM: Starting")
         
         query = self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", f"1 - CorrectionQuery.json"),
+            os.path.join(self.project_root, "documents", "prompts", "rewriting", f"1 - CorrectionQuery.json"),
             {"query": query}
         )
         

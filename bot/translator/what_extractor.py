@@ -26,7 +26,7 @@ class WhatExtractor:
         try:
             if query_dict.get("query", "").strip():
                 what = self.llm.invoke_from_file(
-                    os.path.join(self.project_root, "prompts", "rewriting", "6 - WhatExtraction.json"),
+                    os.path.join(self.project_root, "documents", "prompts", "rewriting", "6 - WhatExtraction.json"),
                     query_dict,
                     True
                 )
@@ -66,9 +66,15 @@ class WhatExtractor:
         Returns:
             str: A formatted string listing all available what.
         """
-        what_elements = set.intersection(
-            *[set(self.source_what_map.get(source, [])) for source in sources]
-        )
+        
+        # If sources is empty, initialize to an empty set.
+        if not sources:
+            what_elements = set()
+        else:
+            # This block now only runs if 'sources' contains at least one item.
+            what_elements = set.intersection(
+                *[set(self.source_what_map.get(source, [])) for source in sources]
+            )
         
         what_list = [
             f"\t- \"{what}\": {self.definitions.get(what, '')}"

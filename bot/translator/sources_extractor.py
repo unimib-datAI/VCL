@@ -28,7 +28,7 @@ class SourcesExtractor:
             if query_dict.get("query", "").strip():
                 documents = self.llm.str_in_list(
                     self.llm.invoke_from_file(
-                        os.path.join(self.project_root, "prompts", "rewriting", "4 - ExplicitDocumentsExtraction.json"),
+                        os.path.join(self.project_root, "documents", "prompts", "rewriting", "4 - ExplicitDocumentsExtraction.json"),
                         query_dict,
                         True
                     )

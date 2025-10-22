@@ -28,7 +28,11 @@ class CommandClassifier:
         try:
             if query_dict.get("query", "").strip():
                 result = self.llm.invoke_from_file(
-                    os.path.join(self.project_root, "prompts", "rewriting", "3 - IntentClassification.json"),
+                    os.path.join(self.project_root,
+                                 "documents",
+                                 "prompts", 
+                                 "rewriting", 
+                                 "3 - IntentClassification.json"),
                     query_dict,
                     True
                 )

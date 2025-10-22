@@ -17,6 +17,6 @@ class SpellingChecker:
     
     def correct_text_llm(self, text: str) -> str:
         return self.llm.invoke_from_file(
-            os.path.join(self.project_root, "prompts", "rewriting", f"1 - CorrectionQuery.json"),
+            os.path.join(self.project_root, "documents", "prompts", "rewriting", f"1 - CorrectionQuery.json"),
             {"query": text}
         )

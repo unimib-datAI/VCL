@@ -1,0 +1,27 @@
+{
+    "sources": [
+		{
+            "name": "sentenza di primo grado",
+            "synonyms": ["s. trib.", "s. g.d.p.", "s. i grado", "s1"],
+            "description": "Decisione emessa dal primo giudice."
+        },
+
+        {
+            "name": "sentenza di secondo grado",
+            "synonyms": ["s. app.", "sent. ii° gr", "s2"],
+            "description": "Decisione emessa dal giudice d'appello."
+        },
+
+        {
+            "name": "memoria giudiziale",
+            "synonyms": ["memoria", "m1", "m2"],
+            "description": "Atto scritto depositato da una delle parti."
+        },
+
+        {
+            "name": "ricorso giudiziale",
+            "synonyms": ["ricorso", "r1", "r2"],
+            "description": "Atto con cui si avvia o si impugna una decisione."
+        }
+    ]
+}
