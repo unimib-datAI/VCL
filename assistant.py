@@ -71,6 +71,7 @@ class Assistant():
             
         final_response = {
             "id": request_id,
+            "structured_input": structured_query,
             "input": prompt,
             "operations": operations,
             "result": operations[-1].get("result", "")
@@ -88,7 +89,7 @@ class Assistant():
             final_response
         )
         
-        return final_response["result"]
+        return final_response
     
     def __init__(self):
         pass

@@ -64,32 +64,102 @@ def display_chat_history():
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
+            show_expander(message.get("full_details", None))
 
 
 def handle_user_input():
     """Manage user input and generate bot responses."""
     if prompt := st.chat_input("Scrivi un messaggio..."):
         # 1. Add and display the user's message
-        st.session_state.messages.append({"role": "user", "content": prompt})
+        st.session_state.messages.append({"role": "user", "content": prompt, "full_details": None})
         with st.chat_message("user"):
             st.markdown(prompt)
 
         # 2. The assistant's response
         with st.chat_message("assistant"):
             with st.spinner("Sto pensando..."):
-                response = assistant.chat(prompt, id_user)
+                result = assistant.chat(prompt, id_user)
+                text = result.get("result", "")
             
             placeholder = st.empty()
             typed_text = ""
-            for char in response:
+            for char in text:
                 typed_text += char
                 placeholder.markdown(typed_text)
                 time.sleep(0.01)
+                
+            show_expander(result)
 
         # 3. Store the assistant's response in session state
         st.session_state.messages.append(
-            {"role": "assistant", "content": response}
+            {"role": "assistant", "content": text, "full_details": result}
         )
+
+# --- EXPANDER ---
+# --- EXPANDER ---
+def show_expander(full_details):
+    if full_details:
+        with st.expander("Visualizza i dettagli"):
+            structured = full_details.get("structured_input", {})
+            how = structured.get("how", {})
+
+            introduction = f"""
+            **Il comando strutturato identificato è:**
+            ```json
+            {{
+                "command": "{structured.get("command", "")}",
+                "from": {structured.get("from", [])},
+                "what": "{structured.get("what", "")}",
+                "how": {{
+                    "section": "{how.get("section", "")}",
+                    "data": "{how.get("how", "")}",
+                    "response": "{how.get("response", "")}"
+                }}
+            }}
+            ```
+            Il comando è stato diviso in **{len(full_details.get("operations", []))} operazioni**.
+            """
+            st.markdown(introduction)
+            for index, operation in enumerate(full_details.get("operations", []), start=1):
+                st.divider()
+                
+                if operation.get("how", {}):
+                    operation_md = f"""
+                    ### Operazione {index}: {operation.get("id", "")}
+                    
+                    ```json
+                    {{
+                        "command": "{operation.get("command", "")}",
+                        "from": {operation.get("from", [])},
+                        "how": {{
+                            "section": "{operation.get("how", {}).get("section", "")}",
+                            "data": "{operation.get("how", {}).get("data", "")}",
+                            "response": "{operation.get("how", {}).get("response", "")}"
+                        }}
+                    }}
+                    ```
+                    
+                    **Risultato parziale**
+                    
+                    {operation.get("result", "")}
+                    """
+                else:
+                    operation_md = f"""
+                    ### Operazione {index}: {operation.get("id", "")}
+                    
+                    ```json
+                    {{
+                        "command": "{operation.get("command", "")}",
+                        "from": {operation.get("from", [])},
+                        "what": "{operation.get("what", "")}"
+                    }}
+                    ```
+                    
+                    **Risultato parziale**
+                    
+                    {operation.get("result", "")}
+                    """
+                st.markdown(operation_md)
 
 
 # --- SIDEBAR ---
