@@ -76,7 +76,7 @@ pip install *r requirements.txt
 6. Copy the generated key and paste it into `api_key.txt`.
 7. Go to the [Upstash Redis website](https://console.upstash.com/)
 8. Create a DB
-9. Place the upstash*redis URL and token in the `url_redis.txt` and `token_redis.txt` files respectively.
+9. Place the upstash-redis URL and token in the `url_redis.txt` and `token_redis.txt` files respectively.
 10. If you wanna access the Elasticsearch database make sure you are connected to your university's VPN. 
 11. Run streamlit.
 ```bash

@@ -1,4 +1,7 @@
 import json
+import html
+import markdown
+import re
 import streamlit as st
 import time
 
@@ -92,43 +95,61 @@ def handle_user_input():
         st.session_state.messages.append(
             {"role": "assistant", "content": text, "full_details": result}
         )
-
+     
 # --- EXPANDER ---
 def show_expander(full_details):
     if full_details and full_details.get("structured_input", {}):
-        with st.expander("Visualizza i dettagli"): 
-            st.markdown(f"**Il comando strutturato identificato è:**")
-            
-            st.code(json.dumps(full_details.get("structured_input", {}), indent=4), language="json")
-            
+        with st.expander("Visualizza i dettagli"):
             operations = full_details.get("operations", [])
-
+            
             if len(operations) > 1:
-                st.markdown(f"Il comando è stato scomposto in **{len(operations)} operazioni**.")
-                
-                for index, operation in enumerate(operations, start=1):
-                    st.divider()
-
-                    st.markdown(f"### Operazione {index}: {operation.get('id', '')}")
-                    
-                    new_dict = {
-                        "command": operation.get("command", ""),
-                        "from": operation.get("from", []),
-                    }
-                    
-                    if operation.get("what", ""):
-                        new_dict["what"] = operation.get("what", "")
-                        
-                    if operation.get("how", ""):
-                        new_dict["how"] = operation.get("how", "")
-
-                    st.code(json.dumps(new_dict, indent=4), language="json")
-
-                    st.markdown("**Risultato parziale:**")
-                    st.code(operation.get("result", ""), language="markdown")
+                op_string = f"Il comando è stato scomposto in {len(operations)} operazioni."
             else:
-                st.markdown(f"Il comando non è stato necessario scomporlo.")
+                op_string = "Il comando non è stato necessario scomporlo."
+            
+            st.markdown(f"""
+                <details style="margin-left:20px; margin-top:10px;">
+                    <summary>Introduzione</summary>
+                    Il comando identificato per la richiesta è stato:
+                    <pre><code class="language-json">{json.dumps(full_details.get("structured_input", {}), indent=4)}</code></pre>
+                    {op_string}
+                </details>
+            """, unsafe_allow_html=True)
+        
+            for index, operation in enumerate(operations, start=1):
+                new_dict = {
+                    "command": operation.get("command", ""),
+                    "from": operation.get("from", []),
+                }
+                        
+                if operation.get("what", ""):
+                    new_dict["what"] = operation.get("what", "")
+                    
+                if operation.get("how", ""):
+                    new_dict["how"] = operation.get("how", "")
+                            
+                operation_json = json.dumps(new_dict, indent=4)
+                html_text = str(html.escape(markdown.markdown(operation.get("result", ""))))
+                operation_result = str(re.sub(r'<[^>]+>', '', html_text).strip())
 
+                st.markdown(f"""
+                <details style="margin-left:20px; margin-top:10px;">
+                    <summary>Operazione {index}:</b> {operation.get('command', '')} - {operation.get('id', '')}</summary>
+                    <pre><code class="language-json">{operation_json}</code></pre>
+                    <b>Risultato Parziale:</b>
+                    <details style="margin-left:20px; margin-top:10px;">
+                        <summary>Visualizza il testo</summary>
+                        <pre style="white-space: pre-wrap; word-break: break-word;">
+                            <code class="language-plaintext">
+                                {operation_result}
+                            </code>
+                        </pre>
+                    </details>
+                </details>
+                """, unsafe_allow_html=True)
+            
+            st.markdown("</details>", unsafe_allow_html=True)
+            
 
 # --- SIDEBAR ---
 def render_sidebar():

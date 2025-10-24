@@ -74,7 +74,7 @@
             "key": "k",
             "command": "altro",
             "description": "l'intento non corrisponde a nessuna delle opzioni precedenti.",
-            "default": false,
+            "default": true,
             "what": ["*"]
         }
     ]
