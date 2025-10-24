@@ -104,8 +104,8 @@ class Retrieval:
     
     def get_from_operations_list(self, doc: str) -> dict | None:
         for op in self.operations:
-            if op.get("id", "") == doc and "result" in op:
-                return {"name": doc, "text": op.get("result", ""), "type": "operation"}
+            if op.get("id", "") == doc and "result" in op and len(op.get("from", [])) > 0:
+                return {"name": doc, "text": op.get("result", ""), "type": op.get("from", [])[0]}
         return None
 
     def get_from_elastic_search(self, file_type: str) -> dict | None:

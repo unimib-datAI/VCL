@@ -1,4 +1,4 @@
-import socket
+import json
 import streamlit as st
 import time
 
@@ -6,8 +6,6 @@ from assistant import Assistant
 
 title = "DQL"
 assistant = Assistant()
-
-id_user = socket.gethostbyname(socket.gethostname())
 
 # --- PAGE CONFIGURATION ---
 def configure_page():
@@ -78,7 +76,7 @@ def handle_user_input():
         # 2. The assistant's response
         with st.chat_message("assistant"):
             with st.spinner("Sto pensando..."):
-                result = assistant.chat(prompt, id_user)
+                result = assistant.chat(prompt)
                 text = result.get("result", "")
             
             placeholder = st.empty()
@@ -96,70 +94,40 @@ def handle_user_input():
         )
 
 # --- EXPANDER ---
-# --- EXPANDER ---
 def show_expander(full_details):
-    if full_details:
-        with st.expander("Visualizza i dettagli"):
-            structured = full_details.get("structured_input", {})
-            how = structured.get("how", {})
+    if full_details and full_details.get("structured_input", {}):
+        with st.expander("Visualizza i dettagli"): 
+            st.markdown(f"**Il comando strutturato identificato è:**")
+            
+            st.code(json.dumps(full_details.get("structured_input", {}), indent=4), language="json")
+            
+            operations = full_details.get("operations", [])
 
-            introduction = f"""
-            **Il comando strutturato identificato è:**
-            ```json
-            {{
-                "command": "{structured.get("command", "")}",
-                "from": {structured.get("from", [])},
-                "what": "{structured.get("what", "")}",
-                "how": {{
-                    "section": "{how.get("section", "")}",
-                    "data": "{how.get("how", "")}",
-                    "response": "{how.get("response", "")}"
-                }}
-            }}
-            ```
-            Il comando è stato diviso in **{len(full_details.get("operations", []))} operazioni**.
-            """
-            st.markdown(introduction)
-            for index, operation in enumerate(full_details.get("operations", []), start=1):
-                st.divider()
+            if len(operations) > 1:
+                st.markdown(f"Il comando è stato scomposto in **{len(operations)} operazioni**.")
                 
-                if operation.get("how", {}):
-                    operation_md = f"""
-                    ### Operazione {index}: {operation.get("id", "")}
+                for index, operation in enumerate(operations, start=1):
+                    st.divider()
+
+                    st.markdown(f"### Operazione {index}: {operation.get('id', '')}")
                     
-                    ```json
-                    {{
-                        "command": "{operation.get("command", "")}",
-                        "from": {operation.get("from", [])},
-                        "how": {{
-                            "section": "{operation.get("how", {}).get("section", "")}",
-                            "data": "{operation.get("how", {}).get("data", "")}",
-                            "response": "{operation.get("how", {}).get("response", "")}"
-                        }}
-                    }}
-                    ```
+                    new_dict = {
+                        "command": operation.get("command", ""),
+                        "from": operation.get("from", []),
+                    }
                     
-                    **Risultato parziale**
-                    
-                    {operation.get("result", "")}
-                    """
-                else:
-                    operation_md = f"""
-                    ### Operazione {index}: {operation.get("id", "")}
-                    
-                    ```json
-                    {{
-                        "command": "{operation.get("command", "")}",
-                        "from": {operation.get("from", [])},
-                        "what": "{operation.get("what", "")}"
-                    }}
-                    ```
-                    
-                    **Risultato parziale**
-                    
-                    {operation.get("result", "")}
-                    """
-                st.markdown(operation_md)
+                    if operation.get("what", ""):
+                        new_dict["what"] = operation.get("what", "")
+                        
+                    if operation.get("how", ""):
+                        new_dict["how"] = operation.get("how", "")
+
+                    st.code(json.dumps(new_dict, indent=4), language="json")
+
+                    st.markdown("**Risultato parziale:**")
+                    st.code(operation.get("result", ""), language="markdown")
+            else:
+                st.markdown(f"Il comando non è stato necessario scomporlo.")
 
 
 # --- SIDEBAR ---

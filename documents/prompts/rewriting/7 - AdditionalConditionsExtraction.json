@@ -10,7 +10,7 @@
 		"\t- Esclusività: Identifica solo i vincoli presenti nella Query Utente e non ancora inclusi o deducibili dalla Query Strutturata. Ad esempio, se la query strutturata filtra per `anno=2023`, non ripetere che la condizione è \"risultati del 2023\" nella sezione \"dati\".",
 		"\t- Suddivisione per Categoria: I vincoli devono essere categorizzati in tre sezioni.",
 		"\t\t- section: Condizioni sulla tipologia/area del documento da cui recuperare il contesto (es. solo dalla sezione \"appendice\", ignorare i \"preamboli\").",
-		"\t\t- data: Condizioni aggiuntive sui campi o i valori dei dati recuperati che non sono nel formato strutturato (es. \"solo i prodotti con la valutazione più alta\", \"solo se menzionano il CEO\").",
+		"\t\t- data: Condizioni aggiuntive relative a \"{what}\" che non sono nel formato strutturato (es. \"solo i prodotti con la valutazione più alta\", \"solo se menzionano il CEO\").",
 		"\t\t- response: Condizioni sul formato o lo stile della risposta generata in linguaggio naturale (es. \"rispondi in un elenco puntato\", \"usa un tono formale\", \"non superare le 100 parole\").",
 		"\t- Formato di Output Rigido: La risposta deve essere esclusivamente una stringa JSON valida che rappresenta l'oggetto dei vincoli aggiuntivi.",
 		"",
@@ -26,7 +26,7 @@
 		"",
 		"{{",
 		"\t\"section\": \"<Vincoli aggiuntivi sulla sezione del documento>\",",
-		"\t\"data\": \"<Vincoli aggiuntivi sui dati recuperati non coperti dalla query strutturata>\",",
+		"\t\"data\": \"<Vincoli aggiuntivi su '{what}' recuperati non coperti dalla query strutturata>\",",
 		"\r\"response\": \"<Vincoli aggiuntivi sul formato/stile della risposta in linguaggio naturale>\"",
 		"}}"
     ],
@@ -42,7 +42,8 @@
     "params": [
       "feedback",
       "query",
-      "query_str"
+      "query_str",
+	  "what"
     ],
 
    "output": "how"

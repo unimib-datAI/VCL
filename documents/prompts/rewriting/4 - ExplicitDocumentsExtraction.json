@@ -29,7 +29,33 @@
         "Ottieni i documenti espliciti presenti nella seguente query: \"{query}\""
     ],
 
-    "examples": [],
+    "examples": [
+		{
+			"input": "estrai il sillogismo della sentenza s2 con meno di 100 parole",
+			"reasoning": "la query menziona 's2', da interpretare come sentenza di secondo grado. l’estrazione del sillogismo implica l’analisi del contenuto logico della sentenza.",
+			"output": ["sentenza di secondo grado"]
+		},
+		{
+			"input": "confronta le decisioni relative alla parte voni nelle due sentenze allegate",
+			"reasoning": "il riferimento a due sentenze implica sia la sentenza di primo grado che la sentenza di secondo grado.",
+			"output": ["sentenza di primo grado", "sentenza di secondo grado"]
+		},
+		{
+			"input": "estrai dalla sentenza di 1 livello i valori economici espressi in euro",
+			"reasoning": "sentenza di 1 livello e' sinonimo di sentenza di primo grado. la richiesta e' diretta e specifica.",
+			"output": ["sentenza di primo grado"]
+		},
+		{
+			"input": "riassumi in 50 parole la memoria",
+			"reasoning": "il termine \"memoria\" in ambito legale si riferisce alla memoria giudiziale. l’obiettivo e' sintetizzarne il contenuto.",
+			"output": ["memoria giudiziale"]
+		},
+		{
+			"input": "mostra solo le decisioni dopo il 2015 nella sentenza s1",
+			"reasoning": "s1 puo' essere interpretata come sentenza di primo grado. il riferimento temporale non cambia il documento implicato.",
+			"output": ["sentenza di primo grado"]
+		}
+	],
     
     "params": [
         "feedback",

@@ -15,6 +15,8 @@ Dependencies:
 
 import argparse
 import logging
+import os
+import socket
 import threading
 
 from pathlib import Path
@@ -56,7 +58,7 @@ class Config:
     
     minimum_score = 8
     
-    user_id = "default_user"
+    user_id = socket.gethostbyname(socket.gethostname())
 
     @classmethod
     def get_instance(cls, opts: argparse.Namespace = None):
@@ -116,14 +118,24 @@ class Config:
         self._initialized = True
         
     def get_logger(self, name: str, level=logging.INFO) -> logging.Logger:
+        format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+        
+        os.makedirs("logs", exist_ok=True)
+        log_file = os.path.join("logs", f"{self.user_id}.log")
+
         logger = logging.getLogger(name)
         logger.setLevel(level)
 
         if not logger.handlers:
-            handler = logging.StreamHandler()
-            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(name)s - %(message)s")
-            handler.setFormatter(formatter)
-            logger.addHandler(handler)
+            console_handler = logging.StreamHandler()
+            console_formatter = logging.Formatter(format)
+            console_handler.setFormatter(console_formatter)
+            logger.addHandler(console_handler)
+
+            file_handler = logging.FileHandler(log_file, encoding="utf-8")
+            file_formatter = logging.Formatter(format)
+            file_handler.setFormatter(file_formatter)
+            logger.addHandler(file_handler)
 
         return logger
     

@@ -13,7 +13,8 @@ class ConditionsExtractor:
         query_dict = {
             "query": query,
             "query_str": str(query_str),
-            "feedback": ""
+            "feedback": "",
+            "what": query_str.get("what", "")
         }
         
         conditions = {}

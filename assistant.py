@@ -1,16 +1,7 @@
-"""
-This module defines a FastAPI application for the DQL system.
-
-It provides an endpoint (/chat) for processing chat messages, which involves:
-1. Rewriting the input query using the Rewriting module.
-2. Decomposing the rewritten query into operations via the Planner.
-3. Retrieving relevant documents and generating answers for each operation.
-4. Logging all steps and storing intermediate and final results.
-"""
-
 import os
-import networkx as nx
 from datetime import datetime, timezone
+
+from copy import deepcopy
 
 from bot.utils.config import Config
 from bot.utils.file_manager import write_file
@@ -25,69 +16,78 @@ class Assistant():
     CFG = Config.get_instance()
 
     # Initialize components
-    rewriting = Translator(CFG)
-    executor = Executor(CFG)
     preprocessor = Preprocessor(CFG)
     planner = Planner(CFG)
-    
+    translator = Translator(CFG)
+    executor = Executor(CFG)
 
-    logger = CFG.get_logger("Main")
+    logger = CFG.get_logger("Assistant")
 
-    def chat(self, prompt: str, user_id: str):
+    def chat(self, prompt: str):
         # Log start of chat processing
         self.logger.info(f"Request Received: \"{prompt}\"")
         
-        # Set user ID in configuration
-        self.CFG.set_user_id(user_id)
-        
         # Save id request
         timestamp = str(datetime.now(timezone.utc).isoformat())
-        request_id = f"{str(self.CFG.user_id)}_{timestamp}"
-
-        # Step 1: Decompose
-        self.logger.info("Step 1 (Preprocessing): Starting")
-        prompt = self.preprocessor.process(prompt)
-        self.logger.info("Step 1 (Preprocessing): Done")
-        
-        self.logger.info("Step 2 (Rewriting): Starting")
-        structured_query = self.rewriting.rewrite(prompt)
-        structured_query["id"] = request_id
-        self.logger.info("Step 2 (Rewriting): Done")
+        request_id = f"{str(self.CFG.user_id)}_{timestamp}".replace(":", "").replace(".", "")
         
         try:
-            self.logger.info("Step 3 (Planner): Starting")
-            operations = self.planner.decompose(structured_query)
-            self.logger.info("Step 3 (Planner): Done")
-        except Exception as e:
-            self.logger.error(f"Planner Error: {e}")
-            operations = [structured_query]
-        
-        for index, operation in enumerate(operations):
-            self.logger.info(f"Executing operation ID: {operation['id']} with command: {operation['command']}")
-            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Starting")
-            operation["order"] = index
-            operation["result"], _ = self.executor.generate(operation, operations)
-            self.logger.info("Step 3 (Retrieval) and Step 4 (Generation): Done")
+            # Step 1: Preprocessing
+            # Input: query
+            # Output: clean version of the query
+            self.logger.info("Step 1 (Preprocessing): Starting")
             
+            prompt = self.preprocessor.process(prompt)
+            
+            self.logger.info("Step 1 (Preprocessing): Done")
+            
+            # Step 2: Translator
+            # Input: query
+            # Output: structured version of the query
+            self.logger.info("Step 2 (Translator): Starting")
+            structured_query = self.translator.rewrite(prompt)
+            structured_query["id"] = request_id
+            self.logger.info("Step 2 (Translator): Done")
+            
+            self.logger.info("Step 3 (Planner): Starting")
+            operations = self.planner.decompose(deepcopy(structured_query))
+            self.logger.info("Step 3 (Planner): Done")
+            
+            for index, operation in enumerate(operations):
+                self.logger.info(f"Executing operation ID: {operation.get("id", "")} with command: {operation.get("command", "")}")
+                self.logger.info("Step 4 (Executor): Starting")
+                operation["order"] = index
+                operation["result"], _ = self.executor.generate(operation, operations)
+                self.logger.info("Step 4 (Executor): Done")
+                
+                
+            result = operations[-1].get("result", "")
+            self.logger.info("Request Completed")
+        except Exception as e:
+            self.logger.error("Request Failed")
+            self.logger.error(e)
+            
+            structured_query = {}
+            operations = []
+            result = "Qualcosa è andato storto. Riprova!"
+        
         final_response = {
             "id": request_id,
             "structured_input": structured_query,
             "input": prompt,
             "operations": operations,
-            "result": operations[-1].get("result", "")
+            "result": result
         }
-        
-        doc_used = [doc for task in final_response["operations"] for doc in task.get("structured_query", {}).get("from", [])]
+            
+        doc_used = [doc for task in final_response.get("operations", []) for doc in task.get("from", [])]
         final_response["used_documents"] = list(set(doc_used))
         
-        self.CFG.storage.write(user_id, final_response)
-        
-        file_name = str(final_response["id"]).replace(":", "_").replace(".", "_")
-        
+        self.CFG.storage.write(self.CFG.user_id, final_response)
         write_file(
-            os.path.join(self.CFG.project_root, "documents", f"{file_name}.json"), 
+            os.path.join(self.CFG.project_root, "documents", f"{request_id}.json"), 
             final_response
         )
+        
         
         return final_response
     

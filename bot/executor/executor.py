@@ -38,13 +38,14 @@ class Executor:
         docs = Retrieval(self.CFG, operations).execute(operation)
         
         # Special case: request for the entire document (bypass LLM)
-        if (operation["command"] in ["estrai", "cerca"]) and operation.get("what", {}).get("name", "") == "intero documento":
+        if operation.get("what", "") == "intero documento" and len(operation.get("from", [])) == 1:
             result = "\n\n".join([d["text"] for d in docs]).strip()
             self.logger.info("No need to involve the LLM. Direct return.")
-            return result
+            return result, operation
 
         state = {"feedback": ""}
-        state.update({"how": self.get_additional_conditions_str(operation.get("how_str"))})
+        
+        state.update({"how": self.get_additional_conditions_str(operation.get("how", {}))})
         state.update({"context": self.get_context_str(docs, operation.get("from", []))})
         
         if not operation.get("what", {}) == {}:
@@ -61,38 +62,44 @@ class Executor:
             
         # Call the LLM with the constructed prompt and context
         result = ""
-        i = 1
+        try:
+            result = self.llm.invoke_from_file(os.path.join(self.path, f"{operation["command"]}.json"), state)
+        except Exception as e:
+            result = self.llm.invoke_from_file(os.path.join(self.path, f"estrai.json"), state)
         
-        while i <= self.max_iterations and (not self.is_result_ok(operation, result)):
-            if i > 1 and operation.get("limit", {}):
-                state["feedback"] = self.get_feedback_str(operation, result)
-            else:
-                state["feedback"] = ""
-                
-            self.logger.info(f"LLM: Attempt {i}")
-            try:
-                result = self.llm.invoke_from_file(os.path.join(self.path, f"{operation["command"]}.json"), state)
-            except Exception as e:
-                result = self.llm.invoke_from_file(os.path.join(self.path, f"estrai.json"), state)
-                
-            i += 1
+        # i = 1
+        #
+        # while i <= self.max_iterations and (not self.is_result_ok(operation, result)):
+        #     if i > 1 and operation.get("limit", {}):
+        #         state["feedback"] = self.get_feedback_str(operation, result)
+        #     else:
+        #        state["feedback"] = ""
+        #        
+        #    self.logger.info(f"LLM: Attempt {i}")
+        #    try:
+        #        result = self.llm.invoke_from_file(os.path.join(self.path, f"{operation["command"]}.json"), state)
+        #    except Exception as e:
+        #        result = self.llm.invoke_from_file(os.path.join(self.path, f"estrai.json"), state)
+        #        
+        #    i += 1
             
         result = re.sub(self.pattern, self.format_heading, result)
 
         return result, operation
     
-    @staticmethod
-    def get_additional_conditions_str(how: dict) -> str:
+    def get_additional_conditions_str(self, how: dict) -> str:
         # Add any "how" conditions (constraints) if present
-        how_str = ""
+        how_str = "Inoltre la risposta deve rispettare le seguenti condizioni:"
         if how:
-            how_str = "Inoltre la risposta deve rispettare le seguenti condizioni:"
             for condition, value in how.items():
                 if value:
                     how_str += f"\n- Condizione {condition}: {value}"
 
         if how_str.strip() == "" or how_str.endswith("condizioni:"):
             how_str = ""
+            self.logger.info("Additional Conditions: Not Added")
+        else:
+            self.logger.info("Additional Conditions: Added")    
             
         return how_str.strip()
     

@@ -28,4 +28,4 @@ class Preprocessor:
         
         self.logger.info(f"Preprocessing: {query}")
 
-        return query
+        return query.lower()
