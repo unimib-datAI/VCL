@@ -1,14 +1,16 @@
 import json
 import html
 import markdown
+import os
 import re
 import streamlit as st
+import threading
 import time
+import queue
 
 from assistant import Assistant
 
 title = "DQL"
-assistant = Assistant()
 
 # --- PAGE CONFIGURATION ---
 def configure_page():
@@ -78,11 +80,33 @@ def handle_user_input():
 
         # 2. The assistant's response
         with st.chat_message("assistant"):
-            with st.spinner("Sto pensando..."):
-                result = assistant.chat(prompt)
-                text = result.get("result", "")
-            
             placeholder = st.empty()
+            
+            stop_event = threading.Event()
+            result_queue = queue.Queue()
+            
+            assistant = Assistant()
+            
+            t1 = threading.Thread(target=call_assistant, args=(prompt, assistant, stop_event, result_queue))
+            t1.start()
+            
+            log_list = []
+        
+            log_file = os.path.join(assistant.CFG.project_root, "logs", f"{assistant.get_request_id()}.log")
+            log_lines = follow_log(log_file, stop_event) 
+            
+            for line in log_lines: 
+                log_list.append(line.strip()) 
+                placeholder.markdown("\n\n".join(log_list).strip()) 
+                if stop_event.is_set():
+                    placeholder.markdown("")
+                    break
+
+            t1.join()
+            
+            result = result_queue.get()
+            text = result.get("result", "")
+            
             typed_text = ""
             for char in text:
                 typed_text += char
@@ -95,6 +119,24 @@ def handle_user_input():
         st.session_state.messages.append(
             {"role": "assistant", "content": text, "full_details": result}
         )
+        
+def call_assistant(prompt: str, assistant, stop_event, result_queue):
+    result_queue.put(assistant.chat(prompt))
+    stop_event.set()
+    
+    
+def follow_log(file_path, stop_event, wait_time = 0.05):
+    while not (os.path.exists(file_path) or stop_event.is_set()):
+        continue
+    
+    if os.path.exists(file_path):
+        with open(file_path, "r") as f:
+            f.seek(0, 2)
+            while not stop_event.is_set():
+                line = f.readline()
+                if not line:
+                    continue
+                yield line
      
 # --- EXPANDER ---
 def show_expander(full_details):

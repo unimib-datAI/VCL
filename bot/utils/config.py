@@ -57,11 +57,9 @@ class Config:
     project_root = Path(__file__).resolve().parent.parent.parent
     
     minimum_score = 8
-    
-    user_id = socket.gethostbyname(socket.gethostname())
 
     @classmethod
-    def get_instance(cls, opts: argparse.Namespace = None):
+    def get_instance(cls, request_id, user_id: str = None, opts: argparse.Namespace = None):
         """
         Retrieve the singleton instance of Config, creating it if necessary.
 
@@ -74,10 +72,10 @@ class Config:
         if cls._instance is None:
             with cls._lock:  # Ensure thread-safe initialization
                 if cls._instance is None:
-                    cls._instance = cls(opts)
+                    cls._instance = cls(request_id, user_id=user_id, opts=opts)
         return cls._instance
 
-    def __init__(self, opts: argparse.Namespace = None):
+    def __init__(self, request_id, user_id: str = None, opts: argparse.Namespace = None):
         """
         Initialize the Config object with defaults and runtime overrides.
 
@@ -88,6 +86,9 @@ class Config:
         if getattr(self, "_initialized", False):
             return
 
+        self.request_id = request_id
+        self.user_id = user_id if user_id else str(socket.gethostbyname(socket.gethostname())).replace(".", "")
+        
         api_key = None
         seconds = 5
         if opts:
@@ -121,7 +122,7 @@ class Config:
         format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
         
         os.makedirs("logs", exist_ok=True)
-        log_file = os.path.join("logs", f"{self.user_id}.log")
+        log_file = os.path.join("logs", f"{self.request_id}.log")
 
         logger = logging.getLogger(name)
         logger.setLevel(level)

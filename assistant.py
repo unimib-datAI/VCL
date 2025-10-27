@@ -1,7 +1,8 @@
 import os
-from datetime import datetime, timezone
+import socket
 
 from copy import deepcopy
+from datetime import datetime, timezone
 
 from bot.utils.config import Config
 from bot.utils.file_manager import write_file
@@ -12,24 +13,36 @@ from bot.planner.planner import Planner
 from bot.executor.executor import Executor
 
 class Assistant():
-    # Load the global configuration
-    CFG = Config.get_instance()
+    user_id = None
+    request_id = None
+    
+    def __init__(self, request_id : str = None, user_id : str = None):
+        if user_id:
+            self.user_id = user_id
+        else:
+            self.user_id = socket.gethostbyname(socket.gethostname())
+        
+        if request_id:
+            self.request_id = request_id
+        else:
+            timestamp = str(datetime.now(timezone.utc).isoformat())
+            self.request_id = f"{str(self.user_id)}_{timestamp}".replace(":", "").replace(".", "")
+            
+        # Load the global configuration
+        self.CFG = Config.get_instance(self.request_id)
 
-    # Initialize components
-    preprocessor = Preprocessor(CFG)
-    planner = Planner(CFG)
-    translator = Translator(CFG)
-    executor = Executor(CFG)
+        # Initialize components
+        self.preprocessor = Preprocessor(self.CFG)
+        self.planner = Planner(self.CFG)
+        self.translator = Translator(self.CFG)
+        self.executor = Executor(self.CFG)
 
-    logger = CFG.get_logger("Assistant")
+        self.logger = self.CFG.get_logger("Assistant")
+        
 
     def chat(self, prompt: str):
         # Log start of chat processing
         self.logger.info(f"Request Received: \"{prompt}\"")
-        
-        # Save id request
-        timestamp = str(datetime.now(timezone.utc).isoformat())
-        request_id = f"{str(self.CFG.user_id)}_{timestamp}".replace(":", "").replace(".", "")
         
         try:
             # Step 1: Preprocessing
@@ -46,7 +59,7 @@ class Assistant():
             # Output: structured version of the query
             self.logger.info("Step 2 (Translator): Starting")
             structured_query = self.translator.rewrite(prompt)
-            structured_query["id"] = request_id
+            structured_query["id"] = self.request_id
             self.logger.info("Step 2 (Translator): Done")
             
             self.logger.info("Step 3 (Planner): Starting")
@@ -72,7 +85,7 @@ class Assistant():
             result = "Qualcosa è andato storto. Riprova!"
         
         final_response = {
-            "id": request_id,
+            "id": self.request_id,
             "structured_input": structured_query,
             "input": prompt,
             "operations": operations,
@@ -84,15 +97,16 @@ class Assistant():
         
         self.CFG.storage.write(self.CFG.user_id, final_response)
         write_file(
-            os.path.join(self.CFG.project_root, "documents", f"{request_id}.json"), 
+            os.path.join(self.CFG.project_root, "documents", f"{self.request_id}.json"), 
             final_response
         )
         
         
         return final_response
     
-    def __init__(self):
-        pass
+    def get_request_id(self):
+        return self.request_id
+    
     
 #i = 1
 #for node in nx.topological_sort(query_graph):
