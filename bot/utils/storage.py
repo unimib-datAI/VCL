@@ -42,7 +42,7 @@ class Storage:
     _lock = threading.Lock()
 
     @classmethod
-    def get_instance(cls, logger = None, project_root = None):
+    def get_instance(cls, logger = None, project_root = None, user_id = None):
         """
         Retrieve the singleton instance of Storage.
 
@@ -52,10 +52,10 @@ class Storage:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = cls(logger, project_root)
+                    cls._instance = cls(logger, project_root, user_id)
         return cls._instance
 
-    def __init__(self, logger, project_root):
+    def __init__(self, logger, project_root, user_id):
         """
         Initialize the Redis client with credentials from settings files.
 
@@ -73,6 +73,8 @@ class Storage:
             url=read_file(os.path.join(self.project_root, "settings", "url_redis.txt")),
             token=read_file(os.path.join(self.project_root, "settings", "token_redis.txt")),
         )
+        
+        self.user_id = user_id
 
         self._initialized = True
 
@@ -93,7 +95,11 @@ class Storage:
         return json.loads(data)
 
     def write(
-        self, key: str, element: dict, data: Optional[List[Dict[str, Any]]] = None
+        self, 
+        key: str, 
+        element: dict,
+        ttl: Optional[int] = 0,
+        data: Optional[List[Dict[str, Any]]] = None
     ):
         """
         Write a new element to Redis.
@@ -108,8 +114,11 @@ class Storage:
             data = self.read(key)
 
         data.append(element)
-        # Save data with TTL of 60 minutes
-        self.r.set(key, json.dumps(data), ex=3600)
+        if ttl > 0:
+            # Save data with TTL of 60 minutes
+            self.r.set(key, json.dumps(data), ex=ttl)
+        else:
+            self.r.set(key, json.dumps(data))
 
     def chat_in_str(self, key: str) -> str:
         """
@@ -159,3 +168,17 @@ class Storage:
             key (str): Redis key to clear.
         """
         self.r.set(key, json.dumps([]), ex=1800)
+            
+    # --- Language Functions --- #
+    
+    def get_language(self):
+        language = self.read(f"{self.user_id}_language")
+        
+        if not language:
+            return self.set_default_language()
+        
+        return language[0]
+    
+    def write_language(self, element):
+        self.write(f"{self.user_id}_language", element)
+        return element

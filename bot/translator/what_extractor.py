@@ -1,7 +1,7 @@
 import os
 
 from bot.utils.config import Config
-from bot.utils.file_manager import read_file
+from bot.utils.DQL_language import DQLlanguage
 
 class WhatExtractor:
     
@@ -10,10 +10,10 @@ class WhatExtractor:
         self.logger = cfg.get_logger("Translator")
         self.project_root = cfg.project_root
         
-        self.source_what_map, self.definitions = self.retrieve_what()
+        self.dqlLanguage = DQLlanguage(cfg.storage)
     
     def extract(self, query: str, sources: str) -> dict:
-        language_what = self.what_string(sources)
+        language_what = self.what_string(self.dqlLanguage.get_available_what(sources))
         
         query_dict = {
             "query": query,
@@ -41,25 +41,9 @@ class WhatExtractor:
         self.logger.info(f"What Extractor: {what} - {status}")
         
         return what
-        
-    def retrieve_what(self) -> list:
-        """
-        Retrieve the list of available what from the what.json file.
-
-        Returns:
-            list: A list of source dictionaries.
-        """
-        what_path = os.path.join(
-            self.project_root,
-            "documents",
-            "language",
-            "what.json"
-        )
-        what_data = read_file(what_path)
-        
-        return what_data.get("source-what", {}), what_data.get("definitions", {})
     
-    def what_string(self, sources) -> str:
+    @staticmethod
+    def what_string(what_elements) -> str:
         """
         Generate a formatted string of available what.
 
@@ -67,17 +51,8 @@ class WhatExtractor:
             str: A formatted string listing all available what.
         """
         
-        # If sources is empty, initialize to an empty set.
-        if not sources:
-            what_elements = set()
-        else:
-            # This block now only runs if 'sources' contains at least one item.
-            what_elements = set.intersection(
-                *[set(self.source_what_map.get(source, [])) for source in sources]
-            )
-        
         what_list = [
-            f"\t- \"{what}\": {self.definitions.get(what, '')}"
+            f"\t- \"{what[0]}\": {what[1]}"
             for what in what_elements
         ]
             

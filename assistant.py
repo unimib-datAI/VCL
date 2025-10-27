@@ -95,7 +95,7 @@ class Assistant():
         doc_used = [doc for task in final_response.get("operations", []) for doc in task.get("from", [])]
         final_response["used_documents"] = list(set(doc_used))
         
-        self.CFG.storage.write(self.CFG.user_id, final_response)
+        self.CFG.storage.write(self.CFG.user_id, final_response, 3600)
         write_file(
             os.path.join(self.CFG.project_root, "documents", f"{self.request_id}.json"), 
             final_response

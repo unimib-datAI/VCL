@@ -113,7 +113,7 @@ class Config:
 
         # Initialize external dependencies
         self.llm = LLM.get_instance(api_key=api_key, seconds=seconds, project_root=self.project_root)
-        self.storage = Storage.get_instance(self.get_logger("Storage"), self.project_root)
+        self.storage = Storage.get_instance(self.get_logger("Storage"), self.project_root, self.user_id)
 
         # Mark as initialized
         self._initialized = True
