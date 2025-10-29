@@ -1,21 +1,30 @@
 import os
 
-from bot.utils.storage import Storage
+from copy import deepcopy
+
+from bot.utils.config import Config
 from bot.utils.file_manager import read_file
 
 class DQLlanguage():
     full_language = None
     
-    def __init__(self, storage: Storage):
-        self.storage = storage
+    def __init__(self, cfg: Config):
+        self.storage = cfg.storage
+        self.project_root = cfg.project_root
         
         self.update_parameters(True)
         
     def get_language(self):
-        return self.storage.get_language()
+        if not self.full_language:
+            self.full_language = self.storage.get_language()
+            
+            if not self.full_language:
+                self.full_language = self.storage.write_default_language()
+        
+        return self.full_language
     
     def set_language(self, language: dict):
-        self.full_language = self.storage.write(language)
+        self.full_language = self.storage.write_language(language)
         self.update_parameters()
         
     def set_default_language(self):
@@ -35,11 +44,8 @@ class DQLlanguage():
         self.commands = self.full_language.get("commands", [])
         self.sources = self.full_language.get("sources", [])
         
-        self.what_definitions = self.full_language.get("what_definitions", {})
-        
         self.set_default_command()
         self.build_command_maps()
-        self.build_what_map()
             
     # --- COMMANDS FUNCTIONS --- #
             
@@ -91,33 +97,11 @@ class DQLlanguage():
         
         
     # --- WHAT FUNCTIONS --- #
-    def build_what_map(self):
-        what_map = {}
-        
-        for src in self.sources:
-            what_map.update({src.get("name", ""): src.get("available_what", [])})
-            
-        self.what_map = what_map
-        
-        
     def get_available_what(self, sources: list) -> dict:
         what_elements = []
         
         if sources:
-            # This block now only runs if 'sources' contains at least one item.
-            what_elements = list(
-                set.intersection(
-                    *[set(self.what_map.get(source, [])) for source in sources]
-                )
-            )
+            what_elements = [(what["name"], what["definition"]) for what in self.full_language.get("what", []) if set(sources).issubset(what["available"])]
         
-        available_what = []
-        for what in what_elements:
-            available_what.append((what,
-                                   self.get_what_definition(what)))
-        
-        return available_what
-    
-    def get_what_definition(self, element):
-        return self.what_definitions.get(element, "")
+        return what_elements
     

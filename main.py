@@ -12,10 +12,9 @@ It also launches the FastAPI server using Uvicorn.
 """
 
 import argparse
-import uvicorn
+import subprocess
 
-from graph import Graph
-from utils.config import Config
+from bot.utils.config import Config
 
 
 def parse_args():
@@ -72,14 +71,7 @@ def parse_args():
         required=False,
         help="Minimum rewrite grade needed to complete the process.",
     )
-    parser.add_argument(
-        "-save_image",
-        action="store_true",
-        dest="save_image",
-        required=False,
-        help="Saving the rewrite graph image.",
-    )
-
+    
     options = parser.parse_args()
 
     return options
@@ -98,22 +90,12 @@ def main():
     opts = parse_args()
     Config.get_instance(opts)
 
-    if opts.save_image:
-        get_graph_image()
-
-    uvicorn.run("app:app")
-
-
-def get_graph_image():
-    """
-    Generates the rewrite graph and saves it as an image.
-
-    The graph is retrieved from the Graph class and saved as
-    'images/graph.png' in PNG format.
-    """
-    graph = Graph(Config.get_instance()).graph
-    with open("images/graph.png", "wb") as f:
-        f.write(graph.get_graph().draw_mermaid_png())
+    subprocess.call([
+        "streamlit",
+        "run",
+        "app.py",
+        "--server.fileWatcherType=none"
+    ])
 
 
 if __name__ == "__main__":

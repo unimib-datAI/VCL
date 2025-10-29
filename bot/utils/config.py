@@ -59,7 +59,7 @@ class Config:
     minimum_score = 8
 
     @classmethod
-    def get_instance(cls, request_id, user_id: str = None, opts: argparse.Namespace = None):
+    def get_instance(cls, request_id: str = None, user_id: str = None, opts: argparse.Namespace = None):
         """
         Retrieve the singleton instance of Config, creating it if necessary.
 
@@ -75,7 +75,7 @@ class Config:
                     cls._instance = cls(request_id, user_id=user_id, opts=opts)
         return cls._instance
 
-    def __init__(self, request_id, user_id: str = None, opts: argparse.Namespace = None):
+    def __init__(self, request_id: str = None, user_id: str = None, opts: argparse.Namespace = None):
         """
         Initialize the Config object with defaults and runtime overrides.
 

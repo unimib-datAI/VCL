@@ -18,7 +18,7 @@ def configure_page():
     st.set_page_config(
         page_title=title,
         layout="wide",
-        initial_sidebar_state="collapsed"
+        #initial_sidebar_state="collapsed"
     )
     
     # --- Custom CSS for Layout ---
@@ -158,47 +158,48 @@ def show_expander(full_details):
                 </details>
             """, unsafe_allow_html=True)
         
-            for index, operation in enumerate(operations, start=1):
-                new_dict = {
-                    "command": operation.get("command", ""),
-                    "from": operation.get("from", []),
-                }
-                        
-                if operation.get("what", ""):
-                    new_dict["what"] = operation.get("what", "")
-                    
-                if operation.get("how", ""):
-                    new_dict["how"] = operation.get("how", "")
+            if len(operations) > 1:
+                for index, operation in enumerate(operations, start=1):
+                    new_dict = {
+                        "command": operation.get("command", ""),
+                        "from": operation.get("from", []),
+                    }
                             
-                operation_json = json.dumps(new_dict, indent=4)
-                html_text = str(html.escape(markdown.markdown(operation.get("result", ""))))
-                operation_result = str(re.sub(r'<[^>]+>', '', html_text).strip())
+                    if operation.get("what", ""):
+                        new_dict["what"] = operation.get("what", "")
+                        
+                    if operation.get("how", ""):
+                        new_dict["how"] = operation.get("how", "")
+                                
+                    operation_json = json.dumps(new_dict, indent=4)
+                    html_text = str(html.escape(markdown.markdown(operation.get("result", ""))))
+                    operation_result = str(re.sub(r'<[^>]+>', '', html_text).strip())
 
-                st.markdown(f"""
-                <details style="margin-left:20px; margin-top:10px;">
-                    <summary>Operazione {index}:</b> {operation.get('command', '')} - {operation.get('id', '')}</summary>
-                    <pre><code class="language-json">{operation_json}</code></pre>
-                    <b>Risultato Parziale:</b>
+                    st.markdown(f"""
                     <details style="margin-left:20px; margin-top:10px;">
-                        <summary>Visualizza il testo</summary>
-                        <pre style="white-space: pre-wrap; word-break: break-word;">
-                            <code class="language-plaintext">
-                                {operation_result}
-                            </code>
-                        </pre>
+                        <summary>Operazione {index}:</b> {operation.get('command', '')} - {operation.get('id', '')}</summary>
+                        <pre><code class="language-json">{operation_json}</code></pre>
+                        <b>Risultato Parziale:</b>
+                        <details style="margin-left:20px; margin-top:10px;">
+                            <summary>Visualizza il testo</summary>
+                            <pre style="white-space: pre-wrap; word-break: break-word;">
+                                <code class="language-plaintext">
+                                    {operation_result}
+                                </code>
+                            </pre>
+                        </details>
                     </details>
-                </details>
-                """, unsafe_allow_html=True)
-            
-            st.markdown("</details>", unsafe_allow_html=True)
+                    """, unsafe_allow_html=True)
+                
+                st.markdown("</details>", unsafe_allow_html=True)
             
 
 # --- SIDEBAR ---
-def render_sidebar():
-    """Render the sidebar with optional app settings."""
-    with st.sidebar:
-        st.header("Impostazioni")
-        st.write("")
+#def render_sidebar():
+#    """Render the sidebar with optional app settings."""
+#    with st.sidebar:
+#        st.header("Impostazioni")
+#        st.write("")
 
 
 # --- MAIN FUNCTION ---
@@ -210,7 +211,7 @@ def main():
     initialize_chat()
     display_chat_history()
     handle_user_input()
-    render_sidebar()
+    #render_sidebar()
 
 
 # --- ENTRY POINT ---

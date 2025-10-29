@@ -1,12 +1,14 @@
 import os
 
 from bot.utils.config import Config
+from bot.utils.DQL_language import DQLlanguage
 from bot.utils.file_manager import read_file
 
 class Planner:
     def __init__(self, cfg: Config):
         self.logger = cfg.get_logger("Planner")
         self.project_root = cfg.project_root
+        self.dql = DQLlanguage(cfg)
         self.commands = self.retrieve_commands()
 
     def decompose(self, query: dict) -> list[dict]:
@@ -59,16 +61,10 @@ class Planner:
     def retrieve_commands(self) -> dict:
         commands = {}
         
-        commands_path = os.path.join(
-            self.project_root,
-            "documents",
-            "language",
-            "commands.json"
-        )
-        commands_data = read_file(commands_path).get("commands", [])
+        commands_data = self.dql.commands
         
         for command in commands_data:
             if command.get("command", ""):
-                commands[command.get("command")] = command.get("what", [])
+                commands[command.get("command")] = command.get("atomic", [])
         
         return commands

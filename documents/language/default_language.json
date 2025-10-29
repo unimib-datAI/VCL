@@ -76,48 +76,203 @@
 		{
             "name": "sentenza di primo grado",
             "synonyms": ["s. trib.", "s. g.d.p.", "s. i grado", "s1"],
-            "description": "Decisione emessa dal primo giudice.",
-            "available_what": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente", "sillogismo", "percorso logico", "passaggio logico", "fatto", "decisioni", "motivi", "richieste", "altro"]
+            "description": "Decisione emessa dal primo giudice."
         },
 
         {
             "name": "sentenza di secondo grado",
             "synonyms": ["s. app.", "sent. ii° gr", "s2"],
-            "description": "Decisione emessa dal giudice d'appello.",
-            "available_what": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente", "sillogismo", "percorso logico", "passaggio logico", "fatto", "decisioni", "motivi", "richieste", "altro"]
+            "description": "Decisione emessa dal giudice d'appello."
         },
 
         {
             "name": "memoria giudiziale",
             "synonyms": ["memoria", "m1", "m2"],
-            "description": "Atto scritto depositato da una delle parti.",
-            "available_what": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente", "sillogismo", "percorso logico", "passaggio logico", "fatto", "decisioni", "motivi", "richieste", "altro"]
+            "description": "Atto scritto depositato da una delle parti."
         },
 
         {
             "name": "ricorso giudiziale",
             "synonyms": ["ricorso", "r1", "r2"],
-            "description": "Atto con cui si avvia o si impugna una decisione.",
-            "available_what": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente", "sillogismo", "percorso logico", "passaggio logico", "fatto", "decisioni", "motivi", "richieste", "altro"]
+            "description": "Atto con cui si avvia o si impugna una decisione."
         }
     ],
 
-    "what_definitions": {
-        "intero documento": "L’operazione riguarda l'intero contenuto del documento, senza filtri o estrazioni parziali.",
-        "frase": "L’operazione si concentra su una o più frasi specifiche, tipicamente citazioni testuali.",
-        "persona": "La richiesta riguarda individui specifici o ruoli processuali (es. attore, convenuto, giudice).",
-        "fonte": "Si cercano citazioni di altri documenti, come sentenze, articoli di dottrina, riferimenti bibliografici, norme giuridiche (es. articoli di codici o leggi).",
-        "organizzazione": "La richiesta riguarda enti, istituzioni, società o altre persone giuridiche.",
-        "luogo": "Si cercano riferimenti a luoghi geografici rilevanti per il caso.",
-        "denaro": "La richiesta concerne somme, valori monetari o spese legali.",
-        "precedente": "Si vogliono individuare decisioni giudiziarie passate citate come riferimento o base per l'argomentazione.",
-        "sillogismo": "Si cerca una specifica struttura argomentativa basata su una premessa maggiore, una premessa minore e una conclusione logica.",
-        "percorso logico": "Si vuole ricostruire la sequenza generale dei ragionamenti giuridici che hanno portato alla decisione.",
-        "passaggio logico": "Si vuole analizzare un singolo step o anello della catena argomentativa, più specifico del 'percorso logico'.",
-        "fatto": "Si cercano le sezioni del documento che descrivono gli eventi e le circostanze materiali alla base della controversia.",
-        "decisioni": "La richiesta riguarda la parte finale della sentenza (dispositivo) che contiene le conclusioni e le statuizioni del giudice.",
-        "motivi": "Si vogliono estrarre le argomentazioni e le ragioni giuridiche che giustificano la decisione.",
-        "richieste": "Si cercano le domande e le istanze formulate dalle parti all'inizio o nel corso del procedimento.",
-        "altro": "Categoria residuale per elementi non riconducibili ai precedenti."
-    }
+    "what": [
+        {
+            "name": "intero documento",
+            "definition": "L’operazione riguarda l'intero contenuto del documento, senza filtri o estrazioni parziali.", 
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "frase",
+            "definition": "L’operazione si concentra su una o più frasi specifiche, tipicamente citazioni testuali.", 
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "persona",
+            "definition": "La richiesta riguarda individui specifici o ruoli processuali (es. attore, convenuto, giudice).",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+        
+        {
+            "name": "fonte",
+            "definition": "Si cercano citazioni di altri documenti, come sentenze, articoli di dottrina, riferimenti bibliografici, norme giuridiche (es. articoli di codici o leggi).",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "organizzazione",
+            "definition": "La richiesta riguarda enti, istituzioni, società o altre persone giuridiche.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+        
+        {
+            "name": "luogo",
+            "definition": "Si cercano riferimenti a luoghi geografici rilevanti per il caso.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "denaro",
+            "definition": "La richiesta concerne somme, valori monetari o spese legali.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+        
+        {
+            "name": "precedente",
+            "definition": "Si vogliono individuare decisioni giudiziarie passate citate come riferimento o base per l'argomentazione.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+        
+        {
+            "name": "sillogismo",
+            "definition": "Si cerca una specifica struttura argomentativa basata su una premessa maggiore, una premessa minore e una conclusione logica.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "percorso logico",
+            "definition": "Si vuole ricostruire la sequenza generale dei ragionamenti giuridici che hanno portato alla decisione.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "passaggio logico",
+            "definition": "Si vuole analizzare un singolo step o anello della catena argomentativa, più specifico del 'percorso logico'.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "fatto",
+            "definition": "Si cercano le sezioni del documento che descrivono gli eventi e le circostanze materiali alla base della controversia.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "decisioni",
+            "definition": "La richiesta riguarda la parte finale della sentenza (dispositivo) che contiene le conclusioni e le statuizioni del giudice.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "motivi",
+            "definition": "Si vogliono estrarre le argomentazioni e le ragioni giuridiche che giustificano la decisione.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+
+        {
+            "name": "richieste",
+            "definition": "Si cercano le domande e le istanze formulate dalle parti all'inizio o nel corso del procedimento.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        },
+        
+        {
+            "name": "altro",
+            "definition": "Categoria residuale per elementi non riconducibili ai precedenti.",
+            "available": [
+                "sentenza di primo grado",
+                "sentenza di secondo grado",
+                "memoria giudiziale",
+                "ricorso giudiziale"
+            ]
+        }
+    ]
 }

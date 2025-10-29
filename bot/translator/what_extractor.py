@@ -10,7 +10,7 @@ class WhatExtractor:
         self.logger = cfg.get_logger("Translator")
         self.project_root = cfg.project_root
         
-        self.dqlLanguage = DQLlanguage(cfg.storage)
+        self.dqlLanguage = DQLlanguage(cfg)
     
     def extract(self, query: str, sources: str) -> dict:
         language_what = self.what_string(self.dqlLanguage.get_available_what(sources))

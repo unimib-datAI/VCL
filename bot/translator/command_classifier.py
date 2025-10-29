@@ -10,7 +10,7 @@ class CommandClassifier:
         self.logger = cfg.get_logger("Translator")
         self.project_root = cfg.project_root
         
-        self.dqlLanguage = DQLlanguage(cfg.storage)
+        self.dqlLanguage = DQLlanguage(cfg)
     
     def classify(self, query: str) -> dict:
         language_commands = self.commands_string(self.dqlLanguage.commands)

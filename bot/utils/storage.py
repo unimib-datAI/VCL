@@ -154,9 +154,12 @@ class Storage:
     
     def get_element(self, key: str, field: str, element: str) -> Optional[Dict[str, Any]]:
         data = self.read(key)
-        for element in data:
-            if element.get(field, "") == element:
-                return element
+        
+        if type(data) == list:
+            for element in data:
+                if element.get(field, "") == element:
+                    return element
+                
         return None
 
 
@@ -175,10 +178,21 @@ class Storage:
         language = self.read(f"{self.user_id}_language")
         
         if not language:
-            return self.set_default_language()
+            return {}
         
-        return language[0]
+        return language
     
     def write_language(self, element):
-        self.write(f"{self.user_id}_language", element)
+        key = f"{self.user_id}_language"
+        self.r.set(key, json.dumps(element))
         return element
+    
+    def write_default_language(self):
+        default_language = read_file(os.path.join(
+            self.project_root,
+            "documents",
+            "language",
+            "default_language.json"
+        ))
+        
+        return self.write_language(default_language)
