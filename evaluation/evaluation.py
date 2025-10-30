@@ -12,7 +12,7 @@ from langchain_core.output_parsers import StrOutputParser
 # Root path of the project (two levels up from this file)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from utils.file_manager import read_file
+from utils.file_manager import FileHandler
 from utils.LLM import LLM
 from utils.config import Config
 

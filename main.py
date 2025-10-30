@@ -1,37 +1,20 @@
-"""
-This script serves as the main entry point for the DQL system.
-
-It allows command-line configuration of the system, including:
-- Providing an API key
-- Setting wait times between LLM calls
-- Enabling RAG (Retrieval-Augmented Generation)
-- Limiting the number of query rewrite iterations
-- Saving a graphical representation of the rewrite graph
-
-It also launches the FastAPI server using Uvicorn.
-"""
-
 import argparse
-import subprocess
+import streamlit.web.cli as stcli
+import sys
 
-from bot.utils.config import Config
 
+from utils.config import Config
 
-def parse_args():
+def parse_args() -> argparse.Namespace:
     """
-    Parse command-line arguments provided to the script.
+    Parse command-line arguments for the DQL application.
 
     Returns:
-        argparse.Namespace: A namespace containing the parsed arguments:
-            - api_key (str, optional): API Key for Gemini.
-            - wait (int, optional): Wait time after each LLM call.
-            - rag (bool): Whether to retrieve relevant chunks only or full documents.
-            - max_iterations (int, optional): Maximum rewrite attempts for a query.
-            - save_image (bool): Whether to save the rewrite graph image.
-            - minimum_score (int): Minimum rewrite grade needed to complete the process
+        argparse.Namespace: Parsed arguments.
     """
     parser = argparse.ArgumentParser(
-        description="DQL", formatter_class=argparse.RawTextHelpFormatter
+        description="DQL - Data Query Language",
+        formatter_class=argparse.RawTextHelpFormatter,
     )
 
     parser.add_argument(
@@ -39,63 +22,109 @@ def parse_args():
         action="store",
         dest="api_key",
         required=False,
-        help="API Key for Gemini. If not specified, the settings/api_key.txt file is read.",
-    )
-    parser.add_argument(
-        "-wait",
-        action="store",
-        dest="seconds",
-        required=False,
-        help="Number of seconds the system should wait after each call to an LLM.",
-    )
-    parser.add_argument(
-        "-rag",
-        action="store_true",
-        dest="rag",
         help=(
-            "Indicates whether the entire documents (unspecified parameter) "
-            "or only the relevant chunks (specified parameter) should be retrieved."
+            "API key for the Gemini model.\n"
+            "If not specified, it will be read from 'settings/api_key.txt'."
         ),
     )
+
     parser.add_argument(
-        "-max_iterations",
+        "-url_db",
         action="store",
-        dest="max_iterations",
+        dest="url_db",
         required=False,
-        help="Maximum number of rewrite attempts for a query.",
+        help=(
+            "Database connection URL.\n"
+            "If not specified, it will be read from 'settings/url_db.txt'."
+        )
     )
+
     parser.add_argument(
-        "-minimum_score",
+        "-token_db",
         action="store",
-        dest="minimum_score",
+        dest="token_db",
         required=False,
-        help="Minimum rewrite grade needed to complete the process.",
+        help=(
+            "Database authentication token\n"
+            "If not specified, it will be read from 'settings/token_db.txt'."
+        )
+    )
+
+    parser.add_argument(
+        "-wait_seconds",
+        action="store",
+        dest="seconds",
+        type=int,
+        required=False,
+        default=5,
+        help="Number of seconds to wait after each LLM call (default: 5).",
     )
     
-    options = parser.parse_args()
+    parser.add_argument(
+        "-spell_check_without_llm",
+        action="store_true",
+        dest="spell_check_without_llm",
+        help=(
+             "Enable to avoid llm in spell checking phase"
+        ),
+    )
 
-    return options
+    # Optional future flags (commented for now)
+    # parser.add_argument(
+    #     "-rag",
+    #     action="store_true",
+    #     dest="rag",
+    #     help=(
+    #         "Enable Retrieval-Augmented Generation (RAG) mode. "
+    #         "Retrieves either entire documents or relevant chunks."
+    #     ),
+    # )
+    #
+    # parser.add_argument(
+    #     "-max_iterations",
+    #     action="store",
+    #     dest="max_iterations",
+    #     type=int,
+    #     required=False,
+    #     help="Maximum number of query rewrite attempts.",
+    # )
+    #
+    # parser.add_argument(
+    #     "-minimum_score",
+    #     action="store",
+    #     dest="minimum_score",
+    #     type=float,
+    #     required=False,
+    #     help="Minimum rewrite score required to complete the process.",
+    # )
+
+    return parser.parse_args()
 
 
-def main():
+def _launch_streamlit() -> None:
     """
-    Main entry point for the DQL system.
+    Launch the Streamlit user interface for DQL within the same process.
+    """
 
-    This function:
-    1. Parses command-line arguments.
-    2. Initializes the Config singleton with parsed options.
-    3. Generates and saves the rewrite graph image if requested.
-    4. Starts the FastAPI application using Uvicorn.
+    sys.argv = [
+        "streamlit",
+        "run",
+        "gui/Home.py",
+        "--server.fileWatcherType=none",
+    ]
+    sys.exit(stcli.main())
+
+
+def main() -> None:
+    """
+    Entry point for the DQL CLI application.
+
+    Parses command-line options, initializes configuration,
+    and launches the Streamlit interface.
     """
     opts = parse_args()
     Config.get_instance(opts)
-
-    subprocess.call([
-        "streamlit",
-        "run",
-        "app.py",
-        "--server.fileWatcherType=none"
-    ])
+    _launch_streamlit()
 
 
 if __name__ == "__main__":

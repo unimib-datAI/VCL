@@ -2,7 +2,7 @@ import networkx as nx
 import os
 import threading
 
-from bot.utils.config import Config
+from utils.config import Config
 
 class Decomposer():
     _instance = None  # Holds the singleton instance
@@ -41,12 +41,12 @@ class Decomposer():
     def decompose(self, query: str) -> nx.DiGraph:
         self.logger.info(f"Correction and Decomposition by LLM: Starting")
         
-        query = self.llm.invoke_from_file(
+        query = self.llm.invoke(
             os.path.join(self.project_root, "documents", "prompts", "rewriting", f"1 - CorrectionQuery.json"),
             {"query": query}
         )
         
-        query_decomposed = self.llm.invoke_from_file(
+        query_decomposed = self.llm.invoke(
             os.path.join("prompts", "rewriting", "2 - Decomposition.json"), 
             {"query": query}
         )
