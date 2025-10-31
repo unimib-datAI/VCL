@@ -61,10 +61,12 @@ class Config:
         url_db = getattr(opts, "url_db", None) if opts else None
         token_db = getattr(opts, "token_db", None) if opts else None
         seconds = self._parse_seconds(getattr(opts, "seconds", None)) if opts else 5
+        model_name = getattr(opts, "model_name", None) if opts else None
+        provider = getattr(opts, "provider", None) if opts else None
         self.spell_check_without_llm = getattr(opts, "spell_check_without_llm", False) if opts else False
 
         # Initialize subsystems
-        self.llm = LLM.get_instance(api_key=api_key, seconds=seconds, project_root=self.project_root)
+        self.llm = LLM.get_instance(api_key=api_key, seconds=seconds, project_root=self.project_root, model_name=model_name, provider=provider)
         self.storage = Storage.get_instance(self.user_id, url_db, token_db, self.project_root)
         self.language = DQLLanguage.get_instance(self.storage, self.project_root)
 

@@ -68,6 +68,39 @@ def parse_args() -> argparse.Namespace:
              "Enable to avoid llm in spell checking phase"
         ),
     )
+    
+    parser.add_argument(
+        "-model_name",
+        action="store",
+        dest="model_name",
+        required=False,
+        default="gemini-2.0-flash",
+        help=(
+            "Specify the LLM model name.\n"
+            "Examples:\n"
+            "  gemini-2.0-flash (default)\n"
+            "  gpt-4o-mini\n"
+            "  mistralai/Mistral-7B-Instruct-v0.2\n"
+            "  claude-3-5-sonnet\n"
+        ),
+    )
+
+    parser.add_argument(
+        "-provider",
+        action="store",
+        dest="provider",
+        required=False,
+        default="google_genai",
+        choices=["google_genai", "openai", "copilot", "huggingface"],
+        help=(
+            "Specify the LLM provider (default: google_genai).\n"
+            "Available options:\n"
+            "  google_genai  → Google Gemini\n"
+            "  openai        → OpenAI GPT models\n"
+            "  copilot       → GitHub Copilot API\n"
+            "  huggingface   → Hugging Face models\n"
+        ),
+    )
 
     # Optional future flags (commented for now)
     # parser.add_argument(

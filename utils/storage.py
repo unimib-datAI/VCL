@@ -119,17 +119,14 @@ class Storage:
     # --- Document Operations ---
     # ---------------------------
 
-    def get_documents(self, key: str) -> List[Dict[str, Any]]:
+    def get_documents(self) -> List[Dict[str, Any]]:
         """
-        Retrieve all documents stored under a given Redis key.
-
-        Args:
-            key (str): Redis key.
+        Retrieve all documents stored for the current user.
 
         Returns:
             list[dict]: List of stored documents, or empty list if none found.
         """
-        data = self.r.get(key)
+        data = self.r.get(self.user_id)
         if not data:
             return []
         try:
@@ -139,7 +136,6 @@ class Storage:
 
     def set_documents(
         self,
-        key: str,
         element: dict,
         ttl: Optional[int] = 0,
         data: Optional[List[Dict[str, Any]]] = None,
@@ -148,32 +144,28 @@ class Storage:
         Append a new element to an existing Redis document list and save it.
 
         Args:
-            key (str): Redis key.
             element (dict): Element to append.
             ttl (int, optional): Expiration time (seconds). Defaults to 0 (no expiry).
             data (list[dict], optional): Pre-loaded document list. If None, fetched from Redis.
         """
         if data is None:
-            data = self.get_documents(key)
+            data = self.get_documents()
 
         data.append(element)
 
         if ttl and ttl > 0:
-            self.r.set(key, json.dumps(data), ex=ttl)
+            self.r.set(self.user_id, json.dumps(data), ex=ttl)
         else:
-            self.r.set(key, json.dumps(data))
+            self.r.set(self.user_id, json.dumps(data))
 
-    def chat_in_str(self, key: str) -> str:
+    def chat_in_str(self) -> str:
         """
         Return a string representation of stored chat sessions.
-
-        Args:
-            key (str): Redis key for chat history.
 
         Returns:
             str: Stringified representation of chat history.
         """
-        data = self.get_documents(key)
+        data = self.get_documents()
         if not data:
             return ""
 
@@ -192,35 +184,34 @@ class Storage:
     # --- Document Retrieval ---
     # --------------------------
 
-    def get_documents_by_id(self, key: str, element_id: str) -> Optional[Dict[str, Any]]:
+    def get_documents_by_id(self, element_id: str) -> Optional[Dict[str, Any]]:
         """Retrieve a document by its 'id' field."""
-        return self._get_document(key, "id", element_id)
+        return self._get_document("id", element_id)
 
     def get_documents_by_type(
-        self, key: str, element_type: str
+        self, element_type: str
     ) -> Optional[Dict[str, Any]]:
         """Retrieve a document by its 'type_doc' field."""
-        return self._get_document(key, "type_doc", element_type)
+        return self._get_document("type_doc", element_type)
 
     def get_documents_by_name(
-        self, key: str, element_name: str
+        self, element_name: str
     ) -> Optional[Dict[str, Any]]:
         """Retrieve a document by its 'name' field."""
-        return self._get_document(key, "name", element_name)
+        return self._get_document("name", element_name)
 
-    def _get_document(self, key: str, field: str, value: str) -> Optional[Dict[str, Any]]:
+    def _get_document(self, field: str, value: str) -> Optional[Dict[str, Any]]:
         """
         Retrieve the first document where a given field matches the provided value.
 
         Args:
-            key (str): Redis key.
             field (str): Field name to match.
             value (str): Expected value.
 
         Returns:
             dict | None: Matching document or None if not found.
         """
-        data = self.get_documents(key)
+        data = self.get_documents()
         if not isinstance(data, list):
             return None
 

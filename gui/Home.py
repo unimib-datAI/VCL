@@ -202,8 +202,7 @@ def follow_log(file_path: str, stop_event: threading.Event, wait_time: float = 0
                     if f"- {label} -" in line:
                         line = line.split(f"- {label} -", 1)[-1].strip()
 
-                if not line.startswith("Assistant"):
-                    line = f"\t{line}"
+                line = f"\t{line}"
                 
                 yield line
 

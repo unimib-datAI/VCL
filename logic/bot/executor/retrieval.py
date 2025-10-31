@@ -127,7 +127,7 @@ class Retrieval:
         for method in [self.storage.get_documents_by_type,
                        self.storage.get_documents_by_id,
                        self.storage.get_documents_by_name]:
-            doc = method(self.id_user, doc_name)
+            doc = method(doc_name)
             if doc and "text" in doc:
                 return {"name": doc["name"], "text": doc["text"], "type": doc_name}
         return None

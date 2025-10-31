@@ -3,105 +3,105 @@
         {
             "key": "a",
             "command": "cerca",
-            "description": "Individua nel testo entità, concetti o frasi semanticamente affini, superando la ricerca per parole chiave grazie alla comprensione del significato e del contesto d’uso dei termini.",
+            "description": "Esegue una ricerca concettuale per individuare entità (parti, giudici, luoghi), istituti giuridici, o principi di diritto semanticamente correlati alla richiesta, andando oltre la mera corrispondenza testuale.",
             "atomic": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente"]
         },
 
         {
             "key": "b",
             "command": "riassumi",
-            "description": "Genera una versione più breve e coerente di un testo, mantenendo i concetti essenziali e scartando i dettagli irrilevanti tramite sintesi estrattiva o astrattiva."
+            "description": "Produce una sintesi concisa del documento (es. atto, sentenza), preservando i punti chiave del fatto, le argomentazioni giuridiche e il dispositivo, eliminando le informazioni accessorie."
         },
         
         {
             "key": "c",
             "command": "estrai semantico",
-            "description": "Isola dal testo una parte autonoma di significato (come il 'fatto' o la 'motivazione'), utile per concentrarsi su sezioni specifiche di un documento complesso.",
+            "description": "Isola e restituisce sezioni specifiche del documento giuridico dotate di autonoma rilevanza, come la ricostruzione del 'fatto', i 'motivi' della decisione, o il 'dispositivo'.",
             "atomic": ["fatto", "decisioni", "motivi", "richieste", "altro"]
         },
         
         {
             "key": "d",
             "command": "estrai logico",
-            "description": "Ricostruisce una sequenza di eventi o passaggi di ragionamento, rendendo esplicita la struttura logica o temporale implicita nel testo.",
+            "description": "Ricostruisce l'iter argomentativo e la catena di inferenze logiche (es. sillogismi) utilizzate per giungere alla decisione o per fondare una tesi difensiva.",
             "atomic": ["sillogismo", "percorso logico", "passaggio logico"]
         },
         
         {
             "key": "e",
             "command": "confronta",
-            "description": "Analizza due testi per evidenziarne similitudini e differenze di contenuto, linguaggio o logica, utile per comparare atti o argomentazioni giuridiche."
+            "description": "Esegue un'analisi comparativa tra due o più documenti (es. atto di citazione e comparsa di risposta, sentenza di primo e secondo grado) evidenziando concordanze e discordanze fattuali, normative o argomentative."
         },
         
         {
             "key": "f",
             "command": "integra",
-            "description": "Combina più testi o versioni di uno stesso documento eliminando incoerenze e duplicazioni, producendo un testo unico e coerente."
+            "description": "Fonde il contenuto di più documenti o versioni (es. diverse bozze di un atto) in un unico testo consolidato, risolvendo ridondanze o contraddizioni."
         },
         
         {
             "key": "g",
             "command": "verifica",
-            "description": "Controlla la correttezza, coerenza e pertinenza di riferimenti, norme o argomentazioni rispetto al contenuto complessivo del testo."
+            "description": "Effettua un controllo di coerenza interna del documento, verificando la correttezza dei riferimenti normativi e giurisprudenziali citati e la congruenza delle argomentazioni."
         },
         
         {
             "key": "h",
             "command": "analizza",
-            "description": "Esamina un testo per valutarne la struttura, la completezza e la solidità logico-giuridica, individuando punti di forza e debolezza."
+            "description": "Scompone il documento nelle sue parti costitutive (es. eccezioni, motivi, domande) per valutarne la struttura, la completezza formale e la tenuta logico-giuridica dell'impianto argomentativo."
         },
         
         {
             "key": "i",
             "command": "riorganizza",
-            "description": "Riordina frasi o paragrafi disposti in modo caotico secondo una sequenza logica, cronologica o tematica coerente."
+            "description": "Ristruttura il testo o parti di esso secondo un ordine logico, cronologico (es. sequenza dei fatti) o per materia (es. raggruppando i motivi di appello)."
         },
         
         {
             "key": "j",
             "command": "classifica",
-            "description": "Assegna a ciascun elemento testuale una categoria predefinita (es. domanda, fatto, norma, dispositivo) spiegando il criterio di appartenenza."
+            "description": "Attribuisce a singole porzioni di testo un'etichetta giuridica specifica (es. 'domanda riconvenzionale', 'motivo d'impugnazione', 'norma applicabile'), indicandone la funzione processuale o argomentativa."
         },
         
         {
             "key": "k",
             "command": "altro",
-            "description": "l'intento non corrisponde a nessuna delle opzioni precedenti.",
+            "description": "L'intento dell'utente non è riconducibile a uno dei comandi specifici predefiniti.",
             "default": true,
             "atomic": ["*"]
         }
     ],
 
     "sources": [
-		{
+        {
             "name": "sentenza di primo grado",
             "synonyms": ["s. trib.", "s. g.d.p.", "s. i grado", "s1"],
-            "description": "Decisione emessa dal primo giudice."
+            "description": "Provvedimento decisorio emesso dall'organo giudicante che si è pronunciato per primo sulla controversia (es. Tribunale, Giudice di Pace)."
         },
 
         {
             "name": "sentenza di secondo grado",
             "synonyms": ["s. app.", "sent. ii° gr", "s2"],
-            "description": "Decisione emessa dal giudice d'appello."
+            "description": "Provvedimento decisorio emesso dall'organo giudicante di appello (es. Corte d'Appello) in seguito all'impugnazione della sentenza di primo grado."
         },
 
         {
             "name": "memoria giudiziale",
             "synonyms": ["memoria", "m1", "m2"],
-            "description": "Atto scritto depositato da una delle parti."
+            "description": "Atto processuale scritto, depositato da una parte costituita in giudizio, contenente argomentazioni, istanze o repliche (es. memoria ex art. 183 c.p.c.)."
         },
 
         {
             "name": "ricorso giudiziale",
             "synonyms": ["ricorso", "r1", "r2"],
-            "description": "Atto con cui si avvia o si impugna una decisione."
+            "description": "Atto introduttivo del giudizio o mezzo di impugnazione (es. ricorso per cassazione) con cui si adisce un'autorità giudiziaria per ottenere un provvedimento."
         }
     ],
 
     "what": [
         {
             "name": "intero documento",
-            "definition": "L’operazione riguarda l'intero contenuto del documento, senza filtri o estrazioni parziali.", 
+            "definition": "L'operazione richiesta (es. riassunto, analisi) deve essere applicata alla totalità del documento selezionato, dall'intestazione al dispositivo.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -112,7 +112,7 @@
 
         {
             "name": "frase",
-            "definition": "L’operazione si concentra su una o più frasi specifiche, tipicamente citazioni testuali.", 
+            "definition": "L'operazione si focalizza su una specifica proposizione o un estratto testuale letterale (es. 'cerca questa citazione').",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -123,7 +123,7 @@
 
         {
             "name": "persona",
-            "definition": "La richiesta riguarda individui specifici o ruoli processuali (es. attore, convenuto, giudice).",
+            "definition": "La ricerca o l'analisi è mirata a persone fisiche (es. Tizio, Caio), parti processuali (attore, convenuto, terzo intervenuto) o organi giudicanti (es. il Giudice Istruttore).",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -134,7 +134,7 @@
         
         {
             "name": "fonte",
-            "definition": "Si cercano citazioni di altri documenti, come sentenze, articoli di dottrina, riferimenti bibliografici, norme giuridiche (es. articoli di codici o leggi).",
+            "definition": "Ricerca mirata a riferimenti normativi (es. 'art. 2043 c.c.'), giurisprudenziali (massime o sentenze) o dottrinali citati all'interno del testo.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -145,7 +145,7 @@
 
         {
             "name": "organizzazione",
-            "definition": "La richiesta riguarda enti, istituzioni, società o altre persone giuridiche.",
+            "definition": "La ricerca è focalizzata su entità giuridiche, pubbliche o private, menzionate nel testo (es. società, enti pubblici, istituti di credito).",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -156,7 +156,7 @@
         
         {
             "name": "luogo",
-            "definition": "Si cercano riferimenti a luoghi geografici rilevanti per il caso.",
+            "definition": "Ricerca di toponimi o luoghi geografici rilevanti ai fini della competenza territoriale o della descrizione dei fatti (es. 'il luogo del sinistro').",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -167,7 +167,7 @@
 
         {
             "name": "denaro",
-            "definition": "La richiesta concerne somme, valori monetari o spese legali.",
+            "definition": "Ricerca o estrazione di qualsiasi importo monetario, inclusi il petitum (somma richiesta), il risarcimento del danno, o la liquidazione delle spese di lite.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -178,7 +178,7 @@
         
         {
             "name": "precedente",
-            "definition": "Si vogliono individuare decisioni giudiziarie passate citate come riferimento o base per l'argomentazione.",
+            "definition": "Ricerca specifica di precedenti giurisprudenziali (sentenze passate) invocati a sostegno di una tesi o utilizzati dal giudice come fondamento della decisione.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -189,7 +189,7 @@
         
         {
             "name": "sillogismo",
-            "definition": "Si cerca una specifica struttura argomentativa basata su una premessa maggiore, una premessa minore e una conclusione logica.",
+            "definition": "Estrazione di uno specifico schema argomentativo che applica una norma (premessa maggiore) a un fatto (premessa minore) per trarne una conclusione giuridica.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -200,7 +200,7 @@
 
         {
             "name": "percorso logico",
-            "definition": "Si vuole ricostruire la sequenza generale dei ragionamenti giuridici che hanno portato alla decisione.",
+            "definition": "Ricostruzione dell'intera catena argomentativa (ratio decidendi) seguita dal giudice o dalla parte, dall'analisi dei fatti all'applicazione delle norme.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -211,7 +211,7 @@
 
         {
             "name": "passaggio logico",
-            "definition": "Si vuole analizzare un singolo step o anello della catena argomentativa, più specifico del 'percorso logico'.",
+            "definition": "Analisi di una singola inferenza o di uno specifico snodo argomentativo all'interno del ragionamento giuridico complessivo.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -222,7 +222,7 @@
 
         {
             "name": "fatto",
-            "definition": "Si cercano le sezioni del documento che descrivono gli eventi e le circostanze materiali alla base della controversia.",
+            "definition": "Estrazione delle parti del testo relative alla ricostruzione storica degli eventi, alle circostanze materiali e alle prove che costituiscono l'oggetto della controversia.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -233,7 +233,7 @@
 
         {
             "name": "decisioni",
-            "definition": "La richiesta riguarda la parte finale della sentenza (dispositivo) che contiene le conclusioni e le statuizioni del giudice.",
+            "definition": "Estrazione del dispositivo della sentenza, ovvero la parte finale che contiene la statuizione decisoria del giudice (es. 'accoglie', 'respinge', 'condanna').",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -244,7 +244,7 @@
 
         {
             "name": "motivi",
-            "definition": "Si vogliono estrarre le argomentazioni e le ragioni giuridiche che giustificano la decisione.",
+            "definition": "Estrazione delle argomentazioni in fatto e in diritto (ratio decidendi) che costituiscono la motivazione e il fondamento logico-giuridico della decisione.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -255,7 +255,7 @@
 
         {
             "name": "richieste",
-            "definition": "Si cercano le domande e le istanze formulate dalle parti all'inizio o nel corso del procedimento.",
+            "definition": "Estrazione delle conclusioni o delle istanze formulate dalle parti (es. domande principali, eccezioni, richieste istruttorie) e rivolte al giudice.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",
@@ -266,7 +266,7 @@
         
         {
             "name": "altro",
-            "definition": "Categoria residuale per elementi non riconducibili ai precedenti.",
+            "definition": "Elemento semantico specifico non rientrante nelle categorie standard.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",

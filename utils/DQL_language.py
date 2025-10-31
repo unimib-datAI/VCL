@@ -79,7 +79,7 @@ class DQLLanguage:
 
             # If not found, fall back to the default language file
             if not self.full_language:
-                self.full_language = self.storage.write_default_language()
+                self.full_language = self.storage.set_default_language()
 
         return self.full_language
 
@@ -195,8 +195,8 @@ class DQLLanguage:
             return []
 
         what_elements = [
-            (what["name"], what["definition"])
+            (what.get("name", ""), what.get("definition", ""))
             for what in self.full_language.get("what", [])
-            if set(sources).issubset(what["available"])
+            if set(sources).issubset(what.get("available", []))
         ]
         return what_elements

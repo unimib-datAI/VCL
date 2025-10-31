@@ -6,11 +6,9 @@ import time
 
 from langchain.chat_models import init_chat_model
 from langchain_core.output_parsers import StrOutputParser
-from langchain.prompts import (
+from langchain_core.prompts import (
     ChatPromptTemplate,
     FewShotChatMessagePromptTemplate,
-)
-from langchain.prompts.chat import (
     HumanMessagePromptTemplate,
     AIMessagePromptTemplate,
 )
@@ -20,17 +18,31 @@ from utils.file_manager import FileHandler
 
 class LLM:
     """
-    Singleton class for initializing, managing, and invoking a Large Language Model (LLM).
+    Thread-safe Singleton class for initializing, managing, and invoking
+    Large Language Models (LLMs) through LangChain.
 
-    This class ensures that only one instance of the model is created across threads,
-    while handling API key management, prompt template building, and invocation routines.
+    This class provides a unified interface to multiple LLM providers 
+    (Gemini, OpenAI, Copilot, HuggingFace) while ensuring that only a single 
+    model instance is created across threads. It handles provider-specific 
+    API key management, prompt template construction, and controlled invocation
+    with configurable delay between requests.
+
+    Supported providers:
+        - google_genai (Gemini)
+        - openai (GPT models)
+        - copilot (GitHub Copilot API)
+        - huggingface (Hugging Face Inference API)
+
+    If initialization with the selected provider fails, the class 
+    automatically falls back to Gemini ("gemini-2.0-flash").
 
     Attributes:
-        model_name (str): Default LLM model name.
-        provider (str): LLM provider (e.g., Google GenAI).
-        llm: Initialized LangChain chat model instance.
-        parser (StrOutputParser): Default output parser for model responses.
-        seconds (int): Delay (in seconds) between LLM invocations.
+        model_name (str): The name of the LLM model (e.g., "gpt-4o-mini", "gemini-2.0-flash").
+        provider (str): The provider name ("google_genai", "openai", "copilot", "huggingface").
+        llm: The initialized LangChain chat model instance.
+        parser (StrOutputParser): Default parser for string-based model responses.
+        seconds (int): Delay (in seconds) between consecutive LLM invocations.
+        project_root (Path): Root directory used to locate API key files.
     """
 
     # Singleton instance and thread lock
@@ -46,66 +58,108 @@ class LLM:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, api_key: str = None, seconds: int = 5, project_root=None):
+    def __init__(
+        self,
+        api_key: str = None,
+        seconds: int = 5,
+        project_root=None,
+        model_name: str = "gemini-2.0-flash",
+        provider: str = "google_genai",
+    ):
         """
         Initialize the LLM instance.
 
         Args:
-            api_key (str, optional): API key for the provider. If not provided,
-                the class attempts to read it from 'settings/api_key.txt'.
+            api_key (str, optional): Provider API key.
             seconds (int): Delay between LLM invocations.
-            project_root (Path): Root project directory, used to locate settings.
-
-        Raises:
-            ValueError: If no API key can be found or provided.
+            project_root (Path): Root directory for key files.
+            model_name (str): Name of the model to use.
+            provider (str): LLM provider ('google_genai', 'openai', 'copilot', 'huggingface').
         """
-        api_path = project_root / "settings" / "api_key.txt"
+        self.project_root = project_root
 
-        # Retrieve or load the API key
-        api_key = self._load_api_key(api_key, api_path)
-        os.environ["GOOGLE_API_KEY"] = api_key
+        try:
+            self._initialize_llm(api_key, model_name, provider)
+        except Exception as e:
+            # Fallback to Gemini in case of provider failure
+            print(f"Default LLM: {e}")
+            self._initialize_llm(None, "gemini-2.0-flash", "google_genai")
 
-        # Initialize LangChain chat model
-        self.llm = init_chat_model(self.model_name, model_provider=self.provider)
         self.seconds = seconds
         self._initialized = True
 
     @classmethod
-    def get_instance(cls, api_key: str = None, seconds: int = 5, project_root=None):
+    def get_instance(
+        cls,
+        api_key: str = None,
+        seconds: int = 5,
+        project_root=None,
+        model_name: str = "gemini-2.0-flash",
+        provider: str = "google_genai",
+    ):
         """
-        Retrieve the singleton instance of the LLM (thread-safe).
-
-        Args:
-            api_key (str, optional): API key for initialization.
-            seconds (int): Delay between LLM calls.
-            project_root (Path): Root project directory.
-
-        Returns:
-            LLM: The singleton instance.
+        Retrieve the singleton instance of the LLM in a thread-safe manner.
         """
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = cls(api_key, seconds, project_root)
+                    cls._instance = cls(
+                        api_key=api_key,
+                        seconds=seconds,
+                        project_root=project_root,
+                        model_name=model_name,
+                        provider=provider,
+                    )
         return cls._instance
 
     # -----------------------
     # --- Private Helpers ---
     # -----------------------
 
+    def _initialize_llm(self, api_key, model_name, provider):
+        """
+        Initialize the LangChain chat model for the specified provider and model.
+        """
+        self.model_name = model_name
+        self.provider = provider
+
+        # Path for provider-specific API key
+        api_path = self.project_root / "settings" / f"api_key_{provider}.txt"
+
+        # Load API key
+        api_key = self._load_api_key(api_key, api_path)
+
+        # Set environment variable
+        self._set_env_key(provider, api_key)
+
+        # Initialize model
+        self.llm = init_chat_model(model_name, model_provider=provider)
+
+    def _set_env_key(self, provider: str, api_key: str):
+        """
+        Set the correct environment variable for each supported provider.
+        """
+        env_map = {
+            "google_genai": "GOOGLE_API_KEY",
+            "openai": "OPENAI_API_KEY",
+            "copilot": "GITHUB_COPILOT_API_KEY",
+            "huggingface": "HUGGINGFACEHUB_API_TOKEN",
+        }
+        env_name = env_map.get(provider, "")
+        if not env_name:
+            raise ValueError(f"Unsupported provider: {provider}")
+        os.environ[env_name] = api_key
+
     def _load_api_key(self, api_key: str, api_path) -> str:
         """
-        Load API key from argument or from file; save if needed.
+        Load the API key from argument or from file. If not present, raise an error.
 
         Args:
             api_key (str): Provided API key.
-            api_path (Path): Path to API key file.
+            api_path (Path): Path to the API key file.
 
         Returns:
             str: Valid API key.
-
-        Raises:
-            ValueError: If key is not found anywhere.
         """
         if not api_key and os.path.exists(api_path) and os.path.isfile(api_path):
             api_key = FileHandler().read_file(api_path)
@@ -113,7 +167,6 @@ class LLM:
         if not api_key:
             raise ValueError("No API key could be found or loaded.")
 
-        # Persist the key (could normalize or update formatting)
         FileHandler().write_file(api_path, api_key)
         return api_key
 
@@ -133,7 +186,6 @@ class LLM:
             dict: Parsed dictionary or empty dict if parsing fails.
         """
         try:
-            # Extract the substring enclosed in braces
             output = output[output.index("{"): output.rfind("}") + 1]
             try:
                 return json.loads(output)
@@ -168,24 +220,21 @@ class LLM:
         Build a LangChain ChatPromptTemplate from a structured JSON file.
 
         Args:
-            file_name (str): Path to the JSON template file.
-            inputs (dict): Input values for template parameters.
+            file_name (str): Path to the JSON prompt template file.
+            inputs (dict): Input values to fill template parameters.
 
         Returns:
-            ChatPromptTemplate: Constructed prompt template.
+            tuple[ChatPromptTemplate, dict]: The constructed prompt template and input map.
         """
         template = FileHandler().read_file(file_name)
 
-        # Normalize structure
         system_msg = "\n".join(template.get("system", []))
         human_msg = "\n".join(template.get("human", []))
         params = template.get("params", [])
         examples = template.get("examples", [])
 
-        # Resolve parameter placeholders
         input_template = self._resolve_template_params(params, inputs)
 
-        # Build few-shot prompt if examples exist
         if examples:
             few_shot_prompt = self._build_few_shot_prompt(examples)
             prompt = ChatPromptTemplate.from_messages([
@@ -203,14 +252,7 @@ class LLM:
 
     def _resolve_template_params(self, params, inputs) -> dict:
         """
-        Resolve template parameters using provided input data.
-
-        Args:
-            params (list): Parameter structure from template.
-            inputs (dict): Input data to map to parameters.
-
-        Returns:
-            dict: Resolved key-value pairs for prompt filling.
+        Resolve template parameters from user-provided inputs.
         """
         input_template = {}
         for p in params:
@@ -222,14 +264,7 @@ class LLM:
 
     def _build_few_shot_prompt(self, examples: list) -> FewShotChatMessagePromptTemplate:
         """
-        Build a few-shot message prompt from examples.
-
-        Args:
-            examples (list): List of example dictionaries containing
-                'input', 'reasoning', and 'output' fields.
-
-        Returns:
-            FewShotChatMessagePromptTemplate: The constructed few-shot prompt.
+        Construct a few-shot prompt section using given examples.
         """
         formatted_examples = [
             {
@@ -258,36 +293,26 @@ class LLM:
 
     def invoke(self, file_name: str, input_state: dict, lower: bool = False) -> str:
         """
-        Invoke the LLM with a built prompt and retrieve its output.
+        Invoke the LLM with the given prompt template and input data.
 
         Args:
             file_name (str): Path to the prompt template file.
-            input_state (dict): Execution state from which to
-                        extract parameters for prompt filling.
-            lower (bool): Whether to convert the response to lowercase.
+            input_state (dict): Data for filling in prompt placeholders.
+            lower (bool): Whether to convert the output to lowercase.
 
         Returns:
-            str: Cleaned and formatted LLM response.
+            str: Cleaned LLM response text.
         """
         prompt, input_prompt = self.build_from_file(file_name, input_state)
         chain = prompt | self.llm | self.parser
         result = chain.invoke(input_prompt)
         time.sleep(self.seconds)
 
-        # Post-processing of model response
-        result = self._clean_response(result, lower)
-        return result
+        return self._clean_response(result, lower)
 
     def _clean_response(self, result: str, lower: bool) -> str:
         """
-        Clean and normalize the raw LLM output.
-
-        Args:
-            result (str): Raw model response.
-            lower (bool): Whether to convert to lowercase.
-
-        Returns:
-            str: Cleaned text output.
+        Normalize and clean the raw LLM response.
         """
         if lower:
             result = result.lower()

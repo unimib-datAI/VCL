@@ -92,7 +92,7 @@ class Assistant:
         except Exception as e:
             self.logger.error("Request processing failed")
             self.logger.exception(e)
-            structured_query, operations, result = {}, [], "Something went wrong. Please try again."
+            structured_query, operations, result = {}, [], "Si è verificato un errore. Riprova."
 
         response = self._finalize_response(prompt, structured_query, operations, result)
         self._store_response(response)
@@ -158,6 +158,10 @@ class Assistant:
 
     def _store_response(self, response: dict):
         """Persist the response in storage and local filesystem."""
-        self.CFG.storage.set_documents(response, 3600)  # Cache for 1 hour
+        try:
+            self.CFG.storage.set_documents(response, ttl=3600)  # Cache for 1 hour
+        except Exception:
+            self.logger.warning("Document not saved in storage")
+            
         file_path = os.path.join(self.CFG.project_root, "documents", f"{response.get("id", "")}.json")
         FileHandler().write_file(file_path, response)
