@@ -4,63 +4,133 @@
             "key": "a",
             "command": "cerca",
             "description": "Esegue una ricerca concettuale per individuare entità (parti, giudici, luoghi), istituti giuridici, o principi di diritto semanticamente correlati alla richiesta, andando oltre la mera corrispondenza testuale.",
-            "atomic": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente"]
+            "atomic": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente"],
+            "guidelines": [
+ 				"- Focalizzazione sulla Pertinenza: Estrai esclusivamente i passaggi di testo che rispondono direttamente e in modo inequivocabile alla richiesta dell'utente.",
+ 				"- Esclusione del Superfluo: Ometti qualsiasi informazione che sia irrilevante, accessoria, solo vagamente correlata o che costituisca rumore rispetto all'obiettivo della ricerca.",
+ 				"- Fedeltà Assoluta: Il contenuto estratto deve essere identico all'originale. Non sono permesse modifiche, sintesi, correzioni o parafrasi.",
+ 				"- Completezza Contestuale: Assicurati di includere tutti i frammenti pertinenti, anche se dislocati in diverse parti del documento, affinché il risultato aggregato sia informativo e comprensibile.",
+ 				"- Nessuna Aggiunta Esterna: L'output deve contenere solo il testo estratto dal documento, senza commenti, spiegazioni, introduzioni o qualsiasi testo non proveniente dalla fonte."
+            ]
         },
 
         {
             "key": "b",
             "command": "riassumi",
-            "description": "Produce una sintesi concisa del documento (es. atto, sentenza), preservando i punti chiave del fatto, le argomentazioni giuridiche e il dispositivo, eliminando le informazioni accessorie."
+            "description": "Produce una sintesi concisa del documento (es. atto, sentenza), preservando i punti chiave del fatto, le argomentazioni giuridiche e il dispositivo, eliminando le informazioni accessorie.",
+            "guidelines": [
+ 				"- Selezione dell'Essenziale: Isola i concetti chiave, i fatti principali, le argomentazioni portanti e le decisioni (come il dispositivo), scartando metodicamente tutto ciò che è accessorio.",
+ 				"- Eliminazione delle Ridondanze: Rimuovi attivamente dettagli marginali, esempi superflui, ripetizioni e informazioni già espresse con altri termini.",
+ 				"- Gestione delle Contraddizioni: Se emergono informazioni contrastanti all'interno del testo, privilegia il contenuto che appare più chiaro, completo e coerente con il contesto generale del documento.",
+ 				"- Autosufficienza Informativa: Il riassunto deve essere logicamente autonomo e permettere la piena comprensione dell'argomento trattato senza necessitare la lettura del testo originale.",
+ 				"- Riscrittura Concettuale: Il risultato non deve essere un \"copia-incolla\" di frasi selezionate, ma una nuova esposizione che fonde e rielabora i concetti fondamentali in un testo coeso e scorrevole."
+            ]
         },
         
         {
             "key": "c",
             "command": "estrai semantico",
             "description": "Isola e restituisce sezioni specifiche del documento giuridico dotate di autonoma rilevanza, come la ricostruzione del 'fatto', i 'motivi' della decisione, o il 'dispositivo'.",
-            "atomic": ["fatto", "decisioni", "motivi", "richieste", "altro"]
+            "atomic": ["fatto", "decisioni", "motivi", "richieste", "altro"],
+            "guidelines": [
+ 				"- Estrazione dell'Implicito: Identifica e porta alla luce gli elementi non testuali, come premesse sottintese, conclusioni non dichiarate e la struttura concettuale che sorregge il testo (es. la sezione \"fatto\" o \"motivi\" anche se non titolata).",
+ 				"- Ricostruzione delle Relazioni: Mappa le relazioni semantiche tra le diverse parti del testo (es. come i fatti supportano una specifica richiesta, o come i motivi portano a una decisione).",
+ 				"- Fedeltà Concettuale: Riformula liberamente i concetti individuati per renderli chiari e diretti. La priorità è preservare il significato e le relazioni tra le idee, non le parole originali.",
+ 				"- Completezza Strutturale: Assicurati di includere tutte le componenti semantiche richieste (es. se si estraggono i \"motivi\", includerli tutti) per fornire un quadro completo.",
+ 				"- Presentazione come Analisi: Il risultato deve essere un'esposizione autonoma che spiega la struttura semantica sottostante al documento."
+            ]
         },
         
         {
             "key": "d",
             "command": "estrai logico",
             "description": "Ricostruisce l'iter argomentativo e la catena di inferenze logiche (es. sillogismi) utilizzate per giungere alla decisione o per fondare una tesi difensiva.",
-            "atomic": ["sillogismo", "percorso logico", "passaggio logico"]
+            "atomic": ["sillogismo", "percorso logico", "passaggio logico"],
+            "guidelines": [
+ 				"- Estrazione dell'Implicito: Identifica e porta alla luce gli elementi non testuali, come premesse sottintese, conclusioni non dichiarate, sillogismi nascosti e l'intera struttura argomentativa implicita.",
+ 				"- Ricostruzione del Ragionamento: L'obiettivo è mappare la catena logica (relazioni di causa-effetto, premesse-conseguenze) e l'organizzazione inferenziale che sorregge il testo.",
+ 				"- Fedeltà Logica: Riformula liberamente i concetti individuati per renderli chiari. La priorità assoluta è preservare il significato logico e le relazioni inferenziali, non le parole originali.",
+ 				"- Completezza Argomentativa: Assicurati di includere tutti i passaggi logici necessari per comprendere il percorso di ragionamento, anche quelli che potrebbero sembrare secondari, per evitare salti logici.",
+ 				"- Presentazione come Analisi: Il risultato deve essere un'esposizione originale e autonoma che spiega il percorso di ragionamento sottostante al documento."
+            ]
         },
         
         {
             "key": "e",
             "command": "confronta",
-            "description": "Esegue un'analisi comparativa tra due o più documenti (es. atto di citazione e comparsa di risposta, sentenza di primo e secondo grado) evidenziando concordanze e discordanze fattuali, normative o argomentative."
+            "description": "Esegue un'analisi comparativa tra due o più documenti (es. atto di citazione e comparsa di risposta, sentenza di primo e secondo grado) evidenziando concordanze e discordanze fattuali, normative o argomentative.",
+            "guidelines": [
+ 				"- Identificazione di Concordanze: Individua e raggruppa tutti gli elementi comuni ai documenti: concetti, temi, fatti descritti in modo analogo, tesi condivise e conclusioni identiche.",
+ 				"- Evidenziazione delle Discordanze: Isola e spiega le differenze di contenuto, come diverse ricostruzioni fattuali, diverse norme invocate, prospettive opposte, o conclusioni divergenti.",
+ 				"- Confronto delle Argomentazioni: Non limitarti ai fatti, ma analizza e confronta i ragionamenti sottostanti, le premesse da cui partono e la coerenza logica con cui arrivano alle rispettive conclusioni.",
+ 				"- Supporto con Prove Testuali: Se utile per chiarire un punto di concordanza o discordanza, utilizza brevi citazioni fedeli tratte dai documenti come prova fattuale a supporto dell'analisi.",
+ 				"- Neutralità Analitica: L'analisi deve essere oggettiva, limitandosi a registrare le similitudini e le differenze senza esprimere giudizi di valore, opinioni o preferenze."
+            ]
         },
         
         {
             "key": "f",
             "command": "integra",
-            "description": "Fonde il contenuto di più documenti o versioni (es. diverse bozze di un atto) in un unico testo consolidato, risolvendo ridondanze o contraddizioni."
+            "description": "Fonde il contenuto di più documenti o versioni (es. diverse bozze di un atto) in un unico testo consolidato, risolvendo ridondanze o contraddizioni.",
+            "guidelines": [
+ 				"- Identificazione delle Sovrapposizioni: Analizza tutti i documenti sorgente per trovare informazioni identiche, quasi identiche o palesemente ridondanti.",
+ 				"- Consolidamento del Contenuto: Mantieni una sola versione dell'informazione ridondante, scegliendo quella più completa, aggiornata e chiara.",
+ 				"- Risoluzione dei Conflitti: Se i documenti presentano contraddizioni (es. date diverse, fatti contrastanti), segnala l'incongruenza o, se il contesto lo permette, seleziona l'informazione palesemente corretta (es. la versione di un atto successivo).",
+ 				"- Creazione di un Testo Unico: Fondi tutto il contenuto non duplicato e quello risolto in un singolo testo coeso.",
+ 				"- Completezza Finale: Assicurati che il testo consolidato contenga tutte le informazioni uniche e pertinenti di tutti i documenti di partenza, senza perdere dati essenziali nel processo di fusione."
+            ]
         },
         
         {
             "key": "g",
             "command": "verifica",
-            "description": "Effettua un controllo di coerenza interna del documento, verificando la correttezza dei riferimenti normativi e giurisprudenziali citati e la congruenza delle argomentazioni."
+            "description": "Effettua un controllo di coerenza interna del documento, verificando la correttezza dei riferimenti normativi e giurisprudenziali citati e la congruenza delle argomentazioni.",
+            "guidelines": [
+ 				"- Controllo dei Riferimenti: Estrai tutti i riferimenti a norme e giurisprudenza. Verifica la loro correttezza formale (es. numero articolo, data sentenza) e la loro pertinenza (se sono applicabili al caso descritto).",
+ 				"- Analisi di Coerenza Interna: Esamina il documento per individuare eventuali contraddizioni logiche o fattuali (es. affermazioni in palese contrasto tra loro in diverse sezioni).",
+ 				"- Valutazione della Congruenza Argomentativa: Verifica che le conclusioni tratte (es. la decisione) siano una conseguenza logica e giuridicamente fondata delle premesse (fatti e norme invocate).",
+ 				"- Segnalazione Esclusiva delle Anomalie: L'output deve evidenziare solamente le anomalie riscontrate: riferimenti errati, incoerenze fattuali, o fallacie logiche nel ragionamento.",
+ 				"- Astenersi dal Merito: La verifica è tecnica e non deve esprimere un'opinione sul \"merito\" (se la decisione è \"giusta\" o \"sbagliata\"), ma solo sulla sua correttezza formale e logica interna."
+            ]
         },
         
         {
             "key": "h",
             "command": "analizza",
-            "description": "Scompone il documento nelle sue parti costitutive (es. eccezioni, motivi, domande) per valutarne la struttura, la completezza formale e la tenuta logico-giuridica dell'impianto argomentativo."
+            "description": "Scompone il documento nelle sue parti costitutive (es. eccezioni, motivi, domande) per valutarne la struttura, la completezza formale e la tenuta logico-giuridica dell'impianto argomentativo.",
+            "guidelines": [
+ 				"- Scomposizione Strutturale: Identifica e isola le componenti logico-giuridiche fondamentali del documento (es. petizione, eccezioni, motivi di impugnazione, domande, dispositivo).",
+ 				"- Valutazione di Completezza: Per ogni componente identificata, valuta se contiene tutti gli elementi essenziali richiesti (es. una domanda è supportata da fatti e da una richiesta specifica? Un motivo è articolato?).",
+ 				"- Analisi della Tenuta Logica: Esamina l'impianto argomentativo complessivo, valutando come le diverse parti si supportano a vicenda e se il ragionamento che le lega è solido e privo di vizi logici evidenti.",
+ 				"- Focus sulla Funzione: L'analisi deve spiegare la funzione di ciascuna parte (es. \"questa sezione serve a contestare il nesso causale\") e valutarne l'efficacia nel contesto dell'atto.",
+ 				"- Output come Report: Il risultato è un report analitico che scompone l'atto e ne valuta criticamente la struttura e la solidità argomentativa."
+            ]
         },
         
         {
             "key": "i",
             "command": "riorganizza",
-            "description": "Ristruttura il testo o parti di esso secondo un ordine logico, cronologico (es. sequenza dei fatti) o per materia (es. raggruppando i motivi di appello)."
+            "description": "Ristruttura il testo o parti di esso secondo un ordine logico, cronologico (es. sequenza dei fatti) o per materia (es. raggruppando i motivi di appello).",
+            "guidelines": [
+ 				"- Identificazione del Criterio: Determina il criterio di riordino richiesto (es. cronologico per i fatti, tematico per i motivi, logico-deduttivo per le argomentazioni).",
+ 				"- Scomposizione in Unità: Fraziona il testo originale in unità informative minime (es. singoli fatti, singole argomentazioni, singole norme citate).",
+ 				"- Riaggregazione secondo Criterio: Ricostruisci un nuovo testo assemblando le unità informative nell'ordine definito dal criterio (es. tutti i fatti dall'inizio alla fine; tutti gli argomenti relativi al danno patrimoniale raggruppati).",
+ 				"- Preservazione Assoluta del Contenuto: Il contenuto di ogni singola unità informativa deve rimanere inalterato nella sua sostanza. L'intervento riguarda solo la sequenza e la struttura.",
+ 				"- Coerenza del Testo Finale: Assicurati che il testo riorganizzato sia scorrevole e che le transizioni tra le parti riordinate siano logiche."
+            ]
         },
         
         {
             "key": "j",
             "command": "classifica",
-            "description": "Attribuisce a singole porzioni di testo un'etichetta giuridica specifica (es. 'domanda riconvenzionale', 'motivo d'impugnazione', 'norma applicabile'), indicandone la funzione processuale o argomentativa."
+            "description": "Attribuisce a singole porzioni di testo un'etichetta giuridica specifica (es. 'domanda riconvenzionale', 'motivo d'impugnazione', 'norma applicabile'), indicandone la funzione processuale o argomentativa.",
+            "guidelines": [
+ 				"- Analisi Funzionale del Testo: Leggi il documento e identifica blocchi di testo che svolgono una funzione giuridica, processuale o argomentativa specifica.",
+ 				"- Attribuzione dell'Etichetta: Assegna a ciascun blocco identificato l'etichetta giuridica più precisa possibile (es. \"eccezione di prescrizione\", \"motivo di appello - violazione di legge\", \"ricostruzione del fatto\", \"petitum\").",
+ 				"- Corrispondenza Esatta: L'etichettatura deve essere granulare. Se una sezione contiene sia un'eccezione sia una domanda, devono essere identificate e classificate separatamente.",
+ 				"- Focus sulla Sostanza: La classificazione non si basa sui titoli (es. \"In Fatto\"), ma sulla reale funzione che quel testo svolge nell'atto (es. \"esposizione dei fatti costitutivi della domanda\").",
+ 				"- Output come Mappatura: Il risultato deve presentare la mappatura chiara tra le porzioni di testo (o il loro contenuto sintetico) e l'etichetta giuridica attribuita."
+            ]
         },
         
         {
@@ -68,7 +138,13 @@
             "command": "altro",
             "description": "L'intento dell'utente non è riconducibile a uno dei comandi specifici predefiniti.",
             "default": true,
-            "atomic": ["*"]
+            "atomic": ["*"],
+            "guidelines": [
+ 				"- Comprensione dell'Intento: Analizza la richiesta dell'utente per capire l'obiettivo finale, anche se non corrisponde a un comando standard.",
+ 				"- Applicazione dei Principi Generali: Esegui l'operazione richiesta applicando i principi fondamentali di pertinenza, accuratezza e fedeltà al contenuto.",
+ 				"- Flessibilità Operativa: Adatta il processo per soddisfare la richiesta specifica, combinando se necessario elementi di ricerca, sintesi o analisi per produrre il risultato desiderato.",
+ 				"- Risposta Diretta: Fornisci una risposta che sia direttamente utile e comprensibile, rispondendo nel modo più fedele possibile all'intento non classificato."
+            ]
         }
     ],
 

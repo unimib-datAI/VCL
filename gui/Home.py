@@ -122,7 +122,7 @@ def handle_user_input():
             log_file = os.path.join(
                 assistant.CFG.project_root, "logs", f"{assistant.CFG.get_request_id()}.log"
             )
-            log_list = []
+            log_list = ["LOGS:"]
 
             for line in follow_log(log_file, stop_event):
                 log_list.append(line)

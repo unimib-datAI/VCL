@@ -15,8 +15,12 @@ Dependencies:
 
 import os
 import re
+
+from copy import deepcopy
+
 from logic.bot.executor.retrieval import Retrieval
 from utils.config import Config
+from utils.DQL_language import DQLLanguage
 
 
 class Executor:
@@ -27,7 +31,7 @@ class Executor:
         pattern (str): Regex pattern for detecting headings in text.
         llm: Configured LLM instance from Config.
         logger: Logger instance from Config.
-        path (str): Directory containing prompt templates.
+        file_path (str): Path file containing prompt template.
     """
 
     pattern = r'(?m)^\s*(#{1,6})\s*(.+)$'
@@ -46,7 +50,8 @@ class Executor:
         self.cfg = cfg
         self.llm = cfg.llm
         self.logger = cfg.get_logger("Executor")
-        self.path = os.path.join(cfg.project_root, "documents", "prompts", "generator")
+        self.language : DQLLanguage = cfg.language
+        self.file_path = os.path.join(cfg.project_root, "documents", "prompts", "Generator.json")
 
     # ----------------------
     # --- Public Methods ---
@@ -78,40 +83,19 @@ class Executor:
         state = {
             "feedback": "",
             "how": self._format_conditions(operation.get("how", {})),
-            "context": self._build_context(docs, operation.get("from", []))
+            "context": self._build_context(docs, operation.get("from", [])),
+            "guidelines": self.language.get_guidelines_from_command(operation.get("command", "")),
+            "description_command": self.language.get_description_from_command(operation.get("command", "")),
+            "query_str": str(deepcopy(operation))
         }
 
-        if operation.get("what", {}):
-            state["what"] = operation.get("what", {})
-
         # Step 4: Invoke LLM with appropriate prompt
-        result = self._invoke_llm(operation, state)
+        result = self.llm.invoke(self.file_path, state)
 
         # Step 5: Format headings in the result
         result = re.sub(self.pattern, self._format_heading, result)
 
         return result, operation
-
-    # ----------------------------
-    # --- Function to call LLM ---
-    # ----------------------------
-    
-    def _invoke_llm(self, operation: dict, state: dict) -> str:
-        """
-        Call the LLM with the given operation and state.
-
-        Args:
-            operation (dict): Operation dictionary containing command info.
-            state (dict): Context, conditions, and optional feedback for the LLM.
-
-        Returns:
-            str: LLM-generated response.
-        """
-        try:
-            return self.llm.invoke(os.path.join(self.path, f"{operation['command']}.json"), state)
-        except Exception:
-            self.logger.warning(f"Failed to invoke LLM for {operation['command']}, using fallback 'estrai.json'")
-            return self.llm.invoke(os.path.join(self.path, "estrai.json"), state)
 
     # ----------------------
     # --- Input Context  ---

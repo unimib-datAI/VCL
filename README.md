@@ -4,7 +4,7 @@ It serves as a conceptual layer between the user and the language models (LLM), 
 
 The goal of this project is to implement a model that converts a natural language query into a DQL query and develop the system that leverages the DQL query to meet user needs.
 
-## System Overview at V1
+## System Overview at V0.1
 
 The system is a **modular intelligent assistant** based on a **natural language processing and operation planning pipeline**.
 Currently, it supports only **elementary queries**, meaning those containing a single request.
@@ -61,24 +61,84 @@ Some features have already been partially implemented:
 * **Conversation support**: we chose to keep each message independent of the conversation in V1, but in a realistic scenario it is important that the conversation history is part of the context.
 * **Evaluator Component**: Query rewriting quality evaluation system
 
-## How to Run the Code
+## How to run the code
 
-To run this project, follow these steps:
+1.  **Install Dependencies**
+    Ensure you have Python and `pip` installed. Run this command from the project root to install all required libraries:
+    ```bash
+    pip install -r requirements.txt
+    ```
+2.  **Create Settings Folder**
+    In the project's root directory, create a new folder named `settings`:
+    ```bash
+    mkdir settings
+    ```
+3.  **Credential Configuration**
+    You can provide credentials (API key, DB URL, DB Token) in two ways: via configuration files (recommended) or by passing them as flags at runtime.
+    
+    - **Method 1: Configuration Files (Recommended)**
 
-1. Install dependencies
-```bash
-pip install *r requirements.txt
-```
-2. Create a folder named `settings` in the root of the project
-3. Create `api_key.txt`, `url_redis.txt`, `token_redis.txt` and put into `settings`
-4. Go to the [Gemini API website](https://aistudio.google.com/app/apikey)
-5. Generate a new API key.
-6. Copy the generated key and paste it into `api_key.txt`.
-7. Go to the [Upstash Redis website](https://console.upstash.com/)
-8. Create a DB
-9. Place the upstash-redis URL and token in the `url_redis.txt` and `token_redis.txt` files respectively.
-10. If you wanna access the Elasticsearch database make sure you are connected to your university's VPN. 
-11. Run streamlit.
-```bash
-streamlit run app.py **server.fileWatcherType=none
-```
+      - **LLM API Key**
+        - Go to the website of the LLM provider you intend to use (e.g., [Google Gemini](https://aistudio.google.com/app/apikey), [OpenAI](https://platform.openai.com/api-keys), etc.).
+        - Generate a new API key.
+        - Inside the `settings` folder, create a file named `api_key_<provider>.txt`, where `<provider>` matches the provider name (see the list in the `-provider` flag).
+        - Paste your API key into this file.
+      - **Database Credentials (Upstash)**
+        - Go to the [Upstash Redis website](https://console.upstash.com/) and create a database.
+        - Locate the URL (endpoint) and token for your database.
+        - Inside the `settings` folder, create two files:
+          - `url_db.txt`: Paste the database URL here.
+          - `token_db.txt`: Paste the database token here.
+
+    - **Method 2: Runtime Flags**
+      Alternatively, you can skip creating the files in the `settings` folder and pass the credentials directly at runtime using the `-api`, `-url_db`, and `-token_db` flags (see section 4).
+
+4. **VPN Connection for Elasticsearch**: If you need to access the Elasticsearch database, ensure you are connected to your university's VPN before running the script.
+
+5. **Running the Application**
+    Execute the Streamlit application using the `main.py` script.
+    The base command is:
+    ```bash
+    python main.py
+    ```
+    The script accepts several optional flags (arguments) to customize its behavior.
+
+    * `-api <KEY>`
+
+        * **Description:** Provides the API key for the LLM.
+        * **Usage:** Overrides the key read from the `settings/api_key_<provider>.txt` file.
+
+    * `-url_db <URL>`
+
+        * **Description:** Provides the connection URL for the database (e.g., Upstash).
+        * **Usage:** Overrides the URL read from the `settings/url_db.txt` file.
+
+    * `-token_db <TOKEN>`
+
+        * **Description:** Provides the authentication token for the database.
+        * **Usage:** Overrides the token read from the `settings/token_db.txt` file.
+
+    * `-provider <PROVIDER_NAME>`
+
+        * **Description:** Specifies which LLM provider to use.
+        * **Default:** `google_genai`
+        * **Choices:** `google_genai`, `openai`, `copilot`, `huggingface`.
+        * **Note:** Ensure the corresponding API key file (e.g., `api_key_openai.txt`) exists if you use a provider other than the default, or use the `-api` flag.
+
+    * `-model_name <MODEL_NAME>`
+
+        * **Description:** Specifies the exact LLM model name to use.
+        * **Default:** `gemini-2.0-flash`
+        * **Examples:** `gpt-4o-mini`, `claude-3-5-sonnet`, `mistralai/Mistral-7B-Instruct-v0.2`.
+
+    * `-wait_seconds <NUMBER>`
+
+        * **Description:** Sets the number of seconds to wait after each LLM call.
+        * **Default:** `5`
+
+    * `-spell_check_without_llm`
+
+        * **Description:** If present, this flag disables the use of the LLM for the spell-checking phase, using an alternative method instead.
+        * **Usage:** Just add the flag; it does not require a value
+
+    

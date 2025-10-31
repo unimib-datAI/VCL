@@ -132,10 +132,12 @@ class DQLLanguage:
         """
         self.key_command_map: dict[str, str] = {}
         self.command_description_map: dict[str, str] = {}
+        self.command_guidelines_map: dict[str, str] = {}
 
         for cmd in self.full_language.get("commands", []):
             self.key_command_map[cmd["key"]] = cmd["command"]
             self.command_description_map[cmd["command"]] = cmd["description"]
+            self.command_guidelines_map[cmd["command"]] = "\n".join(cmd["guidelines"]).strip()
 
     def get_command_from_key(self, key: str) -> str:
         """
@@ -163,6 +165,21 @@ class DQLLanguage:
         if len(key) == 1:
             key = self.get_command_from_key(key)
         return self.command_description_map.get(key, "")
+    
+    def get_guidelines_from_command(self, key: str) -> str:
+        """
+        Retrieve the guidelines for a command, given its name or key.
+
+        Args:
+            key (str): Command name or single-letter key.
+
+        Returns:
+            str: Description text, or an empty string if not found.
+        """
+        # If key is a single character, treat it as a shortcut key
+        if len(key) == 1:
+            key = self.get_command_from_key(key)
+        return self.command_guidelines_map.get(key, "")
 
     def _set_default_command(self):
         """

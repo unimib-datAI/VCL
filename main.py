@@ -24,7 +24,7 @@ def parse_args() -> argparse.Namespace:
         required=False,
         help=(
             "API key for the Gemini model.\n"
-            "If not specified, it will be read from 'settings/api_key.txt'."
+            "If not specified, it will be read from 'settings/api_key_<provider>.txt'."
         ),
     )
 
