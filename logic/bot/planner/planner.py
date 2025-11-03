@@ -29,7 +29,6 @@ class Planner:
         self.logger = cfg.get_logger("Planner")
         self.project_root = cfg.project_root
         self.dql: DQLLanguage = cfg.language
-        self.commands = self._retrieve_commands()
 
     # -------------------------------------------------------------------------
     # Public Methods
@@ -50,15 +49,15 @@ class Planner:
             list[dict]: List of operation dictionaries ready for execution.
         """
         command_key = query.get("command", "")
-        sources = query.get("from", [])
 
-        if self.commands.get(command_key, ["*"]):
-            if len(sources) > 1:
+        middle_commands = self._find_middle_commands(query.get("what", ""))
+        
+        if command_key in middle_commands:
+            if len(query.get("from", [])) > 1:
                 return self._create_operations(query, command_key, "integra")
             return [query]
 
-        middle_command = self._find_middle_command(query.get("what", ""))
-        return self._create_operations(query, middle_command, command_key)
+        return self._create_operations(query, middle_commands[0], command_key)
 
     # -------------------------------------------------------------------------
     # Private Methods
@@ -97,7 +96,7 @@ class Planner:
         atomic_ops.append(final_op)
         return atomic_ops
 
-    def _find_middle_command(self, what: str) -> str:
+    def _find_middle_commands(self, what: str) -> str:
         """
         Identify the intermediate command that matches the 'what' field.
 
@@ -107,23 +106,12 @@ class Planner:
         Returns:
             str: The middle command key or empty string if not found.
         """
-        for key, atomic_list in self.commands.items():
-            if what in atomic_list:
-                self.logger.info(f"Middle Command: {key}")
-                return key
-        self.logger.info("Middle Command: not found")
-        return ""
-
-    def _retrieve_commands(self) -> dict:
-        """
-        Retrieve and structure atomic commands from the DQL language.
-
-        Returns:
-            dict: Mapping of command keys to their atomic sub-commands.
-        """
-        commands_mapping = {}
-        for command in self.dql.commands:
-            key = command.get("command", "")
-            if key:
-                commands_mapping[key] = command.get("atomic", [])
-        return commands_mapping
+        for what_dict in self.dql.get_what():
+            if what == what_dict.get("name", ""):
+                if len((w := what_dict.get("relative_command", []))) > 0:
+                    self.logger.info(f"Middle Commands: {w}")
+                    return w
+                break
+            
+        self.logger.info("Middle Command: not found -> default command")
+        return self.dql.default_command.get("command", "")

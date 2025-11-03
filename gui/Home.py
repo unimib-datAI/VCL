@@ -84,7 +84,7 @@ def display_chat_history():
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-            show_expander(message.get("full_details", None))
+            show_expander(message.get("full_details", None), message.get("logs", []))
 
 
 # ---------------------------
@@ -98,7 +98,7 @@ def handle_user_input():
     if prompt := st.chat_input("Scrivi un messaggio..."):
         # --- 1. Display user's message ---
         st.session_state.messages.append(
-            {"role": "user", "content": prompt, "full_details": None}
+            {"role": "user", "content": prompt, "full_details": None, "logs": []}
         )
         with st.chat_message("user"):
             st.markdown(prompt)
@@ -144,11 +144,11 @@ def handle_user_input():
                 placeholder.markdown(typed_text)
                 time.sleep(0.01)
 
-            show_expander(result)
+            show_expander(result, log_list[1:])
 
         # --- 4. Save assistant's response ---
         st.session_state.messages.append(
-            {"role": "assistant", "content": text, "full_details": result}
+            {"role": "assistant", "content": text, "full_details": result, "logs": log_list[1:]}
         )
 
 
@@ -211,7 +211,7 @@ def follow_log(file_path: str, stop_event: threading.Event, wait_time: float = 0
 # --- Expander in every assistant’s response ---
 # ----------------------------------------------
 
-def show_expander(full_details: dict):
+def show_expander(full_details: dict, logs: list = []):
     """
     Display structured details and intermediate operations of the assistant’s response.
 
@@ -229,15 +229,14 @@ def show_expander(full_details: dict):
             op_string = "Il comando non è stato necessario scomporlo."
 
         # Show structured input overview
+        command_json = json.dumps(full_details.get("structured_input", {}), indent=4)
         st.markdown(
             f"""
             <details style="margin-left:20px; margin-top:10px;">
                 <summary>Introduzione</summary>
                 Il comando identificato per la richiesta è stato:
                 <p></p>
-                <pre><code class="language-json">
-                    {json.dumps(full_details.get("structured_input", {}), indent=4)}
-                </code></pre>
+                <pre><code class="language-json">{command_json}</code></pre>
                 {op_string}
             </details>
             """,
@@ -250,6 +249,21 @@ def show_expander(full_details: dict):
                 display_operation(index, operation)
 
             st.markdown("</details>", unsafe_allow_html=True)
+        
+        # Display logs (if available)
+        if len(logs) > 0:
+            st.markdown(
+                f"""
+                <details style="margin-left:20px; margin-top:10px;">
+                    <summary>Logs</summary>
+                    <p></p>
+                    <pre style="white-space: pre-wrap; word-break: break-word;">
+                        <code class="language-plaintext">{"\n".join([l.strip() for l in logs]).strip()}</code>
+                    </pre>
+                </details>
+                """,
+                unsafe_allow_html=True,
+            )
             
         st.markdown("\n", unsafe_allow_html=True)
 

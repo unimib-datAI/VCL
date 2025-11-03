@@ -53,7 +53,7 @@ class CommandClassifier:
         Returns:
             dict: Dictionary containing 'name' and 'description' of the classified command.
         """
-        language_commands_str = self.commands_string(self.dql_language.commands)
+        language_commands_str = self.commands_string(self.dql_language.get_commands())
 
         query_dict = {
             "query": query,

@@ -50,12 +50,12 @@ class SourcesExtractor:
         Returns:
             list: List of document/source names deemed relevant.
         """
-        language_sources_str = self.sources_string(self.dql_language.sources)
+        language_sources_str = self.sources_string(self.dql_language.get_sources())
 
         query_dict = {
             "query": query,
             "language_sources": language_sources_str,
-            "number": len(self.dql_language.sources),
+            "number": len(self.dql_language.get_sources()),
             "feedback": ""
         }
 
@@ -85,7 +85,7 @@ class SourcesExtractor:
 
         except Exception as e:
             # Fallback: return all available sources
-            documents = [src["name"] for src in self.dql_language.sources]
+            documents = [src["name"] for src in self.dql_language.get_sources()]
             self.logger.error(f"Error extracting sources: {e}")
 
         # Log the extraction result

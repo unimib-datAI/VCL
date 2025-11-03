@@ -4,7 +4,6 @@
             "key": "a",
             "command": "cerca",
             "description": "Esegue una ricerca concettuale per individuare entità (parti, giudici, luoghi), istituti giuridici, o principi di diritto semanticamente correlati alla richiesta, andando oltre la mera corrispondenza testuale.",
-            "atomic": ["intero documento", "frase", "persona", "fonte", "organizzazione", "luogo", "denaro", "precedente"],
             "guidelines": [
  				"- Focalizzazione sulla Pertinenza: Estrai esclusivamente i passaggi di testo che rispondono direttamente e in modo inequivocabile alla richiesta dell'utente.",
  				"- Esclusione del Superfluo: Ometti qualsiasi informazione che sia irrilevante, accessoria, solo vagamente correlata o che costituisca rumore rispetto all'obiettivo della ricerca.",
@@ -31,7 +30,6 @@
             "key": "c",
             "command": "estrai semantico",
             "description": "Isola e restituisce sezioni specifiche del documento giuridico dotate di autonoma rilevanza, come la ricostruzione del 'fatto', i 'motivi' della decisione, o il 'dispositivo'.",
-            "atomic": ["fatto", "decisioni", "motivi", "richieste", "altro"],
             "guidelines": [
  				"- Estrazione dell'Implicito: Identifica e porta alla luce gli elementi non testuali, come premesse sottintese, conclusioni non dichiarate e la struttura concettuale che sorregge il testo (es. la sezione \"fatto\" o \"motivi\" anche se non titolata).",
  				"- Ricostruzione delle Relazioni: Mappa le relazioni semantiche tra le diverse parti del testo (es. come i fatti supportano una specifica richiesta, o come i motivi portano a una decisione).",
@@ -45,7 +43,6 @@
             "key": "d",
             "command": "estrai logico",
             "description": "Ricostruisce l'iter argomentativo e la catena di inferenze logiche (es. sillogismi) utilizzate per giungere alla decisione o per fondare una tesi difensiva.",
-            "atomic": ["sillogismo", "percorso logico", "passaggio logico"],
             "guidelines": [
  				"- Estrazione dell'Implicito: Identifica e porta alla luce gli elementi non testuali, come premesse sottintese, conclusioni non dichiarate, sillogismi nascosti e l'intera struttura argomentativa implicita.",
  				"- Ricostruzione del Ragionamento: L'obiettivo è mappare la catena logica (relazioni di causa-effetto, premesse-conseguenze) e l'organizzazione inferenziale che sorregge il testo.",
@@ -183,6 +180,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
 
@@ -194,6 +194,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
 
@@ -205,6 +208,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
         
@@ -216,6 +222,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
 
@@ -227,6 +236,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
         
@@ -238,6 +250,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
 
@@ -249,6 +264,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
         
@@ -260,6 +278,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "cerca"
             ]
         },
         
@@ -271,6 +292,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai logico"
             ]
         },
 
@@ -282,6 +306,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai logico"
             ]
         },
 
@@ -293,6 +320,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai logico"
             ]
         },
 
@@ -304,6 +334,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai semantico"
             ]
         },
 
@@ -315,6 +348,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai semantico"
             ]
         },
 
@@ -326,6 +362,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai semantico"
             ]
         },
 
@@ -337,6 +376,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai semantico"
             ]
         },
         
@@ -348,6 +390,9 @@
                 "sentenza di secondo grado",
                 "memoria giudiziale",
                 "ricorso giudiziale"
+            ],
+            "relative_command": [
+                "estrai semantico"
             ]
         }
     ]

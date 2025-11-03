@@ -1,6 +1,8 @@
 import os
 import threading
 
+from copy import deepcopy
+
 from utils.file_manager import FileHandler
 from utils.storage import Storage
 
@@ -82,6 +84,15 @@ class DQLLanguage:
                 self.full_language = self.storage.set_default_language()
 
         return self.full_language
+    
+    def get_commands(self):
+        return self.commands
+    
+    def get_sources(self):
+        return self.sources
+    
+    def get_what(self):
+        return self.what
 
     def set_language(self, language: dict):
         """
@@ -102,6 +113,21 @@ class DQLLanguage:
         )
         default_language = FileHandler().read_file(default_language_path)
         self.set_language(default_language)
+        
+    def set_commands(self, commands: list):
+        language = deepcopy(self.full_language)
+        language["commands"] = commands
+        return self.set_language(language)
+    
+    def set_sources(self, sources: list):
+        language = deepcopy(self.full_language)
+        language["sources"] = sources
+        return self.set_language(language)
+    
+    def set_what(self, what: list):
+        language = deepcopy(self.full_language)
+        language["what"] = what
+        return self.set_language(language)
 
     def _update_parameters(self, to_retrieve: bool = False):
         """
@@ -115,6 +141,7 @@ class DQLLanguage:
 
         self.commands = self.full_language.get("commands", [])
         self.sources = self.full_language.get("sources", [])
+        self.what = self.full_language.get("what", [])
 
         self._set_default_command()
         self._build_command_maps()
