@@ -49,7 +49,7 @@ class Assistant:
             cfg (Config): Global configuration object
         """
         # Load global configuration
-        self.CFG = cfg if cfg else Config.get_instance()
+        self.CFG = cfg
 
     # ----------------------
     # --- Public Methods ---
@@ -71,9 +71,6 @@ class Assistant:
         Returns:
             dict: Final response containing structured input, operations, results, and used documents.
         """
-        # Initialize request id
-        self.CFG.generate_request_id()
-        
         # Initialize logger
         self.logger = self.CFG.get_logger("Assistant")
         self.logger.info(f"Request Received: \"{prompt}\"")

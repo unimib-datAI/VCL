@@ -1,95 +1,34 @@
-import argparse
 import logging
 import os
-import socket
-import threading
+
 from datetime import datetime, timezone
-from pathlib import Path
 
 from utils.DQL_language import DQLLanguage
-from utils.LLM import LLM
+from utils.system_config import SystemConfig
 from utils.storage import Storage
 
-
-class Config:
-    """
-    Singleton configuration manager for initializing and providing access to 
-    shared application-level components such as LLM, Storage, and DQLLanguage.
-
-    Responsibilities:
-        - Manage global configuration (API keys, DB URLs, tokens, etc.)
-        - Handle logging setup for both console and file outputs
-        - Manage user and request identification
-        - Ensure thread-safe singleton instantiation
-
-    Attributes:
-        DB_URL (str): Default database URL.
-        project_root (Path): Root directory of the project.
-        user_id (str): Unique identifier for the current user.
-        request_id (str): Unique identifier for the current request.
-        llm (LLM): Singleton instance of the LLM class.
-        storage (Storage): Singleton instance of the Storage class.
-        language (DQLLanguage): Singleton instance of the DQLLanguage class.
-    """
-    # Singleton instance and thread lock
-    _instance = None
-    _lock = threading.Lock()
-
-    # Default configuration values
+class Config():
+    user_id = None
+    request_id = None
+    
     DB_URL: str = "http://10.0.0.108:9201"
-    project_root = Path(__file__).resolve().parent.parent
-
-    user_id: str = None
-    request_id: str = None
-
-    # ----------------------
-    # --- Initialization ---
-    # ----------------------
     
-    def __init__(self, opts: argparse.Namespace = None, user_id: str = None):
-        """
-        Initialize the configuration object with defaults and runtime overrides.
-        """
-        if getattr(self, "_initialized", False):
-            return  # Prevent re-initialization
-
-        # Initialize identifiers
-        self.user_id = user_id or self._generate_user_id()
-
-        # Extract options safely
-        api_key = getattr(opts, "api_key", None) if opts else None
-        url_db = getattr(opts, "url_db", None) if opts else None
-        token_db = getattr(opts, "token_db", None) if opts else None
-        seconds = self._parse_seconds(getattr(opts, "seconds", None)) if opts else 5
-        model_name = getattr(opts, "model_name", None) if opts else None
-        provider = getattr(opts, "provider", None) if opts else None
-        self.spell_check_without_llm = getattr(opts, "spell_check_without_llm", False) if opts else False
-
-        # Initialize subsystems
-        self.llm = LLM.get_instance(api_key=api_key, seconds=seconds, project_root=self.project_root, model_name=model_name, provider=provider)
-        self.storage = Storage.get_instance(self.user_id, url_db, token_db, self.project_root)
-        self.language = DQLLanguage.get_instance(self.storage, self.project_root)
-
-        self._initialized = True
-    
-    @classmethod
-    def get_instance(cls, opts: argparse.Namespace = None, user_id: str = None):
-        """
-        Retrieve the global Config singleton instance, creating it if necessary.
-
-        Args:
-            opts (argparse.Namespace, optional): Command-line arguments.
-            user_id (str, optional): Optional user ID override.
-
-        Returns:
-            Config: The singleton configuration instance.
-        """
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = cls(opts=opts, user_id=user_id)
-        return cls._instance
-
+    def __init__(self, user_id: str):
+        self.user_id = user_id
+        self.system_CFG = SystemConfig.get_instance()
+        
+        self.storage = Storage.get_instance(self.user_id, 
+                                            self.system_CFG.url_db, 
+                                            self.system_CFG.token_db, 
+                                            self.system_CFG.project_root)
+        
+        self.language = DQLLanguage.get_instance(self.storage, 
+                                                 self.system_CFG.project_root)
+        
+        self.llm = self.system_CFG.llm
+        self.project_root = self.system_CFG.project_root
+        self.spell_check_without_llm = self.system_CFG.spell_check_without_llm
+        
     # --------------
     # --- Logger ---
     # --------------
@@ -125,7 +64,7 @@ class Config:
             logger.addHandler(file_handler)
 
         return logger
-
+    
     # -----------------------------
     # --- Identifier Management ---
     # -----------------------------
@@ -138,26 +77,6 @@ class Config:
 
     def generate_request_id(self) -> str:
         """Generate a unique request ID based on user ID and current UTC timestamp."""
-        if not self.user_id:
-            self.user_id = self._generate_user_id()
-
         timestamp = datetime.now(timezone.utc).isoformat()
         sanitized = timestamp.replace(":", "").replace(".", "")
         return f"{self.user_id}_{sanitized}"
-
-    def _generate_user_id(self) -> str:
-        """Generate a unique user ID based on the machine’s hostname IP."""
-        return socket.gethostbyname(socket.gethostname()).replace(".", "")
-
-    # ----------------------
-    # --- Helper Methods ---
-    # ----------------------
-    
-    @staticmethod
-    def _parse_seconds(value) -> int:
-        """Validate and parse seconds value, ensuring a non-negative integer."""
-        try:
-            seconds = int(value)
-            return seconds if seconds >= 0 else 5
-        except (TypeError, ValueError):
-            return 5

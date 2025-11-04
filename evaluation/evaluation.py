@@ -14,7 +14,7 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from utils.file_manager import FileHandler
 from utils.LLM import LLM
-from utils.config import Config
+from utils.system_config import SystemConfig
 
 try:
     # Path of the folder where this file is located
@@ -31,7 +31,7 @@ try:
     headers: dict = {"Content-Type": "application/json"}
 
     llm = LLM().get_instance()
-    config = Config().get_instance()
+    config = SystemConfig().get_instance()
 
     for input_file, output_file in file_list:
         print(f"Processing DOC: {input_file}")

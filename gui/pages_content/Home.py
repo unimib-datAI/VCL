@@ -35,29 +35,29 @@ def configure_page():
     )
 
     # --- Custom CSS ---
-    st.markdown(
-        """
-        <style>
-        .block-container {
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
-        }
-
-        /* Hide default Streamlit header */
-        header {
-            visibility: hidden;
-            height: 0;
-        }
-
-        h1 {
-            text-align: center;
-        }
-        </style>
-        """,
-        unsafe_allow_html=True,
-    )
+#    st.markdown(
+#        """
+#        <style>
+#        .block-container {
+#            padding-top: 2rem !important;
+#            padding-bottom: 2rem !important;
+#            padding-left: 2rem !important;
+#            padding-right: 2rem !important;
+#        }
+#
+#        /* Hide default Streamlit header */
+#        header {
+#            visibility: hidden;
+#            height: 0;
+#        }
+#
+#        h1 {
+#            text-align: center;
+#        }
+#        </style>
+#        """,
+#        unsafe_allow_html=True,
+#    )
 
 
 # ---------------------------
@@ -110,7 +110,7 @@ def handle_user_input():
             # Threading setup
             stop_event = threading.Event()
             result_queue = queue.Queue()
-            assistant = Assistant()
+            assistant = Assistant(st.session_state.logic_config)
 
             # Run assistant logic in background
             thread = threading.Thread(
@@ -313,7 +313,7 @@ def display_operation(index: int, operation: dict):
 # --- Entry Point ---
 # -------------------
 
-def main():
+def show_home():
     """
     Main entry point for the Streamlit DQL app.
     Sets up layout, restores chat history, and handles user interactions.
@@ -326,4 +326,4 @@ def main():
     handle_user_input()
 
 if __name__ == "__main__":
-    main()
+    show_home()

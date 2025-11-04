@@ -208,5 +208,6 @@ __marimo__/
 
 #DQL Files
 documents/*.json
+settings/*
 /**/*.csv
 /**/*.txt

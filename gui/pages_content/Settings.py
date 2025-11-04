@@ -9,26 +9,10 @@ from utils.config import Config  # Assicurati che questo import funzioni
 PAGE_TITLE = "Definisci il linguaggio DQL"
 
 def configure_page():
-    # ... (Il tuo codice qui è corretto) ...
     st.set_page_config(
         page_title=PAGE_TITLE, 
         page_icon="🧠", 
         layout="wide"
-    )
-    st.markdown(
-        """
-        <style>
-        .block-container {
-            padding-top: 2rem !important;
-            padding-bottom: 2rem !important;
-            padding-left: 2rem !important;
-            padding-right: 2rem !important;
-        }
-        header { visibility: hidden; height: 0; }
-        h1 { text-align: center; }
-        </style>
-        """,
-        unsafe_allow_html=True,
     )
 
 # -------------------------------
@@ -42,7 +26,7 @@ def initialize_session_state():
     """
     if "language_class" not in st.session_state:
         # Initialize the DQLLanguage instance
-        st.session_state.language_class = Config.get_instance().language
+        st.session_state.language_class = st.session_state.logic_config.language
 
     # 'df_what' and 'df_from' will contain the saved data
     if "df_what" not in st.session_state:
@@ -171,7 +155,6 @@ def is_empty_value(x):
 def has_empty_values(df):
     return df.map(is_empty_value).values.any()
 
-# --- MODIFICA 4: Logica di salvataggio aggiornata ---
 def save_changes():
     """
     Save the edited DataFrame back to the language configuration,
@@ -251,7 +234,7 @@ def confirm_popup(action: str, function):
 # --- Entry Point ---
 # -------------------
 
-def main():
+def show_settings():
     """
     Main entry point for the Streamlit DQL app.
     Sets up layout, restores chat history, and handles user interactions.
@@ -265,4 +248,4 @@ def main():
     display_buttons()
 
 if __name__ == "__main__":
-    main()
+    show_settings()

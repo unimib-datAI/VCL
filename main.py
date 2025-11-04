@@ -2,8 +2,7 @@ import argparse
 import streamlit.web.cli as stcli
 import sys
 
-
-from utils.config import Config
+from utils.system_config import SystemConfig
 
 def parse_args() -> argparse.Namespace:
     """
@@ -142,7 +141,7 @@ def _launch_streamlit() -> None:
     sys.argv = [
         "streamlit",
         "run",
-        "gui/Home.py",
+        "gui/app.py",
         "--server.fileWatcherType=none",
     ]
     sys.exit(stcli.main())
@@ -156,7 +155,7 @@ def main() -> None:
     and launches the Streamlit interface.
     """
     opts = parse_args()
-    Config.get_instance(opts)
+    SystemConfig.get_instance(opts)
     _launch_streamlit()
 
 
