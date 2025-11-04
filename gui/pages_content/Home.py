@@ -252,13 +252,14 @@ def show_expander(full_details: dict, logs: list = []):
         
         # Display logs (if available)
         if len(logs) > 0:
+            text = "\n".join([l.strip() for l in logs]).strip()
             st.markdown(
                 f"""
                 <details style="margin-left:20px; margin-top:10px;">
                     <summary>Logs</summary>
                     <p></p>
                     <pre style="white-space: pre-wrap; word-break: break-word;">
-                        <code class="language-plaintext">{"\n".join([l.strip() for l in logs]).strip()}</code>
+                        <code class="language-plaintext">{text}</code>
                     </pre>
                 </details>
                 """,

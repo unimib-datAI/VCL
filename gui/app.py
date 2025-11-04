@@ -43,7 +43,6 @@ if "page" not in st.query_params:
     st.query_params["page"] = "Login"
 
 page = st.query_params["page"]
-page = st.query_params["sub_page"]
 
 if page == "Login":
     show_login()

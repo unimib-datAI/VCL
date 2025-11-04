@@ -160,5 +160,6 @@ class Assistant:
         except Exception:
             self.logger.warning("Document not saved in storage")
             
-        file_path = os.path.join(self.CFG.project_root, "documents", f"{response.get("id", "")}.json")
+        id = response.get("id", "")
+        file_path = os.path.join(self.CFG.project_root, "documents", f"{id}.json")
         FileHandler().write_file(file_path, response)
