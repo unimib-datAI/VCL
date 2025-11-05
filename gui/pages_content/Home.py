@@ -11,7 +11,7 @@ import queue
 
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent
+ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
@@ -35,29 +35,29 @@ def configure_page():
     )
 
     # --- Custom CSS ---
-#    st.markdown(
-#        """
-#        <style>
-#        .block-container {
-#            padding-top: 2rem !important;
-#            padding-bottom: 2rem !important;
-#            padding-left: 2rem !important;
-#            padding-right: 2rem !important;
-#        }
+#   st.markdown(
+#       """
+#       <style>
+#       .block-container {
+#           padding-top: 2rem !important;
+#           padding-bottom: 2rem !important;
+#           padding-left: 2rem !important;
+#           padding-right: 2rem !important;
+#       }
 #
-#        /* Hide default Streamlit header */
-#        header {
-#            visibility: hidden;
-#            height: 0;
-#        }
+#       /* Hide default Streamlit header */
+#       header {
+#           visibility: hidden;
+#           height: 0;
+#       }
 #
-#        h1 {
-#            text-align: center;
-#        }
-#        </style>
-#        """,
-#        unsafe_allow_html=True,
-#    )
+#       h1 {
+#           text-align: center;
+#       }
+#       </style>
+#       """,
+#       unsafe_allow_html=True,
+#   )
 
 
 # ---------------------------
@@ -93,64 +93,90 @@ def display_chat_history():
 
 def handle_user_input():
     """
-    Handle user input, send it to the Assistant, and display responses progressively.
+    Handle user input from chat_input and suggestion buttons.
+    """    
+    prompt_from_button = st.session_state.pop("prompt_from_button", None)
+
+    with st.popover("💡 Suggerimenti"):
+        st.markdown("Prova a chiedere:")
+        for i, suggestion in enumerate(st.session_state.logic_config.language.gui_examples):
+            if st.button(suggestion, key=f"suggestion_{i}"):
+                st.session_state.prompt_from_button = suggestion
+                st.rerun()
+                
+    display_chat_history()
+
+    # --- Chat Input ---
+    chat_prompt = st.chat_input("Scrivi un messaggio...")
+
+    prompt_to_submit = prompt_from_button or chat_prompt
+    
+    if prompt_to_submit:
+        submit_prompt(prompt_to_submit)
+
+
+def submit_prompt(prompt: str):
     """
-    if prompt := st.chat_input("Scrivi un messaggio..."):
-        # --- 1. Display user's message ---
-        st.session_state.messages.append(
-            {"role": "user", "content": prompt, "full_details": None, "logs": []}
+    Invia il prompt all'assistente e gestisce la visualizzazione della risposta.
+    Questa funzione contiene la logica originariamente in handle_user_input.
+
+    Args:
+        prompt (str): Il testo del prompt da inviare.
+    """
+    # --- 1. Display user's message ---
+    st.session_state.messages.append(
+        {"role": "user", "content": prompt, "full_details": None, "logs": []}
+    )
+    with st.chat_message("user"):
+        st.markdown(prompt)
+
+    # --- 2. Prepare Assistant response ---
+    with st.chat_message("assistant"):
+        placeholder = st.empty()
+
+        # Threading setup
+        stop_event = threading.Event()
+        result_queue = queue.Queue()
+        assistant = Assistant(st.session_state.logic_config)
+
+        # Run assistant logic in background
+        thread = threading.Thread(
+            target=call_assistant, args=(prompt, assistant, stop_event, result_queue)
         )
-        with st.chat_message("user"):
-            st.markdown(prompt)
+        thread.start()
 
-        # --- 2. Prepare Assistant response ---
-        with st.chat_message("assistant"):
-            placeholder = st.empty()
-
-            # Threading setup
-            stop_event = threading.Event()
-            result_queue = queue.Queue()
-            assistant = Assistant(st.session_state.logic_config)
-
-            # Run assistant logic in background
-            thread = threading.Thread(
-                target=call_assistant, args=(prompt, assistant, stop_event, result_queue)
-            )
-            thread.start()
-
-            # Log streaming display
-            log_file = os.path.join(
-                assistant.CFG.project_root, "logs", f"{assistant.CFG.get_request_id()}.log"
-            )
-            log_list = ["LOGS:"]
-
-            for line in follow_log(log_file, stop_event):
-                log_list.append(line)
-                placeholder.markdown("\n\n".join(log_list).strip())
-
-                if stop_event.is_set():
-                    placeholder.markdown("")
-                    break
-
-            thread.join()
-
-            # --- 3. Display assistant's response with typing effect ---
-            result = result_queue.get()
-            text = result.get("result", "")
-
-            typed_text = ""
-            for char in text:
-                typed_text += char
-                placeholder.markdown(typed_text)
-                time.sleep(0.01)
-
-            show_expander(result, log_list[1:])
-
-        # --- 4. Save assistant's response ---
-        st.session_state.messages.append(
-            {"role": "assistant", "content": text, "full_details": result, "logs": log_list[1:]}
+        # Log streaming display
+        log_file = os.path.join(
+            assistant.CFG.project_root, "logs", f"{assistant.CFG.get_request_id()}.log"
         )
+        log_list = ["LOGS:"]
 
+        for line in follow_log(log_file, stop_event):
+            log_list.append(line)
+            placeholder.markdown("\n\n".join(log_list).strip())
+
+            if stop_event.is_set():
+                placeholder.markdown("")
+                break
+
+        thread.join()
+
+        # --- 3. Display assistant's response with typing effect ---
+        result = result_queue.get()
+        text = result.get("result", "")
+
+        typed_text = ""
+        for char in text:
+            typed_text += char
+            placeholder.markdown(typed_text)
+            time.sleep(0.01)
+
+        show_expander(result, log_list[1:])
+
+    # --- 4. Save assistant's response ---
+    st.session_state.messages.append(
+        {"role": "assistant", "content": text, "full_details": result, "logs": log_list[1:]}
+    )
 
 # -------------------------------
 # --- Assistant Communication ---
@@ -323,8 +349,7 @@ def show_home():
     st.title(APP_TITLE)
 
     initialize_chat()
-    display_chat_history()
-    handle_user_input()
+    handle_user_input() # <--- Questa funzione ora include i suggerimenti
 
 if __name__ == "__main__":
     show_home()

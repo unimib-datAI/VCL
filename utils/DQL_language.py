@@ -1,4 +1,5 @@
 import os
+import re
 import threading
 
 from copy import deepcopy
@@ -145,6 +146,8 @@ class DQLLanguage:
 
         self._set_default_command()
         self._build_command_maps()
+        
+        self.gui_examples = self._generate_examples()
 
     # --------------------------
     # --- Command Management ---
@@ -221,9 +224,9 @@ class DQLLanguage:
 
         self.default_command = default_commands[0] if default_commands else {}
 
-    # -----------------------------
+    # -------------------------
     # --- "What" Management ---
-    # -----------------------------
+    # -------------------------
 
     def get_available_what(self, sources: list[str]) -> list[tuple[str, str]]:
         """
@@ -244,3 +247,54 @@ class DQLLanguage:
             if set(sources).issubset(what.get("available", []))
         ]
         return what_elements
+    
+    # -----------------------------
+    # --- "Examples" Management ---
+    # -----------------------------
+    
+    def _generate_examples(self):
+        examples = FileHandler().read_file(
+            os.path.join(
+                self.project_root,
+                "documents",
+                "language",
+                "prompt_examples.json"
+            )
+        ).get("examples", [])
+        
+        formatted_examples = []
+        
+        command_names = [cmd["command"] for cmd in self.commands]
+        source_names = [src["name"] for src in self.sources]
+        what_names = [w["name"] for w in self.what]
+
+        for e in examples:
+            brackets_content = re.findall(r"\[(.*?)\]", e)
+
+            formatted_example = e
+
+            for content in brackets_content:
+                parts = content.split("_", 1)
+                if len(parts) != 2:
+                    continue 
+
+                category, element = parts
+
+                replacement = None
+
+                if category == "command":
+                    replacement = element if element in command_names else command_names[0] if command_names else ""
+                elif category == "source":
+                    replacement = element if element in source_names else source_names[0] if source_names else ""
+                elif category == "what":
+                    replacement = element if element in what_names else what_names[0] if what_names else ""
+                else:
+                    replacement = ""
+
+                formatted_example = formatted_example.replace(f"[{content}]", replacement)
+
+            formatted_examples.append(formatted_example)
+
+        return formatted_examples
+
+    

@@ -10,10 +10,8 @@ from gui.pages_content.Registration import show_registration
 from gui.pages_content.Home import show_home
 from gui.pages_content.Settings import show_settings
 
-# --- Configurazione Iniziale ---
 st.set_page_config(page_title="DQL", layout="wide")
 
-# --- Caricamento Configurazione YAML ---
 if "logic_config" not in st.session_state:
     st.session_state.logic_config = None
 
@@ -28,8 +26,6 @@ if "config" not in st.session_state:
         st.error(f"Errore durante il caricamento di 'config.yaml': {e}")
         st.stop()
 
-
-# --- Inizializzazione Authenticator ---
 if "authenticator" not in st.session_state:
     st.session_state.authenticator = stauth.Authenticate(
         st.session_state.config['credentials'],
@@ -38,7 +34,6 @@ if "authenticator" not in st.session_state:
         st.session_state.config['cookie']['expiry_days']
     )
 
-# --- Logica di Navigazione  ---
 if "page" not in st.query_params:
     st.query_params["page"] = "Login"
 
@@ -53,29 +48,13 @@ elif page == "Home":
 elif page == "Settings":
     show_settings()
 
-# --- Gestione dello Stato di Autenticazione ---
-
-# `st.session_state["authentication_status"]` è il cuore della sessione.
-# Può essere:
-# True: Utente loggato (o ricordato tramite cookie)
-# False: Login fallito
-# None: Utente non ancora loggato
-
 if st.session_state["authentication_status"]:
-    # --- AREA PROTETTA (Cosa vede l'utente loggato) ---
-    # 🔒 Aggiorna il file YAML con le nuove credenziali
     with open("settings/config.yaml", "w", encoding="utf-8") as file:
         yaml.dump(st.session_state.config, file, default_flow_style=False, allow_unicode=True)
     
     with st.sidebar:
         st.write(f"Benvenuto *{st.session_state['name']}*")
-        
-        # Recuperiamo il ruolo dal file di configurazione
-        # Questo è il campo personalizzato che abbiamo richiesto!
         username_loggato = st.session_state['username']
-        
-        #ruolo_utente = config['credentials']['usernames'][username_loggato].get('role', 'N/D')
-        #st.info(f"**Ruolo:** {ruolo_utente.capitalize()}")
         
         if st.button("Home"):
             change_page("Home")
