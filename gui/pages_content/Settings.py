@@ -1,6 +1,5 @@
 import pandas as pd
 import streamlit as st
-from utils.config import Config  # Assicurati che questo import funzioni
 
 # ------------------
 # --- Page setup ---
@@ -8,12 +7,7 @@ from utils.config import Config  # Assicurati che questo import funzioni
 
 PAGE_TITLE = "Definisci il linguaggio DQL"
 
-def configure_page():
-    st.set_page_config(
-        page_title=PAGE_TITLE, 
-        page_icon="🧠", 
-        layout="wide"
-    )
+# st.set_page_config() is called in app.py
 
 # -------------------------------
 # --- Language Initialization ---
@@ -24,19 +18,24 @@ def initialize_session_state():
     Initialize the Streamlit session state variables if they don't exist.
     Ensures consistent state management across page reruns.
     """
-    if "language_class" not in st.session_state:
-        # Initialize the DQLLanguage instance
-        st.session_state.language_class = st.session_state.logic_config.language
+    
+    # Verify that logic_config has been loaded correctly
+    if not st.session_state.logic_config:
+        st.error("Errore: Configurazione utente non caricata.")
+        st.stop()
+        
+    language_class = st.session_state.logic_config.language
+    st.session_state.language_class = language_class
 
     # 'df_what' and 'df_from' will contain the saved data
     if "df_what" not in st.session_state:
         st.session_state.df_what = pd.DataFrame(
-            st.session_state.language_class.get_what()
+            language_class.get_what()
         )
         
     if "df_from" not in st.session_state:
         st.session_state.df_from = pd.DataFrame(
-            st.session_state.language_class.get_sources()
+            language_class.get_sources()
         )
         
     # 'edited_what' and 'edited_from' will contain the data being edited
@@ -49,12 +48,12 @@ def initialize_session_state():
     # Generate selectable options
     if "available_sources" not in st.session_state:
         st.session_state.available_sources = list({
-            src.get("name") for src in st.session_state.language_class.get_sources()
+            src.get("name") for src in language_class.get_sources()
         })
     
     if "available_commands" not in st.session_state:
         st.session_state.available_commands = list({
-            cmd.get("command") for cmd in st.session_state.language_class.get_commands()
+            cmd.get("command") for cmd in language_class.get_commands()
         })
 
 # --------------------------
@@ -99,9 +98,9 @@ def display_from_editor():
     
     # The "edited" DataFrame (which has lists) is copied and transformed into strings only for display
     from_display = st.session_state.edited_from.copy()
-    #
+    
     from_display["synonyms"] = from_display["synonyms"].apply(
-        lambda lst: "; ".join(lst) if isinstance(lst, list) else lst
+        lambda lst: "; ".join(lst) if isinstance(lst, list) else (lst if isinstance(lst, str) else "")
     )
     
     edited_data_from_display = st.data_editor(
@@ -173,15 +172,21 @@ def save_changes():
         df_from_processed["synonyms"] = df_from_processed["synonyms"].apply(
             lambda x: [s.strip() for s in str(x).split(";") if s.strip()] if isinstance(x, str) else (x if isinstance(x, list) else [])
         )
-
-    st.session_state.language_class.set_what(df_what.to_dict(orient="records"))
-    st.session_state.language_class.set_sources(df_from_processed.to_dict(orient="records"))
+    
+    language_class = st.session_state.language_class
+    language_class.set_what(df_what.to_dict(orient="records"))
+    language_class.set_sources(df_from_processed.to_dict(orient="records"))
     
     st.session_state.df_what = df_what.copy()
     st.session_state.df_from = df_from_processed.copy()
     
-    st.session_state.edited_from = df_from_processed.copy()
-
+    st.session_state.edited_from = df_from_processed.copy() # Aggiorna 'edited' con la versione processata
+    
+    # Ricarica le opzioni disponibili nel caso siano cambiati i nomi
+    st.session_state.available_sources = list({
+        src.get("name") for src in language_class.get_sources()
+    })
+    
     st.success("✅ Modifiche salvate con successo!")
 
 def cancel_changes():
@@ -198,13 +203,22 @@ def reset_language():
     """
     Reset the language configuration to its default state.
     """
-    st.session_state.language_class.set_default_language()
+    language_class = st.session_state.language_class
+    language_class.set_default_language()
     
-    st.session_state.df_what = pd.DataFrame(st.session_state.language_class.get_what())
-    st.session_state.df_from = pd.DataFrame(st.session_state.language_class.get_sources())
+    st.session_state.df_what = pd.DataFrame(language_class.get_what())
+    st.session_state.df_from = pd.DataFrame(language_class.get_sources())
     
     st.session_state.edited_what = st.session_state.df_what.copy()
     st.session_state.edited_from = st.session_state.df_from.copy()
+    
+    # Ricarica anche le opzioni
+    st.session_state.available_sources = list({
+        src.get("name") for src in language_class.get_sources()
+    })
+    st.session_state.available_commands = list({
+        cmd.get("command") for cmd in language_class.get_commands()
+    })
 
     st.warning("⚠️ Valori ripristinati ai default!")
 
@@ -226,9 +240,14 @@ def confirm_popup(action: str, function):
     
     if message:
         st.write(message)
-        if st.button("✅ Sì, confermo"):
-            function()
-            st.rerun()
+        col1, col2 = st.columns(2)
+        with col1:
+            if st.button("✅ Sì, confermo", use_container_width=True):
+                function()
+                st.rerun()
+        with col2:
+            if st.button("❌ No, annulla", use_container_width=True):
+                st.rerun()
 
 # -------------------
 # --- Entry Point ---
@@ -239,7 +258,6 @@ def show_settings():
     Main entry point for the Streamlit DQL app.
     Sets up layout, restores chat history, and handles user interactions.
     """
-    configure_page()
     st.title(PAGE_TITLE)
 
     initialize_session_state()

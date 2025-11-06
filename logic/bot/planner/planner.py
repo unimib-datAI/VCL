@@ -54,9 +54,13 @@ class Planner:
         
         if command_key in middle_commands:
             if len(query.get("from", [])) > 1:
+                self.logger.info("Need to create suboperations")
                 return self._create_operations(query, command_key, "integra")
+            else:
+                self.logger.info("No need to create suboperations")
             return [query]
 
+        self.logger.info("Need to create suboperations")
         return self._create_operations(query, middle_commands[0], command_key)
 
     # -------------------------------------------------------------------------
@@ -84,6 +88,10 @@ class Planner:
             }
             for i, source in enumerate(query.get("from", []))
         ]
+        
+        self.logger.info(f"Found {len(atomic_ops)} suboperations:")
+        for i, o in enumerate(atomic_ops):
+            self.logger.info(f"\t- {str(i)}: {o.get("command", "")}({str(o.get("from", []))}, {o.get("what", "")}, None)")
 
         # Create the final aggregation operation
         final_op = {
@@ -93,6 +101,9 @@ class Planner:
             "how": query.get("how", {})
         }
 
+        self.logger.info(f"Final suboperation:")
+        self.logger.info(f"\t- {final_op.get("command", "")}({str(final_op.get("from", []))}, None, {str(o.get("how", {}))})")
+            
         atomic_ops.append(final_op)
         return atomic_ops
 
@@ -109,9 +120,9 @@ class Planner:
         for what_dict in self.dql.get_what():
             if what == what_dict.get("name", ""):
                 if len((w := what_dict.get("relative_command", []))) > 0:
-                    self.logger.info(f"Middle Commands: {w}")
+                    self.logger.info(f"Possible Middle Commands: {w}")
                     return w
                 break
             
-        self.logger.info("Middle Command: not found -> default command")
+        self.logger.info("Possible Middle Commands: not found -> default command")
         return self.dql.default_command.get("command", "")

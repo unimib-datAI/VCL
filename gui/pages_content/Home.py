@@ -23,42 +23,7 @@ APP_TITLE = "DQL"
 # --- Page Configuration ---
 # --------------------------
 
-def configure_page():
-    """
-    Configure the Streamlit page and apply custom CSS styles for layout and aesthetics.
-    """
-    st.set_page_config(
-        page_title=APP_TITLE,
-        page_icon="🏠",
-        layout="wide",
-        # initial_sidebar_state="collapsed"
-    )
-
-    # --- Custom CSS ---
-#   st.markdown(
-#       """
-#       <style>
-#       .block-container {
-#           padding-top: 2rem !important;
-#           padding-bottom: 2rem !important;
-#           padding-left: 2rem !important;
-#           padding-right: 2rem !important;
-#       }
-#
-#       /* Hide default Streamlit header */
-#       header {
-#           visibility: hidden;
-#           height: 0;
-#       }
-#
-#       h1 {
-#           text-align: center;
-#       }
-#       </style>
-#       """,
-#       unsafe_allow_html=True,
-#   )
-
+# st.set_page_config() is called in app.py
 
 # ---------------------------
 # --- Chat Initialization ---
@@ -93,17 +58,24 @@ def display_chat_history():
 
 def handle_user_input():
     """
-    Handle user input from chat_input and suggestion buttons.
-    """    
+    Display and Handle user input from chat_input and suggestion buttons.
+    """
+    # --- Suggestion Button ---
     prompt_from_button = st.session_state.pop("prompt_from_button", None)
 
     with st.popover("💡 Suggerimenti"):
         st.markdown("Prova a chiedere:")
-        for i, suggestion in enumerate(st.session_state.logic_config.language.gui_examples):
-            if st.button(suggestion, key=f"suggestion_{i}"):
-                st.session_state.prompt_from_button = suggestion
-                st.rerun()
-                
+        
+        # Ensure logic_config is loaded
+        if st.session_state.logic_config:
+            for i, suggestion in enumerate(st.session_state.logic_config.language.gui_examples):
+                if st.button(suggestion, key=f"suggestion_{i}"):
+                    st.session_state.prompt_from_button = suggestion
+                    st.rerun()
+        else:
+            st.info("Caricamento configurazione...")
+    
+    # --- Chat History ---
     display_chat_history()
 
     # --- Chat Input ---
@@ -117,11 +89,11 @@ def handle_user_input():
 
 def submit_prompt(prompt: str):
     """
-    Invia il prompt all'assistente e gestisce la visualizzazione della risposta.
-    Questa funzione contiene la logica originariamente in handle_user_input.
+    Sends the prompt to the assistant and handles displaying the response.
+    This function contains the logic originally in handle_user_input.
 
     Args:
-        prompt (str): Il testo del prompt da inviare.
+    prompt (str): The prompt text to send.
     """
     # --- 1. Display user's message ---
     st.session_state.messages.append(
@@ -137,6 +109,11 @@ def submit_prompt(prompt: str):
         # Threading setup
         stop_event = threading.Event()
         result_queue = queue.Queue()
+        
+        if not st.session_state.logic_config:
+            st.error("Errore: Configurazione utente non caricata. Impossibile contattare l'assistente.")
+            return
+
         assistant = Assistant(st.session_state.logic_config)
 
         # Run assistant logic in background
@@ -213,25 +190,28 @@ def follow_log(file_path: str, stop_event: threading.Event, wait_time: float = 0
     """
     # Wait until log file exists or stop event triggered
     while not (os.path.exists(file_path) or stop_event.is_set()):
-        continue
+        time.sleep(wait_time) # Aggiunto sleep per evitare busy-waiting
 
     if os.path.exists(file_path):
-        with open(file_path, "r") as f:
-            f.seek(0, 2)  # Move to end of file
-            while not stop_event.is_set():
-                line = f.readline()
-                if not line:
-                    time.sleep(wait_time)
-                    continue
-                
-                for label in ["INFO", "ERROR", "WARNING"]:
-                    if f"- {label} -" in line:
-                        line = line.split(f"- {label} -", 1)[-1].strip()
+        try:
+            with open(file_path, "r") as f:
+                f.seek(0, 2)  # Move to end of file
+                while not stop_event.is_set():
+                    line = f.readline()
+                    if not line:
+                        time.sleep(wait_time)
+                        continue
+                    
+                    for label in ["INFO", "ERROR", "WARNING"]:
+                        if f"- {label} -" in line:
+                            line = line.split(f"- {label} -", 1)[-1].strip()
 
-                line = f"\t{line}"
-                
-                yield line
-
+                    line = f"\t{line}"
+                    
+                    yield line
+        except Exception:
+            # There may be a race condition
+            yield "\t (Errore lettura log)"
 
 # ----------------------------------------------
 # --- Expander in every assistant’s response ---
@@ -279,13 +259,15 @@ def show_expander(full_details: dict, logs: list = []):
         # Display logs (if available)
         if len(logs) > 0:
             text = "\n".join([l.strip() for l in logs]).strip()
+            # Escaping HTML
+            text_escaped = html.escape(text)
             st.markdown(
                 f"""
                 <details style="margin-left:20px; margin-top:10px;">
                     <summary>Logs</summary>
                     <p></p>
                     <pre style="white-space: pre-wrap; word-break: break-word;">
-                        <code class="language-plaintext">{text}</code>
+                        <code class="language-plaintext">{text_escaped}</code>
                     </pre>
                 </details>
                 """,
@@ -345,11 +327,14 @@ def show_home():
     Main entry point for the Streamlit DQL app.
     Sets up layout, restores chat history, and handles user interactions.
     """
-    configure_page()
-    st.title(APP_TITLE)
+
+    # Verify that logic_config has been loaded correctly
+    if not st.session_state.logic_config:
+        st.warning("Inizializzazione della configurazione in corso... Ricarica se il messaggio persiste.")
+        st.stop()
 
     initialize_chat()
-    handle_user_input() # <--- Questa funzione ora include i suggerimenti
+    handle_user_input()
 
 if __name__ == "__main__":
     show_home()

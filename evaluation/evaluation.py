@@ -6,15 +6,15 @@ import socket
 import sys
 
 from pathlib import Path
-from langchain.prompts import ChatPromptTemplate
+from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.output_parsers import StrOutputParser
 
 # Root path of the project (two levels up from this file)
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from logic.assistant import Assistant
+from utils.config import Config
 from utils.file_manager import FileHandler
-from utils.LLM import LLM
-from utils.system_config import SystemConfig
 
 try:
     # Path of the folder where this file is located
@@ -26,12 +26,10 @@ try:
             file_list.append((os.path.join(file_root, file_name),
                               os.path.join(file_root, 'processed', file_name)))
 
-    # API details
-    url: str = "http://127.0.0.1:8000/chat"
-    headers: dict = {"Content-Type": "application/json"}
-
-    llm = LLM().get_instance()
-    config = SystemConfig().get_instance()
+    config = Config("evaluator")
+    llm = config.llm
+    
+    assistant = Assistant(config)
 
     for input_file, output_file in file_list:
         print(f"Processing DOC: {input_file}")
@@ -52,23 +50,8 @@ try:
             
             print(f"Processing ID: {id}")
             print(f"Starting model call...")
-            # Model Call
-            hostname = socket.gethostname()
-            ip = socket.gethostbyname(hostname)
-            
-            data = {
-                "message": query,
-                "thread_id": id,
-            }
-            
-            model_answer = requests.post(url, json=data, headers=headers)
-            
-            if model_answer.status_code == 200:
-                model_answer = model_answer.json()
-            else:
-                model_answer = {}
                 
-            model_answer = model_answer.get('result', '').strip()
+            model_answer = assistant.chat(query).get("result", "")
             
             result = {}
             
@@ -77,7 +60,7 @@ try:
             if model_answer:
                 print(f"Answer from the model obtained. Starting evaluation...")
                 # Evaluation
-                template = read_file(os.path.join(file_root, "prompt", "evaluation.json"))
+                template = FileHandler().read_file(os.path.join(file_root, "prompt", "evaluation.json"))
                 template["system"] = "\n".join(template["system"]).strip()
                 template["human"] = "\n".join(template["human"]).strip()
                 
@@ -109,7 +92,5 @@ try:
         
         df_results = pd.DataFrame(results)
         df_results.to_csv(output_file, index=False, sep=';', encoding='utf-8-sig')
-except requests.exceptions.ConnectionError:
-    print("Connection error. You may need to start the System server.")
 except FileNotFoundError as e:
     print(e)

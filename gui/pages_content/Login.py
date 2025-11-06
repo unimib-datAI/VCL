@@ -2,8 +2,10 @@ import streamlit as st
 
 from gui.change_page import change_page
 
+PAGE_TITLE = "Benvenuto in DQL!"
+
 def show_login():
-    st.title("Login Utente")
+    st.title(PAGE_TITLE)
 
     try:
         st.session_state.authenticator.login()

@@ -142,11 +142,11 @@ class Executor:
         context_lines = []
         if len(docs) == len(names):
             for i, doc in enumerate(docs):
-                context_lines.append(f"[Documento {i + 1}: {names[i]}]\n\n{doc['text']}")
+                context_lines.append(f"[Documento {i + 1}: \"{names[i]}\"]\n\n{doc['text']}\n\n---")
         else:
             for i, doc in enumerate(docs):
                 context_lines.append(f"[Documento {i + 1}]\n\n{doc['text']}")
-        return "\n\n".join(context_lines)
+        return "\n\n".join(context_lines).strip()
     
     # -------------------------
     # --- Output Formatting ---

@@ -18,7 +18,7 @@
         "",
         "\t- L'output deve essere un testo in linguaggio naturale scorrevole comprensibile",
         "\t- Non ci sono limitazioni sull'uso di elenchi puntati o tabelle",
-        "\t- Nel testo si deve fare in modo che sia chiaro di che documento si stia parlando.",
+        "\t- Nel testo si deve fare in modo che sia chiaro di che documento si stia parlando. Per rendere chiaro il riferimento usa, se presente, la stringa virgolettata presente nel titolo del documento.",
         "\t- Non includere spiegazioni, commenti o testo aggiuntivo."
     ],
     

@@ -3,19 +3,28 @@ import time
 
 from gui.change_page import change_page
 
+PAGE_TITLE = "Benvenuto in DQL!"
+
 def show_registration():
-    st.title("Registra Nuovo Utente")
+    st.title(PAGE_TITLE)
     try:
-        email, user_name, name = st.session_state.authenticator.register_user("main", 
-                                                                              pre_authorized=None, 
-                                                                              password_hint=False)
+        (email, 
+         user_name, 
+         name) = st.session_state.authenticator.register_user("Registra", 
+                                                             pre_authorized=None, 
+                                                             password_hint=True)
         
         if email and user_name and name:
             st.success("Registrazione completata! Ora puoi effettuare il login.")
             
-            time.sleep(1)
+            # Pause to allow the user to read the message
+            time.sleep(1.5)
             
-            change_page("Login")    
+            # Redirect to the Login page
+            change_page("Login")
+            
+            # Force rerun after page change
+            st.rerun()
 
     except Exception as e:
         st.error(f"Errore durante la registrazione: {e}")
