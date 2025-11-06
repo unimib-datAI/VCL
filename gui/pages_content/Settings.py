@@ -1,5 +1,6 @@
 import pandas as pd
 import streamlit as st
+import time
 
 # ------------------
 # --- Page setup ---
@@ -7,141 +8,80 @@ import streamlit as st
 
 PAGE_TITLE = "Definisci il linguaggio DQL"
 
-# st.set_page_config() is called in app.py
+# st.set_page_config() è chiamato in app.py
 
 # -------------------------------
 # --- Language Initialization ---
 # -------------------------------
 
+def convert_from_df_to_editable(df: pd.DataFrame) -> pd.DataFrame:
+    """Converts the 'synonyms' column from a list to a string for editing."""
+    editable_df = df.copy()
+    if "synonyms" in editable_df.columns:
+        editable_df["synonyms"] = editable_df["synonyms"].apply(
+            lambda lst: "; ".join(lst) if isinstance(lst, list) else (lst if isinstance(lst, str) else "")
+        )
+    # Ensures column exists even for empty dfs
+    elif "synonyms" not in editable_df.columns:
+         editable_df["synonyms"] = ""
+    return editable_df
+
+def convert_from_df_to_savable(df: pd.DataFrame) -> pd.DataFrame:
+    """Reconverts the 'synonyms' column from a string to a list for saving."""
+    savable_df = df.copy()
+    if "synonyms" in savable_df.columns:
+        savable_df["synonyms"] = savable_df["synonyms"].apply(
+            lambda x: [s.strip() for s in str(x).split(";") if s.strip()] if (isinstance(x, str) and x.strip()) else []
+        )
+    return savable_df
+
+def reload_data_from_class():
+    """
+    Reloads all data from the language_class instance into the session_state.
+    Used after saving or restoring to default values.
+    """
+    language_class = st.session_state.language_class
+
+    what_data = [item for item in language_class.get_what() if isinstance(item, dict)]
+    from_data = [item for item in language_class.get_sources() if isinstance(item, dict)]
+    commands_data = [item for item in language_class.get_commands() if isinstance(item, dict)]
+    
+    # df_what/df_from contain the "saved" data (with lists)
+    st.session_state.df_what = pd.DataFrame(what_data)
+    st.session_state.df_from = pd.DataFrame(from_data)
+
+    # edited_what/edited_from contain the data for the editor (with strings)
+    st.session_state.edited_what = st.session_state.df_what.copy()
+    st.session_state.edited_from = convert_from_df_to_editable(st.session_state.df_from)
+
+    st.session_state.available_sources = list({
+        src.get("name") for src in from_data if src.get("name")
+    })
+    
+    st.session_state.available_commands = list({
+        cmd.get("command") for cmd in commands_data if cmd.get("command")
+    })
+
 def initialize_session_state():
     """
-    Initialize the Streamlit session state variables if they don't exist.
-    Ensures consistent state management across page reruns.
+    Initialize session_state variables *only once*.
     """
     
-    # Verify that logic_config has been loaded correctly
-    if not st.session_state.logic_config:
+    if "state_initialized" in st.session_state:
+        return
+
+    if "logic_config" not in st.session_state or not st.session_state.logic_config:
         st.error("Errore: Configurazione utente non caricata.")
         st.stop()
         
-    language_class = st.session_state.logic_config.language
-    st.session_state.language_class = language_class
-
-    # 'df_what' and 'df_from' will contain the saved data
-    if "df_what" not in st.session_state:
-        st.session_state.df_what = pd.DataFrame(
-            language_class.get_what()
-        )
-        
-    if "df_from" not in st.session_state:
-        st.session_state.df_from = pd.DataFrame(
-            language_class.get_sources()
-        )
-        
-    # 'edited_what' and 'edited_from' will contain the data being edited
-    if "edited_what" not in st.session_state:
-        st.session_state.edited_what = st.session_state.df_what.copy()
-        
-    if "edited_from" not in st.session_state:
-        st.session_state.edited_from = st.session_state.df_from.copy()
-        
-    # Generate selectable options
-    if "available_sources" not in st.session_state:
-        st.session_state.available_sources = list({
-            src.get("name") for src in language_class.get_sources()
-        })
-    
-    if "available_commands" not in st.session_state:
-        st.session_state.available_commands = list({
-            cmd.get("command") for cmd in language_class.get_commands()
-        })
+    st.session_state.language_class = st.session_state.logic_config.language
+    reload_data_from_class()
+    st.session_state.state_initialized = True
 
 # --------------------------
-# --- What UI Components ---
-# --------------------------
-
-def display_what_editor():
-    """
-    Display a table editor for modifying the What Section of DQL configuration.
-    """
-    st.markdown("### Sezione WHAT")
-
-    st.session_state.edited_what = st.data_editor(
-        st.session_state.edited_what,
-        num_rows="dynamic",
-        column_config={
-            "name": "Termine",
-            "definition": "Definizione",
-            "available": st.column_config.MultiselectColumn(
-                "Disponibile nei documenti...",
-                options=st.session_state.available_sources,
-                color="primary",
-                format_func=lambda x: x.capitalize(),
-            ),
-            "relative_command": st.column_config.MultiselectColumn(
-                "Specifico dei comandi",
-                options=st.session_state.available_commands,
-                color="primary"
-            ),
-        },
-    )
-
-# --------------------------
-# --- From UI Components ---
-# --------------------------
-
-def display_from_editor():
-    """
-    Display a table editor for modifying the From Section of DQL configuration.
-    """
-    st.markdown("### Sezione FROM")
-    
-    # The "edited" DataFrame (which has lists) is copied and transformed into strings only for display
-    from_display = st.session_state.edited_from.copy()
-    
-    from_display["synonyms"] = from_display["synonyms"].apply(
-        lambda lst: "; ".join(lst) if isinstance(lst, list) else (lst if isinstance(lst, str) else "")
-    )
-    
-    edited_data_from_display = st.data_editor(
-        from_display,
-        num_rows="dynamic",
-        column_config={
-            "name": "Documento",
-            "description": "Breve Descrizione",
-            "synonyms": st.column_config.TextColumn(
-                "Sinonimi",
-                help="Inserisci i sinonimi separati da ;",
-                width="medium"
-            ),
-        },
-    )
-    
-    st.session_state.edited_from = edited_data_from_display
-
-# --------------------------
-# --- Button Components ---
-# --------------------------
-
-def display_buttons():
-    col1, col2, col3 = st.columns(3)
-    with col1:
-        save = st.button("💾 Salva", use_container_width=True)
-    with col2:
-        cancel = st.button("↩️ Annulla", use_container_width=True)
-    with col3:
-        reset = st.button("🔄 Ripristina", use_container_width=True)
-
-    if save:
-        confirm_popup("save", save_changes)
-    elif cancel:
-        confirm_popup("cancel", cancel_changes)
-    elif reset:
-        confirm_popup("reset", reset_language)
-
-# ----------------
 # --- Actions ---
-# ---------------
+# --------------------------
+
 def is_empty_value(x):
     if x is None:
         return True
@@ -156,98 +96,166 @@ def has_empty_values(df):
 
 def save_changes():
     """
-    Save the edited DataFrame back to the language configuration,
-    only if there are no None, empty, or whitespace-only values.
+    Saves data from 'edited_what'/'edited_from' to the class.
+    Returns True if the save is successful, False otherwise.
     """
     df_what = st.session_state.edited_what.copy()
-    df_from_display = st.session_state.edited_from.copy()
+    df_from_editable = st.session_state.edited_from.copy() 
 
-    if has_empty_values(df_what) or has_empty_values(df_from_display):
-        st.error("⚠️ Compila tutti i campi")
-        return
+    if has_empty_values(df_what) or has_empty_values(df_from_editable):
+        return False
 
-    # Reconvert synonyms from string to list before saving
-    df_from_processed = df_from_display.copy()
-    if "synonyms" in df_from_processed.columns:
-        df_from_processed["synonyms"] = df_from_processed["synonyms"].apply(
-            lambda x: [s.strip() for s in str(x).split(";") if s.strip()] if isinstance(x, str) else (x if isinstance(x, list) else [])
-        )
+    df_from_processed = convert_from_df_to_savable(df_from_editable)
     
     language_class = st.session_state.language_class
     language_class.set_what(df_what.to_dict(orient="records"))
     language_class.set_sources(df_from_processed.to_dict(orient="records"))
     
-    st.session_state.df_what = df_what.copy()
-    st.session_state.df_from = df_from_processed.copy()
-    
-    st.session_state.edited_from = df_from_processed.copy() # Aggiorna 'edited' con la versione processata
-    
-    # Ricarica le opzioni disponibili nel caso siano cambiati i nomi
-    st.session_state.available_sources = list({
-        src.get("name") for src in language_class.get_sources()
-    })
-    
-    st.success("✅ Modifiche salvate con successo!")
+    reload_data_from_class()
+    return True
 
 def cancel_changes():
     """
-    Cancel unsaved edits and restore the last saved DataFrame version.
+    Reloads the "saved" data (df_what/df_from), overwriting
+    the changes in 'edited_what'/'edited_from'.
     """
     st.session_state.edited_what = st.session_state.df_what.copy()
-    st.session_state.edited_from = st.session_state.df_from.copy()
-    
-    st.info("Operazione annullata.")
-
+    st.session_state.edited_from = convert_from_df_to_editable(st.session_state.df_from)
+    return True
 
 def reset_language():
     """
-    Reset the language configuration to its default state.
+    Resets the default data and reloads it into the state.
     """
     language_class = st.session_state.language_class
     language_class.set_default_language()
-    
-    st.session_state.df_what = pd.DataFrame(language_class.get_what())
-    st.session_state.df_from = pd.DataFrame(language_class.get_sources())
-    
-    st.session_state.edited_what = st.session_state.df_what.copy()
-    st.session_state.edited_from = st.session_state.df_from.copy()
-    
-    # Ricarica anche le opzioni
-    st.session_state.available_sources = list({
-        src.get("name") for src in language_class.get_sources()
-    })
-    st.session_state.available_commands = list({
-        cmd.get("command") for cmd in language_class.get_commands()
-    })
-
-    st.warning("⚠️ Valori ripristinati ai default!")
+    reload_data_from_class()
+    return True
 
 # ---------------------------
-# --- Confirmation Dialog ---
+# --- UI Components ---
 # ---------------------------
 
-@st.dialog("Sei sicuro?")
-def confirm_popup(action: str, function):
-    match action:
-        case "save":
-            message = "Sei sicuro di voler salvare le modifiche?"
-        case "cancel":
-            message = "Vuoi annullare le modifiche?"
-        case "reset":
-            message = "Ripristinare i valori originali? Questa operazione non può essere annullata!"
-        case _:
-            message = ""
+def display_confirmation_ui():
+    """
+    Shows the confirmation interface (instead of the form).
+    This function handles "Yes" and "No" clicks.
+    """
+    action = st.session_state.action_pending
     
-    if message:
-        st.write(message)
-        col1, col2 = st.columns(2)
+    if action == "save":
+        message = "Sei sicuro di voler salvare le modifiche?"
+        function_to_run = save_changes
+    elif action == "cancel":
+        message = "Vuoi annullare le modifiche?"
+        function_to_run = cancel_changes
+    elif action == "reset":
+        message = "Ripristinare i valori originali? Questa operazione non può essere annullata!"
+        function_to_run = reset_language
+    else:
+        # Failsafe: If the state is invalid, clear it and reload
+        del st.session_state.action_pending
+        st.rerun()
+        return
+
+    st.warning(message)
+    
+    if st.button("✅ Sì, confermo", use_container_width=True):
+        success = function_to_run()
+        
+        if success:
+            st.success("✅ Modifiche salvate con successo!")
+        else:
+            st.warning("Compila tutti i campi!")
+        
+        time.sleep(1)
+        
+        # Clear the flag and reload to return to the form
+        del st.session_state.action_pending
+        st.rerun()
+            
+    if st.button("❌ No, annulla", use_container_width=True):
+        # Clear the flag and reload to return to the form
+        del st.session_state.action_pending
+        st.rerun()
+
+def display_form_ui():
+    """
+    Displays the form with the data_editor and submit buttons.
+    This function sets the 'action_pending' flag when a button is pressed.
+    """
+    with st.form(key="language_form"):
+        st.markdown("### Sezione FROM")
+        
+        edited_from_df = st.data_editor(
+            st.session_state.edited_from, 
+            num_rows="dynamic",
+            key="from_editor", 
+            column_config={
+                "name": "Documento",
+                "description": "Breve Descrizione",
+                "synonyms": st.column_config.TextColumn(
+                    "Sinonimi",
+                    help="Inserisci i sinonimi separati da ;",
+                    width="medium"
+                ),
+            },
+        )
+        
+        st.markdown("### Sezione WHAT")
+        
+        try:
+            current_sources = list(edited_from_df['name'].dropna().unique())
+        except Exception:
+            current_sources = st.session_state.available_sources
+
+        edited_what_df = st.data_editor(
+            st.session_state.edited_what,
+            num_rows="dynamic",
+            key="what_editor", 
+            column_config={
+                "name": "Termine",
+                "definition": "Definizione",
+                "available": st.column_config.MultiselectColumn(
+                    "Disponibile nei documenti...",
+                    options=current_sources,
+                    color="primary",
+                    format_func=lambda x: x.capitalize(),
+                ),
+                "relative_command": st.column_config.MultiselectColumn(
+                    "Specifico dei comandi",
+                    options=st.session_state.available_commands,
+                    color="primary"
+                ),
+            },
+        )
+        
+        col1, col2, col3 = st.columns(3)
         with col1:
-            if st.button("✅ Sì, confermo", use_container_width=True):
-                function()
-                st.rerun()
+            save_pressed = st.form_submit_button("💾 Salva", use_container_width=True)
         with col2:
-            if st.button("❌ No, annulla", use_container_width=True):
-                st.rerun()
+            cancel_pressed = st.form_submit_button("↩️ Annulla", use_container_width=True)
+        with col3:
+            reset_pressed = st.form_submit_button("🔄 Ripristina", use_container_width=True)
+
+    # --- Handling logic *after* form submission ---
+    if save_pressed:
+        # Save modified data in state
+        st.session_state.edited_what = edited_what_df
+        st.session_state.edited_from = edited_from_df
+        # Set the flag to show confirmation on next rerun
+        st.session_state.action_pending = "save"
+        st.rerun()
+
+    elif cancel_pressed:
+        # Do NOT save data. Set the flag only.
+        st.session_state.action_pending = "cancel"
+        st.rerun()
+
+    elif reset_pressed:
+        # Do NOT save data. Set the flag only.
+        st.session_state.action_pending = "reset"
+        st.rerun()
 
 # -------------------
 # --- Entry Point ---
@@ -255,15 +263,19 @@ def confirm_popup(action: str, function):
 
 def show_settings():
     """
-    Main entry point for the Streamlit DQL app.
-    Sets up layout, restores chat history, and handles user interactions.
+    Main entry point.
+    It acts as a "router" that displays the confirmation interface
+    or the form interface based on the state.
     """
     st.title(PAGE_TITLE)
+    initialize_session_state() 
 
-    initialize_session_state()
-    display_what_editor()
-    display_from_editor()
-    display_buttons()
+    if "action_pending" in st.session_state:
+        # Status = "confirm"
+        display_confirmation_ui()
+    else:
+        # Status = "editing" (default)
+        display_form_ui()
 
 if __name__ == "__main__":
     show_settings()
