@@ -43,7 +43,7 @@ class SystemConfig:
 
         # Extract options safely
         api_key = getattr(opts, "api_key", None) if opts else None
-        seconds = self._parse_seconds(getattr(opts, "seconds", None)) if opts else 5
+        seconds = self._parse_seconds(getattr(opts, "seconds", None)) if opts else 0
         model_name = getattr(opts, "model_name", None) if opts else None
         provider = getattr(opts, "provider", None) if opts else None
         

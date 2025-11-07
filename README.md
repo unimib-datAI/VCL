@@ -93,9 +93,11 @@ Some features have already been partially implemented:
     - **Method 2: Runtime Flags**
       Alternatively, you can skip creating the files in the `settings` folder and pass the credentials directly at runtime using the `-api`, `-url_db`, and `-token_db` flags (see section 4).
 
-4. **VPN Connection for Elasticsearch**: If you need to access the Elasticsearch database, ensure you are connected to your university's VPN before running the script.
+4. **File config.yaml**: In the folder named `settings` create a file `config.yaml` to allow the authentication system to function. The main two blocks that must be in the file are `cookie`, `credentials`.
 
-5. **Running the Application**
+5. **VPN Connection for Elasticsearch**: If you need to access the Elasticsearch database, ensure you are connected to your university's VPN before running the script.
+
+6. **Running the Application**
     Execute the Streamlit application using the `main.py` script.
     The base command is:
     ```bash

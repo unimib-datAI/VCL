@@ -55,8 +55,8 @@ def parse_args() -> argparse.Namespace:
         dest="seconds",
         type=int,
         required=False,
-        default=5,
-        help="Number of seconds to wait after each LLM call (default: 5).",
+        default=0,
+        help="Number of seconds to wait after each LLM call (default: 0).",
     )
     
     parser.add_argument(

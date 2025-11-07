@@ -296,8 +296,7 @@ def display_operation(index: int, operation: dict):
             new_dict[key] = operation.get(key, "")
 
     operation_json = json.dumps(new_dict, indent=4)
-    html_text = str(html.escape(markdown.markdown(operation.get("result", ""))))
-    operation_result = re.sub(r"<[^>]+>", "", html_text).strip()
+    operation_result = markdown.markdown(operation.get("result", ""))
 
     st.markdown(
         f"""
@@ -308,9 +307,9 @@ def display_operation(index: int, operation: dict):
             <b>Risultato Parziale:</b>
             <details style="margin-left:20px; margin-top:10px;">
                 <summary>Visualizza il testo</summary>
-                <pre style="white-space: pre-wrap; word-break: break-word;">
-                    <code class="language-plaintext">{operation_result}</code>
-                </pre>
+                <div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">
+                    {operation_result}
+                </div>
             </details>
         </details>
         """,
