@@ -91,7 +91,11 @@ class Planner:
         
         self.logger.info(f"Found {len(atomic_ops)} suboperations:")
         for i, o in enumerate(atomic_ops):
-            self.logger.info(f"\t- {str(i)}: {o.get("command", "")}({str(o.get("from", []))}, {o.get("what", "")}, None)")
+            str_command = o.get("command", "")
+            str_from = str(o.get("from", []))
+            str_what = o.get("what", "")
+            str_how = "None"
+            self.logger.info(f"\t- {str(i)}: {str_command}({str_from}, {str_what}, {str_how})")
 
         # Create the final aggregation operation
         final_op = {
@@ -102,7 +106,11 @@ class Planner:
         }
 
         self.logger.info(f"Final suboperation:")
-        self.logger.info(f"\t- {final_op.get("command", "")}({str(final_op.get("from", []))}, None, {str(o.get("how", {}))})")
+        str_command = final_op.get("command", "")
+        str_from = str(final_op.get("from", []))
+        str_what = "None"
+        str_how = str(final_op.get("how", ""))
+        self.logger.info(f"\t- {str(i)}: {str_command}({str_from}, {str_what}, {str_how})")
             
         atomic_ops.append(final_op)
         return atomic_ops
