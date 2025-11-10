@@ -87,11 +87,11 @@ Some features have already been partially implemented:
         - Go to the [Upstash Redis website](https://console.upstash.com/) and create a database.
         - Locate the URL (endpoint) and token for your database.
         - Inside the `settings` folder, create two files:
-          - `url_db.txt`: Paste the database URL here.
+          - `uri_db.txt`: Paste the database URL here.
           - `token_db.txt`: Paste the database token here.
 
     - **Method 2: Runtime Flags**
-      Alternatively, you can skip creating the files in the `settings` folder and pass the credentials directly at runtime using the `-api`, `-url_db`, and `-token_db` flags (see section 4).
+      Alternatively, you can skip creating the files in the `settings` folder and pass the credentials directly at runtime using the `-api`, `-uri_db`, and `-token_db` flags (see section 4).
 
 4. **File config.yaml**: In the folder named `settings` create a file `config.yaml` to allow the authentication system to function. The main two blocks that must be in the file are `cookie`, `credentials`.
 
@@ -110,10 +110,10 @@ Some features have already been partially implemented:
         * **Description:** Provides the API key for the LLM.
         * **Usage:** Overrides the key read from the `settings/api_key_<provider>.txt` file.
 
-    * `-url_db <URL>`
+    * `-uri_db <URL>`
 
         * **Description:** Provides the connection URL for the database (e.g., Upstash).
-        * **Usage:** Overrides the URL read from the `settings/url_db.txt` file.
+        * **Usage:** Overrides the URL read from the `settings/uri_db.txt` file.
 
     * `-token_db <TOKEN>`
 

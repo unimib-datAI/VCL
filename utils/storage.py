@@ -20,12 +20,12 @@ class Storage:
     _instance = None
     _lock = threading.Lock()
     
-    def __init__(self, url_db: str, project_root):
+    def __init__(self, uri_db: str, project_root):
         """
         Initialize the Mongo client with credentials and user context.
 
         Args:
-            url_db (str | None): Mongo URL.
+            uri_db (str | None): Mongo URI.
             project_root (Path): Project root directory.
 
         Raises:
@@ -38,7 +38,7 @@ class Storage:
         self.file_handler = FileHandler()
 
         mongo_uri = self._load_data(
-            url_db, os.path.join(self.project_root, "settings", "mongo_uri.txt")
+            uri_db, os.path.join(self.project_root, "settings", "mongo_uri.txt")
         )
 
         client = MongoClient(mongo_uri, server_api=ServerApi('1'))
@@ -52,14 +52,14 @@ class Storage:
     @classmethod
     def get_instance(
         cls,
-        url_db=None,
+        uri_db=None,
         project_root=None,
     ) -> "Storage":
         """
         Retrieve or create the singleton instance of Storage.
 
         Args:
-            url_db (str): Mongo URL. (Required on first call)
+            uri_db (str): Mongo URI. (Required on first call)
             project_root (Path): Root project directory. (Required on first call)
 
         Returns:
@@ -71,7 +71,7 @@ class Storage:
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = cls(url_db, project_root)
+                    cls._instance = cls(uri_db, project_root)
         return cls._instance
 
     # ------------------------------
@@ -80,7 +80,7 @@ class Storage:
 
     def _load_data(self, value: Optional[str], path: str) -> str:
         """
-        Load a credential (e.g., Mongo URL or token) from argument or fallback file.
+        Load a credential (e.g., Mongo URI or token) from argument or fallback file.
         """
         if not value and os.path.exists(path) and os.path.isfile(path):
             value = self.file_handler.read_file(path)

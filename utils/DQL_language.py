@@ -1,6 +1,8 @@
 import os
 import re
 
+from copy import deepcopy
+
 from utils.file_manager import FileHandler
 from utils.storage import Storage
 
@@ -130,6 +132,8 @@ class DQLLanguage:
         self.commands = self.full_language.get("commands", [])
         self.sources = self.full_language.get("sources", [])
         self.what = self.full_language.get("what", [])
+        
+        self._check_coerence()
 
         self._set_default_command()
         self._build_command_maps()
@@ -234,6 +238,21 @@ class DQLLanguage:
             if set(sources).issubset(what.get("available", []))
         ]
         return what_elements
+    
+    def _check_coerence(self):
+        sources_names = [src["name"] for src in self.sources]
+        
+        new_what = []
+        
+        for what in self.what:
+            new_what.append(deepcopy(what))
+            available = new_what[-1].get("available", [])
+            coerced_available = [src for src in available if src in sources_names]
+            new_what[-1]["available"] = coerced_available
+        
+        if new_what != self.what:
+            self.set_what(new_what)
+        
     
     # -----------------------------
     # --- "Examples" Management ---

@@ -8,7 +8,7 @@ import time
 
 PAGE_TITLE = "Definisci il linguaggio DQL"
 
-# st.set_page_config() è chiamato in app.py
+# st.set_page_config() is called in app.py
 
 # -------------------------------
 # --- Language Initialization ---
@@ -132,8 +132,6 @@ def reset_language():
     language_class = st.session_state.language_class
     result = language_class.set_default_language()
     
-    print("reset_language:", result)
-    
     if result:
         reload_data_from_class()
         
@@ -188,6 +186,14 @@ def display_confirmation_ui():
         # Clear the flag and reload to return to the form
         del st.session_state.action_pending
         st.rerun()
+        
+def update_available_sources(new_sources):
+    """
+    Updates the list of available sources in the session_state.
+    This is called when the 'from' data_editor is changed.
+    """
+    st.session_state.available_sources = new_sources
+    st.rerun()
 
 def display_form_ui():
     """
@@ -196,14 +202,21 @@ def display_form_ui():
     """
     with st.form(key="language_form"):
         st.markdown("### Sezione FROM")
+        st.markdown("Per aggiornare l'elenco dei documenti nella sezione successiva devi prima salvare le modifiche di questa sezione.")
         
         edited_from_df = st.data_editor(
             st.session_state.edited_from, 
             num_rows="dynamic",
             key="from_editor", 
             column_config={
-                "name": "Documento",
-                "description": "Breve Descrizione",
+                "name": st.column_config.TextColumn(
+                    "Documento",
+                    help="Inserisci il nome del documento.", # Aggiunto help
+                ),
+                "description": st.column_config.TextColumn(
+                    "Breve Descrizione",
+                    help="Fornisci una breve descrizione del documento.", # Aggiunto help
+                ),
                 "synonyms": st.column_config.TextColumn(
                     "Sinonimi",
                     help="Inserisci i sinonimi separati da ;",
@@ -213,6 +226,7 @@ def display_form_ui():
         )
         
         st.markdown("### Sezione WHAT")
+        st.markdown("Definisci i termini utilizzabili nei comandi DQL e le loro caratteristiche.\nConsidera che esistono due elementi non modificabili:\n- \"intero documento\": il comando deve essere applicato all'intero documento selezionato.\n- \"altro\": riguarda tutti quei casi in cui non è possibile categorizzare l'elemento richiesto.")
         
         try:
             current_sources = list(edited_from_df['name'].dropna().unique())
@@ -224,16 +238,24 @@ def display_form_ui():
             num_rows="dynamic",
             key="what_editor", 
             column_config={
-                "name": "Termine",
-                "definition": "Definizione",
+                "name": st.column_config.TextColumn(
+                    "Termine",
+                    help="Il termine o concetto principale da definire.",
+                ),
+                "definition": st.column_config.TextColumn(
+                    "Definizione",
+                    help="La spiegazione dettagliata del termine. (Utilizzata per l'AI)",
+                ),
                 "available": st.column_config.MultiselectColumn(
                     "Disponibile nei documenti...",
+                    help="Seleziona da questa lista i **documenti** (fonti) per cui questo elemento ha senso di esistere.",
                     options=current_sources,
                     color="primary",
                     format_func=lambda x: x.capitalize(),
                 ),
                 "relative_command": st.column_config.MultiselectColumn(
                     "Specifico dei comandi",
+                    help="Seleziona i Comandi Atomici a cui questo termine è strettamente collegato o applicabile.",
                     options=st.session_state.available_commands,
                     color="primary"
                 ),

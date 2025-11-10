@@ -125,6 +125,10 @@ class Planner:
         Returns:
             str: The middle command key or empty string if not found.
         """
+        if what == "intero documento":
+            self.logger.info("Possible Middle Commands: cerca (entire document)")
+            return ["cerca"]
+        
         for what_dict in self.dql.get_what():
             if what == what_dict.get("name", ""):
                 if len((w := what_dict.get("relative_command", []))) > 0:
@@ -133,4 +137,4 @@ class Planner:
                 break
             
         self.logger.info("Possible Middle Commands: not found -> default command")
-        return self.dql.default_command.get("command", "")
+        return [self.dql.default_command.get("command", "")]

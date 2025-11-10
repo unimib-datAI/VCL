@@ -173,20 +173,6 @@
 
     "what": [
         {
-            "name": "intero documento",
-            "definition": "L'operazione richiesta (es. riassunto, analisi) deve essere applicata alla totalità del documento selezionato, dall'intestazione al dispositivo.",
-            "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
-            ],
-            "relative_command": [
-                "cerca"
-            ]
-        },
-
-        {
             "name": "frase",
             "definition": "L'operazione si focalizza su una specifica proposizione o un estratto testuale letterale (es. 'cerca questa citazione').",
             "available": [
@@ -371,20 +357,6 @@
         {
             "name": "richieste",
             "definition": "Estrazione delle conclusioni o delle istanze formulate dalle parti (es. domande principali, eccezioni, richieste istruttorie) e rivolte al giudice.",
-            "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
-            ],
-            "relative_command": [
-                "estrai semantico"
-            ]
-        },
-        
-        {
-            "name": "altro",
-            "definition": "Elemento semantico specifico non rientrante nelle categorie standard.",
             "available": [
                 "sentenza di primo grado",
                 "sentenza di secondo grado",

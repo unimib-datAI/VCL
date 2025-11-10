@@ -32,7 +32,7 @@ class ConditionsExtractor:
     # --- Main Extraction Method ---
     # ------------------------------
     
-    def extract(self, query: str, query_str: dict) -> dict:
+    def extract(self, query: str, query_str: dict, docs) -> dict:
         """
         Extract additional conditions from a user query.
 
@@ -52,6 +52,8 @@ class ConditionsExtractor:
         query_dict = {
             "query": query,
             "query_str": str(query_str),
+            "documents_name": ", ".join([doc[0] for doc in docs]),
+	        "documents_reference": ", ".join([doc[1] for doc in docs]),
             "feedback": "",
             "what": query_str.get("what", "")
         }

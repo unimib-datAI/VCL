@@ -48,11 +48,11 @@ class SystemConfig:
         model_name = getattr(opts, "model_name", None) if opts else None
         provider = getattr(opts, "provider", None) if opts else None
         
-        url_db = getattr(opts, "url_db", None) if opts else None
+        uri_db = getattr(opts, "uri_db", None) if opts else None
         self.spell_check_without_llm = getattr(opts, "spell_check_without_llm", False) if opts else False
         
         # Initialize subsystems
-        self.storage = Storage.get_instance(url_db, self.project_root)
+        self.storage = Storage.get_instance(uri_db, self.project_root)
         
         self.llm = LLM.get_instance(api_key=api_key, 
                                     seconds=seconds, 

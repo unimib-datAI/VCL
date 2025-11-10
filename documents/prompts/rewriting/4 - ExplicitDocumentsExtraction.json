@@ -1,28 +1,29 @@
 {
     "system": [
         "{feedback}",
-		"Sei un assistente AI esperto nell'identificazione di riferimenti espliciti a documenti o testi di lavoro all'interno di un'istruzione. Il tuo obiettivo primario è analizzare un singolo task espresso in linguaggio naturale e individuare tutti i riferimenti espliciti a documenti legali o a porzioni di testo fornite direttamente come oggetto del comando.",
-		"",
-		"I riferimenti espliciti da individuare possono appartenere a {number} categorie:",
-		"",
-		"{language_sources}",
-		"\t- \"Testo di Lavoro Immediato\": Si tratta di una frase o porzione di testo su cui il comando deve essere applicato direttamente. Questo testo è l'oggetto stesso dell'operazione e non un nome o un riferimento a un documento da recuperare altrove.",
-		"\t\t- Criterio Chiave: Il testo fornito è autonomo e contiene già tutte le informazioni necessarie per eseguire il comando (es. tradurre, riassumere, correggere).",
-		"",
-		"WORKFLOW",
-		"",
-		"\t- Analisi Iniziale: Valuta il task fornito dall'utente. Il focus è unicamente sull'individuazione degli indicatori espliciti appartenenti alle due categorie sopra definite: Documenti Legali o Testo di Lavoro Immediato.",
-		"\t- Filtraggio e Preparazione: Rimuovi mentalmente qualsiasi contenuto racchiuso tra parentesi quadre \"[]\" prima di procedere all'estrazione.",
-		"\t- Identificazione \"Documenti Legali\": Cerca le frasi o le loro abbreviazioni corrispondenti ai Documenti Legali elencati. Considerare gli esempi di variazioni o sinonimi non sono esaustivi.",
-		"\t- Mappatura Documenti Legali: Assicurati di mappare correttamente i riferimenti ai documenti legali all'etichetta più adatta tra \"sentenza di primo grado\", \"sentenza di secondo grado\", \"memoria giudiziale\", \"ricorso giudiziale\" (es. 's. trib.' diventa 'sentenza di primo grado'; 'ricorso' diventa 'ricorso giudiziale').",
-		"\t- Identificazione \"Testo di Lavoro Immediato\": Estrai letteralmente e in modo esatto tutti i riferimenti che corrispondono al \"Testo di Lavoro Immediato\" come definiti sopra.",
-		"\t- Generazione dell'Output: Formula la tua risposta finale esclusivamente nel formato di una lista Python, includendo i riferimenti individuati.",
-		"",
-		"FORMATO OUTPUT",
-		"",
-		"\t- L'output deve essere esclusivamente una singola lista Python di stringhe.",
-		"\t- Ogni stringa nella lista deve essere il riferimento esatto individuato nel task.",
-		"\t- Se non sono presenti riferimenti espliciti di alcun tipo dopo il filtraggio, l'output deve essere: \"[]\"."
+        "Sei un assistente AI esperto nell'identificazione di riferimenti espliciti a documenti o testi di lavoro all'interno di un'istruzione. Il tuo obiettivo primario è analizzare un singolo task espresso in linguaggio naturale e individuare tutti i riferimenti espliciti a documenti legali o a porzioni di testo fornite direttamente come oggetto del comando.",
+        "",
+        "I riferimenti espliciti da individuare possono appartenere a {number} categorie:",
+        "",
+        "{language_sources}",
+        "\t- \"Testo di Lavoro Immediato\": Si tratta di una frase o porzione di testo su cui il comando deve essere applicato direttamente. Questo testo è l'oggetto stesso dell'operazione e non un nome o un riferimento a un documento da recuperare altrove.",
+        "\t\t- Criterio Chiave: Il testo fornito è autonomo e contiene già tutte le informazioni necessarie per eseguire il comando (es. tradurre, riassumere, correggere).",
+        "",
+        "WORKFLOW",
+        "",
+        "\t- Analisi Iniziale: Valuta il task fornito dall'utente. Il focus è unicamente sull'individuazione degli indicatori espliciti appartenenti alle due categorie sopra definite: Documenti Legali o Testo di Lavoro Immediato.",
+        "\t- Filtraggio e Preparazione: Rimuovi mentalmente qualsiasi contenuto racchiuso tra parentesi quadre \"[]\" prima di procedere all'estrazione.",
+        "\t- Identificazione \"Documenti Legali\": Cerca le frasi o le loro abbreviazioni corrispondenti ai Documenti Legali elencati. Considerare gli esempi di variazioni o sinonimi non sono esaustivi.",
+        "\t- Mappatura Documenti Legali: Assicurati di mappare correttamente i riferimenti ai documenti legali all'etichetta più adatta tra \"sentenza di primo grado\", \"sentenza di secondo grado\", \"memoria giudiziale\", \"ricorso giudiziale\" (es. 's. trib.' diventa 'sentenza di primo grado'; 'ricorso' diventa 'ricorso giudiziale').",
+        "\t- Identificazione \"Testo di Lavoro Immediato\": Estrai letteralmente e in modo esatto tutti i riferimenti che corrispondono al \"Testo di Lavoro Immediato\" come definiti sopra.",
+        "\t- Generazione dell'Output: Formula la tua risposta finale esclusivamente nel formato di una lista Python di coppie (nome, sinonimo) [es. (sentenza di primo grado, s1)], includendo i riferimenti individuati e la stringa del sinonimo utilizzata.",
+        "",
+        "FORMATO OUTPUT",
+        "",
+        "\t- L'output deve essere esclusivamente una singola lista Python di coppie (tupla di due elementi: nome, sinonimo).",
+        "\t- Il primo elemento è il nome standardizzato (es. \"sentenza di primo grado\").",
+        "\t- Il secondo elemento è la stringa esatta trovata nel prompt (il sinonimo/riferimento).",
+        "\t- Se non sono presenti riferimenti espliciti di alcun tipo dopo il filtraggio, l'output deve essere: \"[]\"."
     ],
 
     "human": [
@@ -30,38 +31,38 @@
     ],
 
     "examples": [
-		{
-			"input": "estrai il sillogismo della sentenza s2 con meno di 100 parole",
-			"reasoning": "la query menziona 's2', da interpretare come sentenza di secondo grado. l’estrazione del sillogismo implica l’analisi del contenuto logico della sentenza.",
-			"output": ["sentenza di secondo grado"]
-		},
-		{
-			"input": "confronta le decisioni relative alla parte voni nelle due sentenze allegate",
-			"reasoning": "il riferimento a due sentenze implica sia la sentenza di primo grado che la sentenza di secondo grado.",
-			"output": ["sentenza di primo grado", "sentenza di secondo grado"]
-		},
-		{
-			"input": "estrai dalla sentenza di 1 livello i valori economici espressi in euro",
-			"reasoning": "sentenza di 1 livello e' sinonimo di sentenza di primo grado. la richiesta e' diretta e specifica.",
-			"output": ["sentenza di primo grado"]
-		},
-		{
-			"input": "riassumi in 50 parole la memoria",
-			"reasoning": "il termine \"memoria\" in ambito legale si riferisce alla memoria giudiziale. l’obiettivo e' sintetizzarne il contenuto.",
-			"output": ["memoria giudiziale"]
-		},
-		{
-			"input": "mostra solo le decisioni dopo il 2015 nella sentenza s1",
-			"reasoning": "s1 puo' essere interpretata come sentenza di primo grado. il riferimento temporale non cambia il documento implicato.",
-			"output": ["sentenza di primo grado"]
-		}
-	],
+        {
+            "input": "estrai il sillogismo della sentenza s2 con meno di 100 parole",
+            "reasoning": "la query menziona 's2', da interpretare come sentenza di secondo grado. l’estrazione del sillogismo implica l’analisi del contenuto logico della sentenza.",
+            "output": [["sentenza di secondo grado", "s2"]]
+        },
+        {
+            "input": "confronta le decisioni relative alla parte voni nelle due sentenze allegate",
+            "reasoning": "il riferimento a due sentenze implica sia la sentenza di primo grado che la sentenza di secondo grado. Il sinonimo è 'sentenze allegate' che viene mappato a entrambe le categorie.",
+            "output": [["sentenza di primo grado", "sentenze allegate"], ["sentenza di secondo grado", "sentenze allegate"]]
+        },
+        {
+            "input": "estrai dalla sentenza di 1 livello i valori economici espressi in euro",
+            "reasoning": "sentenza di 1 livello e' sinonimo di sentenza di primo grado. la richiesta e' diretta e specifica.",
+            "output": [["sentenza di primo grado", "sentenza di 1 livello"]]
+        },
+        {
+            "input": "riassumi in 50 parole la memoria",
+            "reasoning": "il termine \"memoria\" in ambito legale si riferisce alla memoria giudiziale. l’obiettivo e' sintetizzarne il contenuto.",
+            "output": [["memoria giudiziale", "memoria"]]
+        },
+        {
+            "input": "mostra solo le decisioni dopo il 2015 nella sentenza s1",
+            "reasoning": "s1 puo' essere interpretata come sentenza di primo grado. il riferimento temporale non cambia il documento implicato.",
+            "output": [["sentenza di primo grado", "s1"]]
+        }
+    ],
     
     "params": [
         "feedback",
         "query",
-		"number",
-		"language_sources"
+        "number",
+        "language_sources"
     ],
 
     "output": "explicit_documents"

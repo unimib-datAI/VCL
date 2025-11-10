@@ -28,24 +28,13 @@ def parse_args() -> argparse.Namespace:
     )
 
     parser.add_argument(
-        "-url_db",
+        "-uri_db",
         action="store",
-        dest="url_db",
+        dest="uri_db",
         required=False,
         help=(
-            "Database connection URL.\n"
-            "If not specified, it will be read from 'settings/url_db.txt'."
-        )
-    )
-
-    parser.add_argument(
-        "-token_db",
-        action="store",
-        dest="token_db",
-        required=False,
-        help=(
-            "Database authentication token\n"
-            "If not specified, it will be read from 'settings/token_db.txt'."
+            "MongoDB connection URI.\n"
+            "If not specified, it will be read from 'settings/mongo_uri.txt'."
         )
     )
 

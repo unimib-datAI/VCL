@@ -1,12 +1,44 @@
-langchain-google-genai
-langgraph
-langchain-core
-langchain
-pydantic
+# ====== Core Framework (Interface) ======
 streamlit
+
+# ====== LLM Framework (LangChain Core) ======
+# LangChain Core and Components (parsers, prompts)
+langchain
+langchain-core
+
+# ====== LLM Provider for LangChain ======
+# Required for 'google_genai' (Google Gemini)
+langchain-google-genai
+
+# Required for 'openai' (GPT Models)
+langchain-openai
+
+# Required for 'huggingface'
+langchain-huggingface
+huggingface_hub
+transformers
+# Often useful for HF embeddings
+sentence-transformers
+
+# ====== Databases and Search Engines ======
+# For connecting to MongoDB
+pymongo
+
+# For connecting to Elasticsearch
 elasticsearch
-typing-extensions
-upstash-redis
-networkx
-spacy
-it_core_news_sm @ https://github.com/explosion/spacy-models/releases/download/it_core_news_sm-3.7.0/it_core_news_sm-3.7.0.tar.gz
+
+# ====== Utilities and Data Management ======
+# Used for data management
+pandas
+
+# For password hashing
+bcrypt
+
+# For spell checking
+pyspellchecker
+
+# For cookie management (if needed)
+streamlit-cookies-manager
+
+# For parsing Markdown (if used outside of Streamlit)
+markdown
