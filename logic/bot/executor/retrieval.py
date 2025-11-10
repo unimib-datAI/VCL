@@ -5,14 +5,14 @@ Responsibilities:
 -----------------
 - Retrieve documents from multiple sources in priority order:
     1. Operations list (previously computed results)
-    2. Redis storage (user/session-scoped cached documents)
+    2. MongoDB storage (user/session-scoped cached documents)
     3. Local filesystem (fallback under `documents/` directory)
     4. ElasticSearch (if RAG enabled)
 - Structured logging for each retrieval attempt and outcome.
 
 Dependencies:
 -------------
-- utils.config.Config: Provides shared logger, Redis storage instance, and DB URL.
+- utils.config.Config: Provides shared logger, MongoDB storage instance, and DB URL.
 - utils.file_manager.FileHandler: Utility for reading JSON/text files.
 - elasticsearch.Elasticsearch: Backend for document search.
 """
@@ -34,11 +34,11 @@ class Retrieval:
 
     Attributes:
         client (Elasticsearch): Elasticsearch client instance.
-        storage: Redis-based storage instance from Config.
+        storage: MongoDB-based storage instance from Config.
         rag (bool): Flag for RAG (Retrieval-Augmented Generation) mode.
         logger: Logger instance from Config.
         project_root (str): Root project path for local file fallback.
-        id_user (str): User/session identifier for scoped retrieval.
+        user_id (str): User/session identifier for scoped retrieval.
         operations (list[dict]): Optional list of operation results.
     """
 
@@ -49,7 +49,7 @@ class Retrieval:
     def __init__(self, cfg: Config, operations: list[dict] = None):
         self.client = Elasticsearch(cfg.DB_URL)
         self.storage = cfg.storage
-        self.id_user = cfg.user_id
+        self.user_id = cfg.user_id
         self.operations = operations or []
         self.project_root = cfg.project_root
         self.logger = cfg.get_logger("Retrieval")
@@ -64,7 +64,7 @@ class Retrieval:
 
         Retrieval priority:
             1. Operations list
-            2. Redis storage
+            2. MongoDB storage
             3. Local filesystem
             4. ElasticSearch
 
@@ -98,7 +98,7 @@ class Retrieval:
         """
         retrieval_methods = [
             ("Operations List", self._get_from_operations_list),
-            ("Redis", self._get_from_redis),
+            ("MongoDB", self._get_from_mongo),
             ("LocalSystem", self._get_from_local_system),
             ("ElasticSearch", self._get_from_elastic_search)
         ]
@@ -122,12 +122,12 @@ class Retrieval:
                 return {"name": doc_name, "text": op["result"], "type": op["from"][0]}
         return None
 
-    def _get_from_redis(self, doc_name: str) -> dict | None:
-        """Retrieve document from Redis storage scoped by user/session."""
-        for method in [self.storage.get_documents_by_type,
-                       self.storage.get_documents_by_id,
-                       self.storage.get_documents_by_name]:
-            doc = method(doc_name)
+    def _get_from_mongo(self, doc_name: str) -> dict | None:
+        """Retrieve document from MongoDB storage scoped by user/session."""
+        for method in [self.storage.get_document_by_type,
+                       self.storage.get_document_by_id,
+                       self.storage.get_document_by_name]:
+            doc = method(self.user_id, doc_name)
             if doc and "text" in doc:
                 return {"name": doc["name"], "text": doc["text"], "type": doc_name}
         return None

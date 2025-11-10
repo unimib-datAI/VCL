@@ -1,263 +1,289 @@
-import json
+import bcrypt
 import os
 import threading
-from typing import List, Dict, Any, Optional
-from upstash_redis import Redis
+import pymongo
+
+from bson import ObjectId
+from datetime import datetime
+from pymongo.mongo_client import MongoClient
+from pymongo.server_api import ServerApi
+from typing import Optional
 
 from utils.file_manager import FileHandler
 
-
 class Storage:
-    """
-    Singleton class responsible for managing persistent storage using Upstash Redis.
-
-    Handles:
-    - Initialization of Redis client with credentials from local files or parameters.
-    - Reading and writing structured data (documents, chat history, languages, etc.).
-    - Utility methods for retrieving and filtering data from Redis.
-
-    Attributes:
-        project_root (Path): Root directory of the project.
-        user_id (str): Unique identifier of the user.
-        r (Redis): Redis client instance.
-    """
     
-    # Singleton instance and thread lock
-    _instance = None
-    _lock = threading.Lock()
-
     # ----------------------
     # --- Initialization ---
     # ----------------------
-
-    def __init__(self, user_id, url_db, token_db, project_root):
+    
+    _instance = None
+    _lock = threading.Lock()
+    
+    def __init__(self, url_db: str, project_root):
         """
-        Initialize the Redis client with credentials and user context.
+        Initialize the Mongo client with credentials and user context.
 
         Args:
-            user_id (str): Identifier for the current user.
-            url_db (str | None): Redis URL.
-            token_db (str | None): Redis token.
+            url_db (str | None): Mongo URL.
             project_root (Path): Project root directory.
 
         Raises:
-            ValueError: If Redis credentials cannot be loaded or found.
+            ValueError: If Mongo credentials cannot be loaded or found.
         """
         if getattr(self, "_initialized", False):
-            return  # Prevent re-initialization in singleton context
+            return
 
         self.project_root = project_root
-        self.user_id = user_id
+        self.file_handler = FileHandler()
 
-        # Load Redis credentials
-        redis_url = self._load_data(
-            url_db, os.path.join(self.project_root, "settings", "url_db.txt")
-        )
-        redis_token = self._load_data(
-            token_db, os.path.join(self.project_root, "settings", "token_db.txt")
+        mongo_uri = self._load_data(
+            url_db, os.path.join(self.project_root, "settings", "mongo_uri.txt")
         )
 
-        # Initialize Redis client
-        self.r = Redis(url=redis_url, token=redis_token)
+        client = MongoClient(mongo_uri, server_api=ServerApi('1'))
+        db = client["auth_db"]
+        self.users = db["users"]
+        
+        self.users.create_index("username", unique=True)
+        
         self._initialized = True
 
     @classmethod
     def get_instance(
         cls,
-        user_id=None,
         url_db=None,
-        token_db=None,
         project_root=None,
     ) -> "Storage":
         """
         Retrieve or create the singleton instance of Storage.
 
         Args:
-            project_root (Path): Root project directory.
-            user_id (str): Unique user ID.
-            url_db (str): Redis URL.
-            token_db (str): Redis token.
+            url_db (str): Mongo URL. (Required on first call)
+            project_root (Path): Root project directory. (Required on first call)
 
         Returns:
             Storage: Singleton instance.
+            
+        Raises:
+            ValueError: If called for the first time without required arguments.
         """
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
-                    cls._instance = cls(user_id, url_db, token_db, project_root)
+                    cls._instance = cls(url_db, project_root)
         return cls._instance
 
-    # -----------------------
-    # --- Private Helpers ---
-    # -----------------------
+    # ------------------------------
+    # --- Initialization Helpers ---
+    # ------------------------------
 
     def _load_data(self, value: Optional[str], path: str) -> str:
         """
-        Load a credential (e.g., Redis URL or token) from argument or fallback file.
-
-        Args:
-            value (str | None): Provided value, if available.
-            path (str): File path for fallback.
-
-        Returns:
-            str: Loaded and validated credential value.
-
-        Raises:
-            ValueError: If no valid value can be found.
+        Load a credential (e.g., Mongo URL or token) from argument or fallback file.
         """
         if not value and os.path.exists(path) and os.path.isfile(path):
-            value = FileHandler().read_file(path)
+            value = self.file_handler.read_file(path)
 
         if not value:
-            raise ValueError(f"Missing or invalid Redis configuration at: {path}")
+            raise ValueError(f"Missing or invalid Mongo configuration at: {path}")
 
-        # Persist value to ensure it's saved
-        FileHandler().write_file(path, value)
+        self.file_handler.write_file(path, value)
         return value
+
+    # ----------------------
+    # --- Authentication ---
+    # ----------------------
+    
+    def register_user(self, username, email, password):
+        if self.users.find_one({"username": username}) or self.users.find_one({"email": email}):
+            return False
+        
+        hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
+        
+        try:
+            self.users.insert_one({
+                "_id": ObjectId(),
+                "username": username,
+                "email": email,
+                "password": hashed_pw,
+                "data": {
+                    "persisted_docs": self._get_default_docs(),
+                    "chat": []
+                },
+                "settings": {
+                    "language": self._get_default_language()
+                }
+            })
+
+            return True
+        except pymongo.errors.DuplicateKeyError:
+             return False
+
+    def login_user(self, username, password):
+        user = self.users.find_one({"username": username})
+        
+        if not user:
+            return False
+        
+        if bcrypt.checkpw(password.encode("utf-8"), user["password"]):
+            return True
+        
+        return False
 
     # ---------------------------
     # --- Document Operations ---
     # ---------------------------
-
-    def get_documents(self) -> List[Dict[str, Any]]:
-        """
-        Retrieve all documents stored for the current user.
-
-        Returns:
-            list[dict]: List of stored documents, or empty list if none found.
-        """
-        data = self.r.get(self.user_id)
-        if not data:
-            return []
-        try:
-            return json.loads(data)
-        except json.JSONDecodeError:
-            return []
-
-    def set_documents(
-        self,
-        element: dict,
-        ttl: Optional[int] = 0,
-        data: Optional[List[Dict[str, Any]]] = None,
-    ) -> None:
-        """
-        Append a new element to an existing Redis document list and save it.
-
-        Args:
-            element (dict): Element to append.
-            ttl (int, optional): Expiration time (seconds). Defaults to 0 (no expiry).
-            data (list[dict], optional): Pre-loaded document list. If None, fetched from Redis.
-        """
-        if data is None:
-            data = self.get_documents()
-
-        data.append(element)
-
-        if ttl and ttl > 0:
-            self.r.set(self.user_id, json.dumps(data), ex=ttl)
-        else:
-            self.r.set(self.user_id, json.dumps(data))
-
-    def chat_in_str(self) -> str:
-        """
-        Return a string representation of stored chat sessions.
-
-        Returns:
-            str: Stringified representation of chat history.
-        """
-        data = self.get_documents()
-        if not data:
-            return ""
-
-        chat_entries = [
-            {
-                "index": index + 1,
-                "query": doc.get("query", ""),
-                "used_documents": doc.get("used_documents", ""),
-                "id": doc.get("id", ""),
-            }
-            for index, doc in enumerate(data)
-        ]
-        return str(chat_entries)
-
-    # --------------------------
-    # --- Document Retrieval ---
-    # --------------------------
-
-    def get_documents_by_id(self, element_id: str) -> Optional[Dict[str, Any]]:
-        """Retrieve a document by its 'id' field."""
-        return self._get_document("id", element_id)
-
-    def get_documents_by_type(
-        self, element_type: str
-    ) -> Optional[Dict[str, Any]]:
-        """Retrieve a document by its 'type_doc' field."""
-        return self._get_document("type_doc", element_type)
-
-    def get_documents_by_name(
-        self, element_name: str
-    ) -> Optional[Dict[str, Any]]:
-        """Retrieve a document by its 'name' field."""
-        return self._get_document("name", element_name)
-
-    def _get_document(self, field: str, value: str) -> Optional[Dict[str, Any]]:
-        """
-        Retrieve the first document where a given field matches the provided value.
-
-        Args:
-            field (str): Field name to match.
-            value (str): Expected value.
-
-        Returns:
-            dict | None: Matching document or None if not found.
-        """
-        data = self.get_documents()
-        if not isinstance(data, list):
-            return None
-
-        for item in data:
-            if item.get(field) == value:
-                return item
-        return None
-
-    # ---------------------------
-    # --- Language Management ---
-    # ---------------------------
-
-    def get_language(self) -> Dict[str, Any]:
-        """
-        Retrieve the stored language configuration for the user.
-
-        Returns:
-            dict: Language definition, or empty dict if not found.
-        """
-        key = f"{self.user_id}_language"
-        language = self.r.get(key)
-        return json.loads(language) if language else {}
-
-    def set_language(self, element: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Save a new language configuration for the user.
-
-        Args:
-            element (dict): Language definition.
-
-        Returns:
-            dict: The stored language.
-        """
-        key = f"{self.user_id}_language"
-        self.r.set(key, json.dumps(element))
-        return element
-
-    def set_default_language(self) -> Dict[str, Any]:
-        """
-        Load and store the default language configuration from file.
-
-        Returns:
-            dict: The default language definition.
-        """
-        path = os.path.join(
-            self.project_root, "documents", "language", "default_language.json"
+    
+    def _get_document(self, user_id, key, value):
+        """Helper to find a specific document in the current user's array."""
+        query_key = f"data.{key[0]}.{key[1]}"
+        projection = {f"data.{key[0]}.$": 1, "_id": 0}
+        
+        result = self.users.find_one(
+            {"username": user_id, query_key: value},
+            projection
         )
-        default_language = FileHandler().read_file(path)
-        return self.set_language(default_language)
+        
+        if result and "data" in result and key[0] in result["data"]:
+            return result["data"][key[0]][0]
+        return None
+    
+    def get_document_by_id(self, user_id, value):
+        return self._get_document(user_id, ("chat", "id"), value)
+    
+    def get_document_by_type(self, user_id, value):
+        return self._get_document(user_id, ("persisted_docs", "type_doc"), value)
+    
+    def get_document_by_name(self, user_id, value):
+        return self._get_document(user_id, ("persisted_docs", "name"), value)
+    
+    def _get_default_docs(self) -> list:
+        """
+        Load and the default documents from file.
+        """
+        doc_names = ["S1 - AN.json", "S2 - AN.json", "M2 - AN.json", "R2 - AN.json"]
+        doc_path = os.path.join(self.project_root, "documents")
+        
+        return [
+            self.file_handler.read_file(os.path.join(doc_path, name))
+            for name in doc_names
+        ]
+
+    def upsert_persisted_doc(self, user_id,  doc: dict) -> bool:
+        """
+        Insert or replace a persisted_doc for the current user.
+        """
+        
+        if "type_doc" not in doc:
+            raise ValueError("The document must contain a 'type_doc' field.")
+
+        doc.setdefault("updated_at", datetime.utcnow())
+        
+        doc_type = doc["type_doc"]
+        
+        result = self.users.update_one(
+            {"username": user_id, "data.persisted_docs.type_doc": doc_type},
+            {"$set": {"data.persisted_docs.$": doc}}
+        )
+
+        if result.matched_count == 0:
+            result = self.users.update_one(
+                {"username": user_id},
+                {"$push": {"data.persisted_docs": doc}}
+            )
+
+        return result.modified_count > 0
+
+    
+    # -----------------------
+    # --- Chat Operations ---
+    # -----------------------
+    
+    def get_chat(self, user_id):
+        """Retrieve the entire chat history for the current user."""
+        result = self.users.find_one(
+            {"username": user_id},
+            {"data.chat": 1, "_id": 0}
+        )
+        if result and "data" in result:
+            return result["data"].get("chat")
+        return None
+    
+    def add_chat_message(self, user_id, message: dict) -> bool:
+        """
+        Append a single message to the current user's chat array.
+        """
+        message.setdefault("timestamp", datetime.utcnow())
+
+        result = self.users.update_one(
+            {"username": user_id},
+            {"$push": {"data.chat": message}}
+        )
+        return result.modified_count > 0
+    
+    # ---------------------------
+    # --- Language Operations ---
+    # ---------------------------
+    
+    def get_language(self, user_id):
+        """
+        Retrieve the stored language configuration for the current user.
+        """
+        result = self.users.find_one(
+            {"username": user_id},
+            {"settings.language": 1, "_id": 0}
+        )
+        
+        if result and "settings" in result:
+            return result["settings"]["language"]
+            
+        return None
+    
+    def _set_element(self, user_id, key: Optional[str], value) -> bool:
+        """
+        Update or set a specific language setting for the current user.
+        """
+        
+        if key:
+            update_field = f"settings.language.{key}"
+        else:
+            update_field = "settings.language"
+            
+        result = self.users.update_one(
+            {"username": user_id},
+            {"$set": {update_field: value}}
+        )
+
+        return result.modified_count > 0
+
+    def set_language(self, user_id, language: dict):
+        return self._set_element(user_id, None, language)
+    
+    def set_commands(self, user_id, commands: dict):
+        return self._set_element(user_id, "commands", commands)
+    
+    def set_sources(self, user_id, sources: dict):
+        return self._set_element(user_id, "sources", sources)
+    
+    def set_what(self, user_id, what: dict):
+        return self._set_element(user_id, "what", what)
+    
+    def set_default_language(self, user_id):
+        """
+        Load and store the default language configuration for the current user.
+        """
+        return self.set_language(user_id, self._get_default_language())
+
+    def _get_default_language(self) -> dict:
+        """
+        Load and the default language configuration from file.
+        """
+        return self.file_handler.read_file(
+            os.path.join(
+                self.project_root, 
+                "documents", 
+                "language", 
+                "default_language.json"
+            )
+        )

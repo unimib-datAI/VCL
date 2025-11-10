@@ -103,16 +103,18 @@ def save_changes():
     df_from_editable = st.session_state.edited_from.copy() 
 
     if has_empty_values(df_what) or has_empty_values(df_from_editable):
-        return False
+        return None
 
     df_from_processed = convert_from_df_to_savable(df_from_editable)
     
     language_class = st.session_state.language_class
-    language_class.set_what(df_what.to_dict(orient="records"))
-    language_class.set_sources(df_from_processed.to_dict(orient="records"))
+    result_what = language_class.set_what(df_what.to_dict(orient="records"))
+    result_sources = language_class.set_sources(df_from_processed.to_dict(orient="records"))
     
-    reload_data_from_class()
-    return True
+    if result_what or result_sources:
+        reload_data_from_class()
+    
+    return result_what or result_sources
 
 def cancel_changes():
     """
@@ -128,9 +130,14 @@ def reset_language():
     Resets the default data and reloads it into the state.
     """
     language_class = st.session_state.language_class
-    language_class.set_default_language()
-    reload_data_from_class()
-    return True
+    result = language_class.set_default_language()
+    
+    print("reset_language:", result)
+    
+    if result:
+        reload_data_from_class()
+        
+    return result
 
 # ---------------------------
 # --- UI Components ---
@@ -163,11 +170,14 @@ def display_confirmation_ui():
     if st.button("✅ Sì, confermo", use_container_width=True):
         success = function_to_run()
         
-        if success:
+        if success is True:
             st.success("✅ Modifiche salvate con successo!")
         else:
-            st.warning("Compila tutti i campi!")
-        
+            if success is None:
+                st.warning("⚠️ Impossibile salvare: sono presenti valori vuoti nei dati.")
+            else:
+                st.error("❌ Si è verificato un errore durante il salvataggio delle modifiche.")
+                
         time.sleep(1)
         
         # Clear the flag and reload to return to the form

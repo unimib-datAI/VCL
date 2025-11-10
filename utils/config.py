@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 
 from utils.DQL_language import DQLLanguage
 from utils.system_config import SystemConfig
-from utils.storage import Storage
 
 class Config():
     user_id = None
@@ -17,13 +16,11 @@ class Config():
         self.user_id = user_id
         self.system_CFG = SystemConfig.get_instance()
         
-        self.storage = Storage.get_instance(self.user_id, 
-                                            self.system_CFG.url_db, 
-                                            self.system_CFG.token_db, 
-                                            self.system_CFG.project_root)
+        self.storage = self.system_CFG.storage
         
-        self.language = DQLLanguage.get_instance(self.storage, 
-                                                 self.system_CFG.project_root)
+        self.language = DQLLanguage(self.user_id,
+                                    self.storage, 
+                                    self.system_CFG.project_root)
         
         self.llm = self.system_CFG.llm
         self.project_root = self.system_CFG.project_root

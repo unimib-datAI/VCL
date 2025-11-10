@@ -1,8 +1,5 @@
 import os
 import re
-import threading
-
-from copy import deepcopy
 
 from utils.file_manager import FileHandler
 from utils.storage import Storage
@@ -24,16 +21,13 @@ class DQLLanguage:
         command_description_map (dict): Maps command names to their descriptions.
         default_command (dict): The default command configuration.
     """
-    
-    # Singleton instance and thread lock
-    _instance = None
-    _lock = threading.Lock()
+
     
     # ----------------------
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, storage: Storage = None, project_root = None):
+    def __init__(self, user_id, storage: Storage, project_root):
         """
         Initialize the DQLLanguage instance.
 
@@ -41,30 +35,16 @@ class DQLLanguage:
             storage (Storage): Object providing access to storage
             project_root: Main directory of the project
         """
+        if user_id is None:
+            raise ValueError("user_id must be provided to initialize DQLLanguage.")
+        
+        self.user_id = user_id
         self.storage = storage
         self.project_root = project_root
         self.full_language: dict | None = None
 
         # Initialize language and derived properties
         self._update_parameters(to_retrieve=True)
-        
-    @classmethod
-    def get_instance(cls, storage: Storage = None, project_root = None):
-        """
-        Retrieve the singleton instance of the LLM (thread-safe).
-
-        Args:
-            storage (Storage): Object providing access to storage
-            project_root: Main directory of the project
-
-        Returns:
-            DQLLanguage: The singleton instance.
-        """
-        if cls._instance is None:
-            with cls._lock:
-                if cls._instance is None:
-                    cls._instance = cls(storage, project_root)
-        return cls._instance
 
     # ---------------------------
     # --- Language Management ---
@@ -78,11 +58,11 @@ class DQLLanguage:
             dict: The full language definition.
         """
         if not self.full_language:
-            self.full_language = self.storage.get_language()
+            self.full_language = self.storage.get_language(self.user_id)
 
             # If not found, fall back to the default language file
             if not self.full_language:
-                self.full_language = self.storage.set_default_language()
+                self.full_language = self.storage.set_default_language(self.user_id)
 
         return self.full_language
     
@@ -102,8 +82,11 @@ class DQLLanguage:
         Args:
             language (dict): The new language definition.
         """
-        self.full_language = self.storage.set_language(language)
-        self._update_parameters()
+        result = self.storage.set_language(self.user_id, language)
+        if result:
+            self._update_parameters(to_retrieve=True)
+        
+        return result
 
     def set_default_language(self):
         """
@@ -113,22 +96,26 @@ class DQLLanguage:
             self.project_root, "documents", "language", "default_language.json"
         )
         default_language = FileHandler().read_file(default_language_path)
-        self.set_language(default_language)
+        return self.set_language(default_language)
         
     def set_commands(self, commands: list):
-        language = deepcopy(self.full_language)
-        language["commands"] = commands
-        return self.set_language(language)
+        result = self.storage.set_commands(self.user_id, commands)
+        if result:
+            self._update_parameters(to_retrieve=True)
+        return result
     
     def set_sources(self, sources: list):
-        language = deepcopy(self.full_language)
-        language["sources"] = sources
-        return self.set_language(language)
+        result = self.storage.set_sources(self.user_id, sources)
+        if result:
+            self._update_parameters(to_retrieve=True)
+        return result
     
     def set_what(self, what: list):
-        language = deepcopy(self.full_language)
-        language["what"] = what
-        return self.set_language(language)
+        result = self.storage.set_what(self.user_id, what)
+        
+        if result:
+            self._update_parameters(to_retrieve=True)
+        return result
 
     def _update_parameters(self, to_retrieve: bool = False):
         """
@@ -138,7 +125,7 @@ class DQLLanguage:
             to_retrieve (bool): If True, reloads the language from storage first.
         """
         if to_retrieve:
-            self.full_language = self.get_language()
+            self.full_language = self.storage.get_language(self.user_id)
 
         self.commands = self.full_language.get("commands", [])
         self.sources = self.full_language.get("sources", [])
@@ -147,7 +134,7 @@ class DQLLanguage:
         self._set_default_command()
         self._build_command_maps()
         
-        self.gui_examples = self._generate_examples()
+        self.gui_examples = self._generate_gui_examples()
 
     # --------------------------
     # --- Command Management ---
@@ -252,7 +239,7 @@ class DQLLanguage:
     # --- "Examples" Management ---
     # -----------------------------
     
-    def _generate_examples(self):
+    def _generate_gui_examples(self):
         examples = FileHandler().read_file(
             os.path.join(
                 self.project_root,
@@ -264,37 +251,70 @@ class DQLLanguage:
         
         formatted_examples = []
         
-        command_names = [cmd["command"] for cmd in self.commands]
-        source_names = [src["name"] for src in self.sources]
-        what_names = [w["name"] for w in self.what]
+        categories = {
+            "command": [cmd["command"] for cmd in self.commands],
+            "source": [src["name"] for src in self.sources],
+            "what": [w["name"] for w in self.what],
+        }
 
         for e in examples:
             brackets_content = re.findall(r"\[(.*?)\]", e)
 
-            formatted_example = e
+            # Count how many placeholders you need for each category
+            needed_counts = {
+                "command": sum(1 for c in brackets_content if c.startswith("command_")),
+                "source": sum(1 for c in brackets_content if c.startswith("source_")),
+                "what": sum(1 for c in brackets_content if c.startswith("what_")),
+            }
 
+            # If enough elements are missing, discard
+            if any(needed_counts[k] > len(categories[k]) for k in categories):
+                continue
+
+            formatted_example = e
+            used = {k: set() for k in categories}
+
+            # ------------------------------------------
+            
+            def choose_replacement(category, element):
+                """Returns the value to be inserted, or None if not available."""
+                available = categories[category]
+                used_set = used[category]
+
+                # Priority to the specified one if valid and unused
+                if element in available and element not in used_set:
+                    choice = element
+                else:
+                    # Find the first available one that hasn't been used yet
+                    remaining = [a for a in available if a not in used_set]
+                    if not remaining:
+                        return None
+                    choice = remaining[0]
+
+                used_set.add(choice)
+                return choice
+            
+            # ------------------------------------------
+
+            # Apply replacements
             for content in brackets_content:
                 parts = content.split("_", 1)
                 if len(parts) != 2:
-                    continue 
+                    continue
 
                 category, element = parts
+                if category not in categories:
+                    formatted_example = None
+                    break
 
-                replacement = None
-
-                if category == "command":
-                    replacement = element if element in command_names else command_names[0] if command_names else ""
-                elif category == "source":
-                    replacement = element if element in source_names else source_names[0] if source_names else ""
-                elif category == "what":
-                    replacement = element if element in what_names else what_names[0] if what_names else ""
-                else:
-                    replacement = ""
+                replacement = choose_replacement(category, element)
+                if not replacement:
+                    formatted_example = None
+                    break
 
                 formatted_example = formatted_example.replace(f"[{content}]", replacement)
 
-            formatted_examples.append(formatted_example)
+            if formatted_example:
+                formatted_examples.append(formatted_example)
 
         return formatted_examples
-
-    

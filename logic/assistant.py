@@ -92,7 +92,6 @@ class Assistant:
             structured_query, operations, result = {}, [], "Si è verificato un errore. Riprova."
 
         response = self._finalize_response(prompt, structured_query, operations, result)
-        self._store_response(response)
 
         return response
 
@@ -153,7 +152,7 @@ class Assistant:
         response["used_documents"] = list(set(used_docs))
         return response
 
-    def _store_response(self, response: dict):
+    def store_response(self, response: dict):
         """Persist the response in storage and local filesystem."""
         try:
             self.CFG.storage.set_documents(response, ttl=3600)  # Cache for 1 hour
