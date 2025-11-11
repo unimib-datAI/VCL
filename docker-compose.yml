@@ -1,12 +1,25 @@
 services:
   mongodb:
     image: mongo:latest
-    container_name: dql
+    container_name: mongodb
     restart: always
-    ports:
-      - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
       MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+    ports:
+      - "27019:27017"
     volumes:
       - ./data:/data/db
+
+  dql-system:
+    build: .
+    container_name: dql-system
+    depends_on:
+      - mongodb
+    restart: always
+    ports:
+      - "8010:8501"
+    volumes:
+      - ./settings:/app/settings
+      - /var/run/docker.sock:/var/run/docker.sock
+
