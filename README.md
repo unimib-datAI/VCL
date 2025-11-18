@@ -68,11 +68,9 @@ Some features have already been partially implemented:
     ```bash
     pip install -r requirements.txt
     ```
-2.  **Create Settings Folder**
-    In the project's root directory, create a new folder named `settings`:
-    ```bash
-    mkdir settings
-    ```
+2.  **Create .env file**
+    In the project's root directory, create the environment file (`.env`):
+    
 3.  **Credential Configuration**
     You can provide credentials (API key, DB URL, DB Token) in two ways: via configuration files (recommended) or by passing them as flags at runtime.
     
@@ -81,23 +79,16 @@ Some features have already been partially implemented:
       - **LLM API Key**
         - Go to the website of the LLM provider you intend to use (e.g., [Google Gemini](https://aistudio.google.com/app/apikey), [OpenAI](https://platform.openai.com/api-keys), etc.).
         - Generate a new API key.
-        - Inside the `settings` folder, create a file named `api_key_<provider>.txt`, where `<provider>` matches the provider name (see the list in the `-provider` flag).
-        - Paste your API key into this file.
-      - **Database Credentials (Upstash)**
-        - Go to the [Upstash Redis website](https://console.upstash.com/) and create a database.
-        - Locate the URL (endpoint) and token for your database.
-        - Inside the `settings` folder, create two files:
-          - `uri_db.txt`: Paste the database URL here.
-          - `token_db.txt`: Paste the database token here.
+        - Inside the `.env`, create the correct variable between `GOOGLE_API_KEY`, `OPENAI_API_KEY`, `GITHUB_COPILOT_API_KEY`, "HUGGINGFACEHUB_API_TOKEN" and paste the API key
+      - **Database Credentials (MongoDB)**
+        - Inside the `.env`, create the variables between `MONGO_URI`, `MONGO_INITDB_ROOT_USERNAME`, `MONGO_INITDB_ROOT_PASSWORD`
 
     - **Method 2: Runtime Flags**
-      Alternatively, you can skip creating the files in the `settings` folder and pass the credentials directly at runtime using the `-api`, `-uri_db`, and `-token_db` flags (see section 4).
+      Alternatively, you can skip creating the variables in the enviroment file and pass the credentials directly at runtime using the `-api`, `-uri_db` flags (see section 4).
 
-4. **File config.yaml**: In the folder named `settings` create a file `config.yaml` to allow the authentication system to function. The main two blocks that must be in the file are `cookie`, `credentials`.
+4. **VPN Connection for Elasticsearch**: If you need to access the Elasticsearch database, ensure you are connected to your university's VPN before running the script.
 
-5. **VPN Connection for Elasticsearch**: If you need to access the Elasticsearch database, ensure you are connected to your university's VPN before running the script.
-
-6. **Running the Application**
+5. **Running the Application**
     Execute the Streamlit application using the `main.py` script.
     The base command is:
     ```bash
@@ -108,24 +99,16 @@ Some features have already been partially implemented:
     * `-api <KEY>`
 
         * **Description:** Provides the API key for the LLM.
-        * **Usage:** Overrides the key read from the `settings/api_key_<provider>.txt` file.
 
-    * `-uri_db <URL>`
+    * `-uri_db <URI>`
 
-        * **Description:** Provides the connection URL for the database (e.g., Upstash).
-        * **Usage:** Overrides the URL read from the `settings/uri_db.txt` file.
-
-    * `-token_db <TOKEN>`
-
-        * **Description:** Provides the authentication token for the database.
-        * **Usage:** Overrides the token read from the `settings/token_db.txt` file.
+        * **Description:** Provides the connection URL for the database (e.g., MongoDB).
 
     * `-provider <PROVIDER_NAME>`
 
         * **Description:** Specifies which LLM provider to use.
         * **Default:** `google_genai`
         * **Choices:** `google_genai`, `openai`, `copilot`, `huggingface`.
-        * **Note:** Ensure the corresponding API key file (e.g., `api_key_openai.txt`) exists if you use a provider other than the default, or use the `-api` flag.
 
     * `-model_name <MODEL_NAME>`
 

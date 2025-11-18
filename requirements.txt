@@ -1,6 +1,9 @@
 # ====== Core Framework (Interface) ======
 streamlit
 
+# ====== Environment Variable ======
+python-dotenv
+
 # ====== LLM Framework (LangChain Core) ======
 # LangChain Core and Components (parsers, prompts)
 langchain

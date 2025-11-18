@@ -5,11 +5,9 @@ import threading
 import time
 
 from copy import deepcopy
+from dotenv import load_dotenv
 from langchain.chat_models import init_chat_model
 from langchain_core.output_parsers import StrOutputParser
-
-from utils.file_manager import FileHandler
-
 
 class LLM:
     """
@@ -37,9 +35,11 @@ class LLM:
         _llm: The initialized LangChain chat model instance.
         parser (StrOutputParser): Default parser for string-based model responses.
         _seconds (int): Delay (in seconds) between consecutive LLM invocations.
-        _project_root (Path): Root directory used to locate API key files.
+        _project_root (Path): Root directory used to locate API key files (unused for env vars).
     """
-
+    # Load env variable from file .env
+    load_dotenv()
+    
     # Singleton instance and thread lock
     _instance = None
     _lock = threading.Lock()
@@ -48,6 +48,14 @@ class LLM:
     model_name: str = "gemini-2.0-flash"
     provider: str = "google_genai"
     parser = StrOutputParser()
+
+    # Mapping between provider names and environment variable names
+    _PROVIDER_ENV_MAP = {
+        "google_genai": "GOOGLE_API_KEY",
+        "openai": "OPENAI_API_KEY",
+        "copilot": "GITHUB_COPILOT_API_KEY",
+        "huggingface": "HUGGINGFACEHUB_API_TOKEN",
+    }
 
     # ----------------------
     # --- Initialization ---
@@ -67,7 +75,7 @@ class LLM:
         Args:
             api_key (str, optional): Provider API key.
             seconds (int): Delay between LLM invocations.
-            project_root (Path): Root directory for key files.
+            project_root (Path): Root directory (kept for compatibility).
             model_name (str): Name of the model to use.
             provider (str): LLM provider ('google_genai', 'openai', 'copilot', 'huggingface').
         """
@@ -98,7 +106,7 @@ class LLM:
         Args:
             api_key (str, optional): Provider API key.
             seconds (int): Delay between LLM invocations.
-            project_root (Path): Root directory for key files.
+            project_root (Path): Root directory.
             model_name (str): Name of the model to use.
             provider (str): LLM provider.
         
@@ -128,11 +136,8 @@ class LLM:
         self._model_name = model_name
         self._provider = provider
 
-        # Path for provider-specific API key
-        api_path = self._project_root / "settings" / f"api_key_{provider}.txt"
-
-        # Load API key
-        api_key = self._load_api_key(api_key, api_path)
+        # Load API key (from arg or environment)
+        api_key = self._load_api_key(api_key, provider)
 
         # Set environment variable
         self._set_env_key(provider, api_key)
@@ -144,42 +149,42 @@ class LLM:
         """
         Set the correct environment variable for each supported provider.
         """
-        env_map = {
-            "google_genai": "GOOGLE_API_KEY",
-            "openai": "OPENAI_API_KEY",
-            "copilot": "GITHUB_COPILOT_API_KEY",
-            "huggingface": "HUGGINGFACEHUB_API_TOKEN",
-        }
-        env_name = env_map.get(provider, "")
+        env_name = self._PROVIDER_ENV_MAP.get(provider, "")
         if not env_name:
             raise ValueError(f"Unsupported provider: {provider}")
         os.environ[env_name] = api_key
 
-    def _load_api_key(self, api_key: str, api_path) -> str:
+    def _load_api_key(self, api_key: str, provider: str) -> str:
         """
-        Load the API key from argument or from file. If not present, raise an error.
+        Load the API key from argument or from environment variables.
 
         Args:
             api_key (str): Provided API key.
-            api_path (Path): Path to the API key file.
+            provider (str): The LLM provider name to look up in environment.
 
         Returns:
             str: Valid API key.
             
         Raises:
-            ValueError: If no API key is provided and none can be found at api_path.
+            ValueError: If no API key is provided and none found in environment.
         """
-        # If no key is passed, try to read it from the designated file
-        if not api_key and os.path.exists(api_path) and os.path.isfile(api_path):
-            api_key = FileHandler().read_file(api_path)
+        # 1. If api_key is passed directly, use it
+        if api_key:
+            return api_key
 
-        # If still no key, it's an error
-        if not api_key:
-            raise ValueError(f"No API key could be found or loaded. Searched at: {api_path}")
+        # 2. Identify the environment variable name
+        env_var_name = self._PROVIDER_ENV_MAP.get(provider)
+        if not env_var_name:
+            raise ValueError(f"Unsupported provider for API key lookup: {provider}")
 
-        # (Over)write the key file to ensure it's stored for next time
-        FileHandler().write_file(api_path, api_key)
-        return api_key
+        # 3. Retrieve from environment (.env should be loaded prior to running or by system)
+        fetched_key = os.getenv(env_var_name)
+
+        # 4. If still no key, it's an error
+        if not fetched_key:
+            raise ValueError(f"No API key found. Please provide it as an argument or set the {env_var_name} environment variable.")
+
+        return fetched_key
 
     # ------------------------
     # --- Output Formatter ---
@@ -270,12 +275,12 @@ class LLM:
             prompt_info (tuple): A tuple containing prompt components:
                 (prompt_template, static_params, user_param_keys, parser_type)
             info_user (dict): A dictionary containing user-specific data
-                              (e.g., {"query": "...", "context": "..."}).
+                            (e.g., {"query": "...", "context": "..."}).
             lower (bool, optional): Whether to lowercase the final result.
 
         Returns:
             str | list | dict: The cleaned and parsed LLM response. The
-                               type depends on the `parser_type` in prompt_info.
+                                type depends on the `parser_type` in prompt_info.
         """
         # Unpack the prompt information tuple
         prompt, params_DQL, params_user, parser_type = prompt_info

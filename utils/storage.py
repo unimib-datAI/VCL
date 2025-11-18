@@ -3,11 +3,12 @@ import os
 import threading
 import pymongo.errors
 
+from dotenv import load_dotenv
 from pymongo import MongoClient
 from pymongo.server_api import ServerApi
 from bson import ObjectId
 from datetime import datetime
-from typing import Optional, List, Dict, Any
+from typing import Optional, List, Any
 
 from utils.file_manager import FileHandler
 
@@ -26,6 +27,9 @@ class Storage:
     # ----------------------
     # --- Initialization ---
     # ----------------------
+    
+    # Load env variable from file .env
+    load_dotenv()
     
     _instance = None
     _lock = threading.Lock()
@@ -49,9 +53,9 @@ class Storage:
         self._project_root = project_root
         self._file_handler = FileHandler()
 
-        # Load Mongo URI from args or file
+        # Load Mongo URI from args, env, or file
         mongo_uri = self._load_data(
-            uri_db, os.path.join(self._project_root, "settings", "mongo_uri.txt")
+            uri_db
         )
 
         # Initialize MongoDB client and collections
@@ -97,14 +101,13 @@ class Storage:
     # --- Initialization Helpers ---
     # ------------------------------
 
-    def _load_data(self, value: Optional[str], path: str) -> str:
+    def _load_data(self, value: Optional[str], env_var: str = "MONGO_URI") -> str:
         """
-        Load a credential (e.g., Mongo URI) from argument or fallback file.
-        Writes the value back to the file to persist it.
+        Load a credential (e.g., Mongo URI) from argument, environment variable, or fallback file.
 
         Args:
             value (Optional[str]): The value passed (e.g., from args).
-            path (str): The file path to read/write.
+            env_var (str): The name of the environment variable to check.
 
         Returns:
             str: The loaded credential.
@@ -112,17 +115,17 @@ class Storage:
         Raises:
             ValueError: If no value is provided and the file is missing.
         """
-        # If no value is provided, try reading from the file
-        if not value and os.path.exists(path) and os.path.isfile(path):
-            value = self._file_handler.read_file(path)
+        # 1. Check if value is passed directly
+        if value:
+            return value
 
-        # If still no value, raise an error
-        if not value:
-            raise ValueError(f"Missing or invalid Mongo configuration at: {path}")
+        # 2. Check environment variable
+        env_value = os.getenv(env_var)
+        if env_value:
+            return env_value
 
-        # Write the value back (ensures it's saved if passed as arg)
-        self._file_handler.write_file(path, value)
-        return value
+        # 3. Raise error if nothing found
+        raise ValueError(f"Missing or invalid Mongo configuration. Checked arg and env var '{env_var}'")
 
     # ----------------------
     # --- Authentication ---
@@ -201,7 +204,7 @@ class Storage:
         Args:
             user_id (str): The user's username.
             key (tuple): A tuple like ("array_name", "field_name_to_match").
-                         Example: ("chat", "id")
+                          Example: ("chat", "id")
             value (str): The value to match against.
 
         Returns:

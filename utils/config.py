@@ -1,6 +1,8 @@
 import logging
 import os
+
 from datetime import datetime, timezone
+from dotenv import load_dotenv
 
 from utils.DQL_language import DQLLanguage
 from utils.system_config import SystemConfig
@@ -25,8 +27,11 @@ class Config:
     
     # --- Class-level Constants ---
     
-    # URL for the document database (e.g., Elasticsearch)
-    DB_URL: str = "http://10.0.0.108:9201"
+    # Load env variable from file .env
+    load_dotenv()
+    
+    # URL for the document database
+    DB_URL: str = os.getenv("DB_URL")
     
     # Standard format for all log messages
     _LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
