@@ -1,17 +1,27 @@
 import bcrypt
 import os
 import threading
-import pymongo
+import pymongo.errors
 
+from pymongo import MongoClient
+from pymongo.server_api import ServerApi
 from bson import ObjectId
 from datetime import datetime
-from pymongo.mongo_client import MongoClient
-from pymongo.server_api import ServerApi
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 from utils.file_manager import FileHandler
 
 class Storage:
+    """
+    Thread-safe singleton class for managing MongoDB storage.
+
+    Handles:
+    - User authentication (registration, login)
+    - User-specific data (chat history, documents)
+    - User-specific settings (DQL language configuration)
+    - In-memory caching for chat and language settings with thread-safe
+      access and invalidation.
+    """
     
     # ----------------------
     # --- Initialization ---
@@ -22,7 +32,8 @@ class Storage:
     
     def __init__(self, uri_db: str, project_root):
         """
-        Initialize the Mongo client with credentials and user context.
+        Initialize the Mongo client and collections.
+        (Private constructor, use get_instance())
 
         Args:
             uri_db (str | None): Mongo URI.
@@ -31,21 +42,31 @@ class Storage:
         Raises:
             ValueError: If Mongo credentials cannot be loaded or found.
         """
+        # Prevent re-initialization if already done
         if getattr(self, "_initialized", False):
             return
 
-        self.project_root = project_root
-        self.file_handler = FileHandler()
+        self._project_root = project_root
+        self._file_handler = FileHandler()
 
+        # Load Mongo URI from args or file
         mongo_uri = self._load_data(
-            uri_db, os.path.join(self.project_root, "settings", "mongo_uri.txt")
+            uri_db, os.path.join(self._project_root, "settings", "mongo_uri.txt")
         )
 
+        # Initialize MongoDB client and collections
         client = MongoClient(mongo_uri, server_api=ServerApi('1'))
         db = client["auth_db"]
-        self.users = db["users"]
+        self._users = db["users"]
         
-        self.users.create_index("username", unique=True)
+        # Ensure usernames are unique
+        self._users.create_index("username", unique=True)
+        
+        # --- Initialize caches and their locks ---
+        self._chat_cache = {}
+        self._lang_cache = {}
+        self._chat_cache_lock = threading.Lock()
+        self._lang_cache_lock = threading.Lock()
         
         self._initialized = True
 
@@ -56,7 +77,7 @@ class Storage:
         project_root=None,
     ) -> "Storage":
         """
-        Retrieve or create the singleton instance of Storage.
+        Retrieve or create the singleton instance of Storage (thread-safe).
 
         Args:
             uri_db (str): Mongo URI. (Required on first call)
@@ -64,12 +85,10 @@ class Storage:
 
         Returns:
             Storage: Singleton instance.
-            
-        Raises:
-            ValueError: If called for the first time without required arguments.
         """
         if cls._instance is None:
             with cls._lock:
+                # Double-check lock
                 if cls._instance is None:
                     cls._instance = cls(uri_db, project_root)
         return cls._instance
@@ -80,29 +99,57 @@ class Storage:
 
     def _load_data(self, value: Optional[str], path: str) -> str:
         """
-        Load a credential (e.g., Mongo URI or token) from argument or fallback file.
-        """
-        if not value and os.path.exists(path) and os.path.isfile(path):
-            value = self.file_handler.read_file(path)
+        Load a credential (e.g., Mongo URI) from argument or fallback file.
+        Writes the value back to the file to persist it.
 
+        Args:
+            value (Optional[str]): The value passed (e.g., from args).
+            path (str): The file path to read/write.
+
+        Returns:
+            str: The loaded credential.
+
+        Raises:
+            ValueError: If no value is provided and the file is missing.
+        """
+        # If no value is provided, try reading from the file
+        if not value and os.path.exists(path) and os.path.isfile(path):
+            value = self._file_handler.read_file(path)
+
+        # If still no value, raise an error
         if not value:
             raise ValueError(f"Missing or invalid Mongo configuration at: {path}")
 
-        self.file_handler.write_file(path, value)
+        # Write the value back (ensures it's saved if passed as arg)
+        self._file_handler.write_file(path, value)
         return value
 
     # ----------------------
     # --- Authentication ---
     # ----------------------
     
-    def register_user(self, username, email, password):
-        if self.users.find_one({"username": username}) or self.users.find_one({"email": email}):
+    def register_user(self, username, email, password) -> bool:
+        """
+        Register a new user with default documents and language settings.
+
+        Args:
+            username (str): The desired username.
+            email (str): The user's email.
+            password (str): The user's plain-text password.
+
+        Returns:
+            bool: True if registration was successful, False if user/email exists.
+        """
+        # Check for existing user or email
+        if self._users.find_one({"username": username}) or self._users.find_one({"email": email}):
             return False
         
+        # Hash the password
         hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
         
         try:
-            self.users.insert_one({
+            # Insert the new user document
+            self._users.insert_one({
                 "_id": ObjectId(),
                 "username": username,
                 "email": email,
@@ -115,17 +162,28 @@ class Storage:
                     "language": self._get_default_language()
                 }
             })
-
             return True
         except pymongo.errors.DuplicateKeyError:
+             # Should be caught by the initial check, but as a safeguard
              return False
 
-    def login_user(self, username, password):
-        user = self.users.find_one({"username": username})
+    def login_user(self, username, password) -> bool:
+        """
+        Verify a user's login credentials.
+
+        Args:
+            username (str): The username to check.
+            password (str): The plain-text password to check.
+
+        Returns:
+            bool: True if credentials are valid, False otherwise.
+        """
+        user = self._users.find_one({"username": username})
         
         if not user:
             return False
         
+        # Check the provided password against the stored hash
         if bcrypt.checkpw(password.encode("utf-8"), user["password"]):
             return True
         
@@ -135,44 +193,76 @@ class Storage:
     # --- Document Operations ---
     # ---------------------------
     
-    def _get_document(self, user_id, key, value):
-        """Helper to find a specific document in the current user's array."""
+    def _get_document(self, user_id, key: tuple, value: str) -> Optional[dict]:
+        """
+        Private helper to find a specific document in a user's data array.
+        Uses MongoDB's $ projection to return only the matched array element.
+
+        Args:
+            user_id (str): The user's username.
+            key (tuple): A tuple like ("array_name", "field_name_to_match").
+                         Example: ("chat", "id")
+            value (str): The value to match against.
+
+        Returns:
+            Optional[dict]: The found document or None.
+        """
+        # e.g., "data.chat.id"
         query_key = f"data.{key[0]}.{key[1]}"
+        # e.g., {"data.chat.$": 1, "_id": 0}
         projection = {f"data.{key[0]}.$": 1, "_id": 0}
         
-        result = self.users.find_one(
+        result = self._users.find_one(
             {"username": user_id, query_key: value},
             projection
         )
         
+        # Extract the first matched element from the array
         if result and "data" in result and key[0] in result["data"]:
             return result["data"][key[0]][0]
         return None
     
-    def get_document_by_id(self, user_id, value):
+    def get_document_by_id(self, user_id: str, value: str) -> Optional[dict]:
+        """Retrieves a single chat document by its 'id'."""
         return self._get_document(user_id, ("chat", "id"), value)
     
-    def get_document_by_type(self, user_id, value):
+    def get_document_by_type(self, user_id: str, value: str) -> Optional[dict]:
+        """Retrieves a single persisted document by its 'type_doc'."""
         return self._get_document(user_id, ("persisted_docs", "type_doc"), value)
     
-    def get_document_by_name(self, user_id, value):
+    def get_document_by_name(self, user_id: str, value: str) -> Optional[dict]:
+        """Retrieves a single persisted document by its 'name'."""
         return self._get_document(user_id, ("persisted_docs", "name"), value)
     
     def _get_default_docs(self) -> list:
         """
-        Load and the default documents from file.
+        Load the default documents from the /documents directory.
+
+        Returns:
+            list: A list of default document dictionaries.
         """
         doc_names = ["S1 - AN.json", "S2 - AN.json", "M2 - AN.json", "R2 - AN.json"]
-        doc_path = os.path.join(self.project_root, "documents")
+        doc_path = os.path.join(self._project_root, "documents")
         
         return [
-            self.file_handler.read_file(os.path.join(doc_path, name))
+            self._file_handler.read_file(os.path.join(doc_path, name))
             for name in doc_names
         ]
 
-    def upsert_persisted_doc(self, user_id,  doc: dict) -> bool:
+    def upsert_persisted_doc(self, user_id: str, doc: dict) -> bool:
         """
-        Insert or replace a persisted_doc for the current user.
+        Insert or replace (upsert) a document in the 'persisted_docs' array.
+        Match is based on the 'type_doc' field.
+
+        Args:
+            user_id (str): The user's username.
+            doc (dict): The document to upsert. Must contain 'type_doc'.
+
+        Returns:
+            bool: True if the database was modified, False otherwise.
+
+        Raises:
+            ValueError: If 'type_doc' is missing from the document.
         """
         
         if "type_doc" not in doc:
@@ -182,13 +272,15 @@ class Storage:
         
         doc_type = doc["type_doc"]
         
-        result = self.users.update_one(
+        # 1. Try to update (replace) an existing doc matching the type
+        result = self._users.update_one(
             {"username": user_id, "data.persisted_docs.type_doc": doc_type},
             {"$set": {"data.persisted_docs.$": doc}}
         )
 
+        # 2. If no doc was matched, push it as a new doc
         if result.matched_count == 0:
-            result = self.users.update_one(
+            result = self._users.update_one(
                 {"username": user_id},
                 {"$push": {"data.persisted_docs": doc}}
             )
@@ -196,92 +288,229 @@ class Storage:
         return result.modified_count > 0
 
     
+    # --------------------------------
+    # --- Cache Helper Methods ---
+    # --------------------------------
+    
+    def _invalidate_cache(self, user_id: str, cache: dict, lock: threading.Lock):
+        """
+        Thread-safely remove a user's data from a specified cache.
+
+        Args:
+            user_id (str): The user's username (cache key).
+            cache (dict): The cache dictionary (e.g., _chat_cache).
+            lock (threading.Lock): The lock for that cache.
+        """
+        with lock:
+            if user_id in cache:
+                del cache[user_id]
+
+    def _get_cached_data(self, user_id: str, cache: dict, lock: threading.Lock, projection: dict, data_path: List[str]) -> Optional[Any]:
+        """
+        Generic helper to retrieve data from cache or database.
+
+        Args:
+            user_id (str): The user's username.
+            cache (dict): The cache to check.
+            lock (threading.Lock): The lock for that cache.
+            projection (dict): The MongoDB projection to use.
+            data_path (List[str]): The path to the data in the result (e.g., ["data", "chat"]).
+
+        Returns:
+            Optional[Any]: The cached or retrieved data, or None.
+        """
+        # 1. Check cache first (thread-safe)
+        with lock:
+            if user_id in cache:
+                return cache[user_id]
+        
+        # 2. Not in cache, query DB (outside lock to avoid holding it during I/O)
+        result = self._users.find_one(
+            {"username": user_id},
+            projection
+        )
+        
+        # 3. Extract data by traversing the data_path
+        data = None
+        if result:
+            temp_data = result
+            try:
+                for key in data_path:
+                    temp_data = temp_data[key]
+                data = temp_data
+            except KeyError:
+                data = None # Path not found
+        
+        # 4. Store in cache (thread-safe)
+        with lock:
+            cache[user_id] = data
+            
+        return data
+
     # -----------------------
     # --- Chat Operations ---
     # -----------------------
     
-    def get_chat(self, user_id):
-        """Retrieve the entire chat history for the current user."""
-        result = self.users.find_one(
-            {"username": user_id},
-            {"data.chat": 1, "_id": 0}
-        )
-        if result and "data" in result:
-            return result["data"].get("chat")
-        return None
-    
-    def add_chat_message(self, user_id, message: dict) -> bool:
+    def get_chat(self, user_id: str) -> Optional[list]:
         """
-        Append a single message to the current user's chat array.
+        Retrieve the entire chat history for the user, using cache.
+
+        Args:
+            user_id (str): The user's username.
+
+        Returns:
+            Optional[list]: The user's chat history list, or None.
+        """
+        return self._get_cached_data(
+            user_id,
+            self._chat_cache,
+            self._chat_cache_lock,
+            {"data.chat": 1, "_id": 0},
+            ["data", "chat"]
+        )
+    
+    
+    def add_chat_message(self, user_id: str, message: dict) -> bool:
+        """
+        Append a single message to the user's chat array and invalidate cache.
+
+        Args:
+            user_id (str): The user's username.
+            message (dict): The chat message to add.
+
+        Returns:
+            bool: True if the database was modified.
         """
         message.setdefault("timestamp", datetime.utcnow())
 
-        result = self.users.update_one(
+        result = self._users.update_one(
             {"username": user_id},
             {"$push": {"data.chat": message}}
         )
+        
+        # Invalidate cache on successful update
+        if result.modified_count > 0:
+            self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
+        
+        return result.modified_count > 0
+    
+    def replace_chat(self, user_id: str, chat: list) -> bool:
+        """
+        Replace the entire chat history for the user and invalidate cache.
+
+        Args:
+            user_id (str): The user's username.
+            chat (list): The new chat history list.
+
+        Returns:
+            bool: True if the database was modified.
+        """
+        
+        result = self._users.update_one(
+            {"username": user_id},
+            {"$set": {"data.chat": chat}}
+        )
+        
+        # Invalidate cache on successful update
+        if result.modified_count > 0:
+            self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
+        
         return result.modified_count > 0
     
     # ---------------------------
     # --- Language Operations ---
     # ---------------------------
     
-    def get_language(self, user_id):
+    def get_language(self, user_id: str) -> Optional[dict]:
         """
-        Retrieve the stored language configuration for the current user.
+        Retrieve the language configuration for the user, using cache.
+
+        Args:
+            user_id (str): The user's username.
+
+        Returns:
+            Optional[dict]: The user's language settings dict, or None.
         """
-        result = self.users.find_one(
-            {"username": user_id},
-            {"settings.language": 1, "_id": 0}
+        return self._get_cached_data(
+            user_id,
+            self._lang_cache,
+            self._lang_cache_lock,
+            {"settings.language": 1, "_id": 0},
+            ["settings", "language"]
         )
-        
-        if result and "settings" in result:
-            return result["settings"]["language"]
-            
-        return None
     
-    def _set_element(self, user_id, key: Optional[str], value) -> bool:
+    
+    def _set_element(self, user_id: str, key: Optional[str], value: Any) -> bool:
         """
-        Update or set a specific language setting for the current user.
+        Private helper to update a field within 'settings.language'
+        and invalidate the language cache.
+
+        Args:
+            user_id (str): The user's username.
+            key (Optional[str]): The sub-key (e.g., "commands"), or None to
+                                 replace the whole 'language' object.
+            value (Any): The new value to set.
+
+        Returns:
+            bool: True if the database was modified.
         """
         
+        # Determine the full update path
         if key:
             update_field = f"settings.language.{key}"
         else:
             update_field = "settings.language"
             
-        result = self.users.update_one(
+        result = self._users.update_one(
             {"username": user_id},
             {"$set": {update_field: value}}
         )
 
-        return result.modified_count > 0
+        # Invalidate cache on successful update
+        if result.modified_count > 0:
+            self._invalidate_cache(user_id, self._lang_cache, self._lang_cache_lock)
 
-    def set_language(self, user_id, language: dict):
+        return result.modified_count > 0
+    
+
+    def set_language(self, user_id: str, language: dict) -> bool:
+        """Replaces the entire language object for the user."""
         return self._set_element(user_id, None, language)
     
-    def set_commands(self, user_id, commands: dict):
+    def set_commands(self, user_id: str, commands: dict) -> bool:
+        """Updates the 'commands' sub-field in the user's language settings."""
         return self._set_element(user_id, "commands", commands)
     
-    def set_sources(self, user_id, sources: dict):
+    def set_sources(self, user_id: str, sources: dict) -> bool:
+        """Updates the 'sources' sub-field in the user's language settings."""
         return self._set_element(user_id, "sources", sources)
     
-    def set_what(self, user_id, what: dict):
+    def set_what(self, user_id: str, what: dict) -> bool:
+        """Updates the 'what' sub-field in the user's language settings."""
         return self._set_element(user_id, "what", what)
     
-    def set_default_language(self, user_id):
+    def set_default_language(self, user_id: str) -> bool:
         """
-        Load and store the default language configuration for the current user.
+        Resets the user's language settings to the default from file.
+
+        Args:
+            user_id (str): The user's username.
+
+        Returns:
+            bool: True if the database was modified.
         """
         return self.set_language(user_id, self._get_default_language())
 
     def _get_default_language(self) -> dict:
         """
-        Load and the default language configuration from file.
+        Load the default language configuration from file.
+
+        Returns:
+            dict: The default language configuration.
         """
-        return self.file_handler.read_file(
+        return self._file_handler.read_file(
             os.path.join(
-                self.project_root, 
+                self._project_root, 
                 "documents", 
                 "language", 
                 "default_language.json"

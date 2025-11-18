@@ -11,7 +11,11 @@ from utils.config import Config
 
 class Translator:
     """
-    Translates user queries into a structured format suitable for downstream processing.
+    Translates user queries into a structured format suitable for downstream
+    processing.
+
+    This class runs multiple extraction components in parallel (threading)
+    to optimize performance and reduce latency.
 
     Responsibilities:
         - Classify the user's intent into a command.
@@ -33,16 +37,16 @@ class Translator:
             cfg (Config): Global configuration instance providing LLM, logger,
                           project paths, and DQL language data.
         """
-        self.llm = cfg.llm
-        self.logger = cfg.get_logger("Translator")
-        self.project_root = cfg.project_root
-        self.user_id = cfg.user_id
+        self._llm = cfg.llm
+        self._logger = cfg.get_logger("Translator")
+        self._project_root = cfg.project_root
+        self._user_id = cfg.get_user_id()
 
         # Initialize all sub-components
-        self.command_classifier = CommandClassifier(cfg)
-        self.sources_extractor = SourcesExtractor(cfg)
-        self.what_extractor = WhatExtractor(cfg)
-        self.conditions_extractor = ConditionsExtractor(cfg)
+        self._command_classifier = CommandClassifier(cfg)
+        self._sources_extractor = SourcesExtractor(cfg)
+        self._what_extractor = WhatExtractor(cfg)
+        self._conditions_extractor = ConditionsExtractor(cfg)
 
     # -----------------------------
     # --- Main Rewriting Method ---
@@ -52,12 +56,16 @@ class Translator:
         """
         Rewrite a raw user query into a structured query dictionary.
 
+        This method runs command classification and source/what extraction
+        in parallel threads to reduce latency.
+
         Steps:
-            1. Classify the query to identify the command.
-            2. Extract relevant sources/documents.
-            3. Extract the 'what' element.
-            4. Extract any additional conditions ('how').
-            5. Combine all extracted elements into a structured dictionary.
+            1. (Thread 1) Classify the query to identify the command.
+            2. (Thread 2) Extract relevant sources/documents.
+            3. (Thread 2) Extract the 'what' element based on the query.
+            4. (Main) Wait for parallel threads to complete.
+            5. (Main) Extract any additional conditions ('how').
+            6. (Main) Combine all elements into a structured dictionary.
 
         Args:
             query (str): Raw input query from the user.
@@ -70,47 +78,83 @@ class Translator:
                   - 'how': dict, additional conditions
         """
         
-        # Step 1: Classify command
+        # Create queues to receive results from threads
         result_command = queue.Queue()
-        thread1 = threading.Thread(
-            target=self.command_classification, args=(query, result_command)
-        )
-        
-        # Step 2 & 3: Extract sources and what
         result_sources_what = queue.Queue()
-        thread2 = threading.Thread(
-            target=self.sources_what_extractor, args=(query, result_sources_what)
+
+        # Step 1: (Thread 1) Classify command
+        thread1 = threading.Thread(
+            target=self._command_classification, args=(query, result_command)
         )
         
+        # Step 2 & 3: (Thread 2) Extract sources and what
+        thread2 = threading.Thread(
+            target=self._sources_what_extractor, args=(query, result_sources_what)
+        )
+        
+        # Start parallel execution
         thread1.start()
         thread2.start()
         
+        # Wait for both threads to finish
         thread1.join()
         thread2.join()
         
+        # Retrieve results from queues
         sources, from_sources, what = result_sources_what.get()
+        command_result = result_command.get()
 
-        # Step 4: Build the structured query
+        # Step 4: Build the initial structured query
         structured_query = {
-            "command": result_command.get().get("name", ""),
+            "command": command_result.get("name", ""),
             "from": from_sources,
             "what": what,
         }
 
         # Step 5: Extract additional conditions
-        structured_query["how"] = self.conditions_extractor.extract(query, structured_query, sources)
+        structured_query["how"] = self._conditions_extractor.extract(query, structured_query, sources)
 
         # Log the final structured query
-        self.logger.info(f"Structured query: {structured_query}")
+        self._logger.info(f"Structured query: {structured_query}")
 
         return structured_query
     
-    def command_classification(self, prompt: str, result_queue: queue.Queue):
-        command = self.command_classifier.classify(prompt)
-        result_queue.put(command)
-        
-    def sources_what_extractor(self, prompt: str, result_queue: queue.Queue):
-        sources = self.sources_extractor.extract(prompt)
-        from_sources = [source[0] for source in sources]
-        what = self.what_extractor.extract(prompt, from_sources)
-        result_queue.put((sources, from_sources, what))
+    # -----------------------------------
+    # --- Private Threading Functions ---
+    # -----------------------------------
+
+    def _command_classification(self, prompt: str, result_queue: queue.Queue):
+        """
+        Thread target function to run command classification.
+        Places the result dictionary into the provided queue.
+
+        Args:
+            prompt (str): The user query.
+            result_queue (queue.Queue): The queue to store the result.
+        """
+        try:
+            command = self._command_classifier.classify(prompt)
+            result_queue.put(command)
+        except Exception as e:
+            self._logger.error(f"Command classification thread failed: {e}")
+            # Provide a fallback value to prevent queue.get() from blocking
+            result_queue.put({"name": "error"})
+
+    def _sources_what_extractor(self, prompt: str, result_queue: queue.Queue):
+        """
+        Thread target function to run sources and 'what' extraction.
+        Places a tuple of (sources, from_sources, what) into the queue.
+
+        Args:
+            prompt (str): The user query.
+            result_queue (queue.Queue): The queue to store the results tuple.
+        """
+        try:
+            sources = self._sources_extractor.extract(prompt)
+            from_sources = [source[0] for source in sources]
+            what = self._what_extractor.extract(prompt, from_sources)
+            result_queue.put((sources, from_sources, what))
+        except Exception as e:
+            self._logger.error(f"Sources/What extraction thread failed: {e}")
+            # Provide fallback values
+            result_queue.put(([], [], "error"))

@@ -1,4 +1,3 @@
-import os
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
 
@@ -28,10 +27,10 @@ class CommandClassifier:
             cfg (Config): Global configuration object providing logger,
                           LLM instance, and DQL language data.
         """
-        self.llm = cfg.llm
-        self.logger = cfg.get_logger("Command Classifier")
-        self.project_root = cfg.project_root
-        self.dql_language: DQLLanguage = cfg.language
+        self._llm = cfg.llm
+        self._logger = cfg.get_logger("Command Classifier")
+        self._project_root = cfg.project_root
+        self._dql_language: DQLLanguage = cfg.language
 
     # ----------------------------------
     # --- Main Classification Method ---
@@ -51,79 +50,60 @@ class CommandClassifier:
             query (str): User input query to classify.
 
         Returns:
-            dict: Dictionary containing 'name' and 'description' of the classified command.
+            dict: Dictionary containing 'name' and 'description' of
+                  the classified command.
         """
-        language_commands_str = self.commands_string(self.dql_language.get_commands())
 
+        # Prepare the input dictionary for the LLM prompt
         query_dict = {
             "query": query,
-            "language_commands": language_commands_str,
-            "default_key": self.dql_language.default_command.get("key", ""),
-            "feedback": ""
+            "feedback": ""  # Placeholder
         }
 
         command_info = {}
-        status = "Error"
+        status = "Error"  # Initial status for logging
 
         try:
+            # Retrieve the correct prompt for intent classification
+            prompt = self._dql_language.prompts.get("IntentClassification.json", None)
+            
+            if not prompt:
+                raise ValueError("IntentClassification.json prompt not found.")
+            
             # Only process non-empty queries
             if query_dict.get("query", "").strip():
                 # Invoke the LLM to classify the query
-                llm_result = self.llm.invoke(
-                    os.path.join(
-                        self.project_root,
-                        "documents",
-                        "prompts",
-                        "rewriting",
-                        "3 - IntentClassification.json"
-                    ),
+                llm_result = self._llm.invoke(
+                    prompt,
                     query_dict,
                     True
                 )
 
-                # Map the LLM result to a command key
-                command_key = self.dql_language.get_command_from_key(llm_result)
+                # Map the LLM result (e.g., a key) to a standardized command name
+                command_key = self._dql_language.get_command_from_key(llm_result)
 
-                # Retrieve command information
+                # Retrieve full command information
                 command_info = {
                     "name": command_key,
-                    "description": self.dql_language.get_description_from_command(command_key)
+                    "description": self._dql_language.get_description_from_command(command_key)
                 }
 
                 status = "Done"
             else:
-                raise ValueError("Empty query provided")
+                raise ValueError("Empty query provided to CommandClassification.")
 
-        except Exception:
-            # Fallback to default 'altro' command for errors
+        except Exception as e:
+            self._logger.error(f"Command classification failed: {e}. Falling back to default.")
+            # Fallback to the default 'altro' (other) command in case of any error
+            default_key = "altro"
             command_info = {
-                "name": "altro",
-                "description": self.dql_language.get_description_from_command("altro")
+                "name": default_key,
+                "description": self._dql_language.get_description_from_command(default_key)
             }
 
         # Log the classification result
-        self.logger.info(
+        self._logger.info(
             f"Intent Classification: {command_info.get('name', 'altro')} - {status}"
         )
 
         return command_info
-
-    # ----------------------
-    # --- Helper Methods ---
-    # ----------------------
-    
-    @staticmethod
-    def commands_string(commands) -> str:
-        """
-        Generate a formatted string of available commands for logging or display.
-
-        Args:
-            commands (list[dict]): List of command dictionaries with 'key' and 'description'.
-
-        Returns:
-            str: A formatted string listing all available commands.
-        """
-        commands_list = [
-            f"- \"{cmd['key']}\": {cmd['description']}" for cmd in commands
-        ]
-        return "\n".join(commands_list)

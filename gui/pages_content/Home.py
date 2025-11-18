@@ -9,13 +9,12 @@ import threading
 import time
 import queue
 
+from datetime import datetime, timedelta
 from pathlib import Path
 
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
-
-from logic.assistant import Assistant
 
 APP_TITLE = "DQL"
 
@@ -32,11 +31,34 @@ APP_TITLE = "DQL"
 def initialize_chat():
     """
     Initialize the chat session state if not already set.
-    """
-    if "messages" not in st.session_state:
+    """ 
+    st.session_state.messages = st.session_state.assistant.get_storage().get_chat(st.session_state.username)
+    
+    first_message = [
+        {
+            "role": "assistant",
+            "content": "Ciao! Come posso aiutarti oggi?",
+            "time": datetime.now().isoformat()
+        }
+    ]
+    
+    if "messages" not in st.session_state or st.session_state.messages == []:
+        st.session_state.messages = first_message
+        save_message(st.session_state.messages)
+    else:
+        cutoff_time = datetime.now() - timedelta(hours=2)
         st.session_state.messages = [
-            {"role": "assistant", "content": "Ciao! Come posso aiutarti oggi?"}
+            m for m in st.session_state.messages
+            if datetime.fromisoformat(m.get("time", (datetime.now() - timedelta(hours=3)).isoformat())) >= cutoff_time
         ]
+        
+        if st.session_state.messages == []:
+            st.session_state.messages = first_message
+        
+        st.session_state.assistant.get_storage().replace_chat(
+            st.session_state.username,
+            st.session_state.messages
+        )
 
 # --------------------
 # --- Chat History ---
@@ -49,14 +71,13 @@ def display_chat_history():
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-            show_expander(message.get("full_details", None), message.get("logs", []))
-
+            _show_expander(message.get("full_details", None), message.get("logs", []))
 
 # ---------------------------
 # --- Chat Input Handling ---
 # ---------------------------
 
-def handle_user_input():
+def display_gui_components():
     """
     Display and Handle user input from chat_input and suggestion buttons.
     """
@@ -66,9 +87,9 @@ def handle_user_input():
     with st.popover("💡 Suggerimenti"):
         st.markdown("Prova a chiedere:")
         
-        # Ensure logic_config is loaded
-        if st.session_state.logic_config:
-            for i, suggestion in enumerate(st.session_state.logic_config.language.gui_examples):
+        # Ensure assistant is loaded
+        if st.session_state.assistant:
+            for i, suggestion in enumerate(st.session_state.assistant.get_language().gui_examples):
                 if st.button(suggestion, key=f"suggestion_{i}"):
                     st.session_state.prompt_from_button = suggestion
                     st.rerun()
@@ -90,73 +111,105 @@ def handle_user_input():
 def submit_prompt(prompt: str):
     """
     Sends the prompt to the assistant and handles displaying the response.
-    This function contains the logic originally in handle_user_input.
 
     Args:
     prompt (str): The prompt text to send.
     """
     # --- 1. Display user's message ---
     st.session_state.messages.append(
-        {"role": "user", "content": prompt, "full_details": None, "logs": []}
+        {
+            "role": "user", 
+            "content": prompt,
+            "time": datetime.now().isoformat()
+        }
     )
+    
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # --- 2. Prepare Assistant response ---
+    # --- 2. Display assistant's message ---
     with st.chat_message("assistant"):
-        placeholder = st.empty()
-
         # Threading setup
+        placeholder = st.empty()
         stop_event = threading.Event()
         result_queue = queue.Queue()
-        
-        if not st.session_state.logic_config:
-            st.error("Errore: Configurazione utente non caricata. Impossibile contattare l'assistente.")
-            return
-
-        assistant = Assistant(st.session_state.logic_config)
 
         # Run assistant logic in background
         thread = threading.Thread(
-            target=call_assistant, args=(prompt, assistant, stop_event, result_queue)
+            target=call_assistant, 
+            args=(
+                prompt, 
+                st.session_state.assistant, 
+                stop_event, 
+                result_queue
+            )
         )
         thread.start()
 
-        # Log streaming display
-        log_file = os.path.join(
-            assistant.CFG.project_root, "logs", f"{assistant.CFG.get_request_id()}.log"
-        )
-        log_list = ["LOGS:"]
+        # Display logs while waiting for response
+        log_list = _display_log(placeholder, stop_event)
 
-        for line in follow_log(log_file, stop_event):
-            log_list.append(line)
-            placeholder.markdown("\n\n".join(log_list).strip())
-
-            if stop_event.is_set():
-                placeholder.markdown("")
-                break
-
+        # Wait for the assistant thread to finish (just in case)
         thread.join()
-
-        # --- 3. Display assistant's response with typing effect ---
+        
+        # Get the result from the queue
         result = result_queue.get()
         text = result.get("result", "")
-
-        typed_text = ""
-        for char in text:
-            typed_text += char
-            placeholder.markdown(typed_text)
-            time.sleep(0.01)
-
-        show_expander(result, log_list[1:])
-
-    # --- 4. Save assistant's response ---
-    st.session_state.messages.append(
-        {"role": "assistant", "content": text, "full_details": result, "logs": log_list[1:]}
+        
+        # Display assistant's response
+        ## Text
+        _display_result(text, placeholder)
+        
+        ## Expander with details
+        _show_expander(result, log_list[1:])
+    
+        # Save assistant's response in session state
+        st.session_state.messages.append(
+            {
+                "role": "assistant", 
+                "content": text,
+                "time": datetime.now().isoformat(),
+                "full_details": result, 
+                "logs": log_list[1:]
+            }
+        )
+    
+    # Save messages in DB
+    save_message(
+        st.session_state.messages[-2:]
     )
+    
+def _display_log(placeholder, stop_event: threading.Event):
+    # Log streaming display
+    log_file = os.path.join(
+        st.session_state.assistant.get_cfg().project_root, 
+        "logs", 
+        f"{st.session_state.assistant.get_cfg().get_request_id()}.log"
+    )
+    
+    log_list = ["LOGS:"]
+
+    for line in follow_log(log_file, stop_event):
+        log_list.append(line)
+        placeholder.markdown("\n\n".join(log_list).strip())
+
+        if stop_event.is_set():
+            placeholder.markdown("")
+            break
+        
+    return log_list
+
+def _display_result(text, placeholder):
+    # Typing effect for assistant's response
+    typed_text = ""
+    for char in text:
+        typed_text += char
+        placeholder.markdown(typed_text)
+        time.sleep(0.01)
+    
 
 # -------------------------------
-# --- Assistant Communication ---
+# --- Orchestrator Communication ---
 # -------------------------------
 
 def call_assistant(prompt: str, assistant, stop_event: threading.Event, result_queue: queue.Queue):
@@ -165,7 +218,7 @@ def call_assistant(prompt: str, assistant, stop_event: threading.Event, result_q
 
     Args:
         prompt (str): The user's input message.
-        assistant (Assistant): Assistant instance for handling the conversation.
+        assistant (Orchestrator): Orchestrator instance for handling the conversation.
         stop_event (threading.Event): Event used to signal completion.
         result_queue (queue.Queue): Queue to store the result for later retrieval.
     """
@@ -190,7 +243,7 @@ def follow_log(file_path: str, stop_event: threading.Event, wait_time: float = 0
     """
     # Wait until log file exists or stop event triggered
     while not (os.path.exists(file_path) or stop_event.is_set()):
-        time.sleep(wait_time) # Aggiunto sleep per evitare busy-waiting
+        time.sleep(wait_time)
 
     if os.path.exists(file_path):
         try:
@@ -217,7 +270,7 @@ def follow_log(file_path: str, stop_event: threading.Event, wait_time: float = 0
 # --- Expander in every assistant’s response ---
 # ----------------------------------------------
 
-def show_expander(full_details: dict, logs: list = []):
+def _show_expander(full_details: dict, logs: list = []):
     """
     Display structured details and intermediate operations of the assistant’s response.
 
@@ -316,7 +369,14 @@ def display_operation(index: int, operation: dict):
         unsafe_allow_html=True,
     )
 
-
+def save_message(messages: list):
+    if "assistant" in st.session_state and st.session_state.username:
+        for message in messages:
+            st.session_state.assistant.get_storage().add_chat_message(
+                st.session_state.username,
+                message
+            )
+        
 # -------------------
 # --- Entry Point ---
 # -------------------
@@ -327,13 +387,13 @@ def show_home():
     Sets up layout, restores chat history, and handles user interactions.
     """
 
-    # Verify that logic_config has been loaded correctly
-    if not st.session_state.logic_config:
+    # Verify that assistant has been loaded correctly
+    if not st.session_state.assistant:
         st.warning("Inizializzazione della configurazione in corso... Ricarica se il messaggio persiste.")
         st.stop()
 
     initialize_chat()
-    handle_user_input()
+    display_gui_components()
 
 if __name__ == "__main__":
     show_home()

@@ -24,8 +24,8 @@ class Preprocessor:
             cfg (Config): Global configuration instance providing logger,
                           LLM instance, and project paths.
         """
-        self.logger = cfg.get_logger("Preprocessor")
-        self.spelling_checker = SpellingChecker(cfg)
+        self._logger = cfg.get_logger("Preprocessor")
+        self._spelling_checker = SpellingChecker(cfg)
 
     # -----------------------------------
     # --- Main Preprocessing Pipeline ---
@@ -46,16 +46,16 @@ class Preprocessor:
             str: Preprocessed query, corrected and normalized.
         """
         if not query or not isinstance(query, str):
-            self.logger.warning("Received empty or invalid query during preprocessing.")
+            self._logger.warning("Received empty or invalid query during preprocessing.")
             return ""
 
         # Step 1: Correct spelling and grammar using the LLM-based correction module
-        corrected_query = self.spelling_checker.correct_spelling(query)
+        corrected_query = self._spelling_checker.correct_spelling(query)
 
         # Step 2: Normalize casing
         normalized_query = corrected_query.lower()
 
         # Log the final preprocessed query for traceability
-        self.logger.info(f"Preprocessed query: {normalized_query}")
+        self._logger.info(f"Preprocessed query: {normalized_query}")
 
         return normalized_query

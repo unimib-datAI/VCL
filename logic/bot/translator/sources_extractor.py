@@ -63,30 +63,26 @@ class SourcesExtractor:
         status = "Error"
 
         try:
+            prompt = self.dql_language.prompts.get("ExplicitDocumentsExtraction.json", None)
+            
+            if not prompt:
+                raise ValueError("Error during prompt retrieval")
+            
             if query_dict.get("query", "").strip():
                 # Invoke LLM to select relevant documents
-                llm_result = self.llm.invoke(
-                    os.path.join(
-                        self.project_root,
-                        "documents",
-                        "prompts",
-                        "rewriting",
-                        "4 - ExplicitDocumentsExtraction.json"
-                    ),
+                documents = self.llm.invoke(
+                    prompt,
                     query_dict,
                     True
                 )
-
-                # Convert LLM output to list
-                documents = self.llm.str_in_list(llm_result)
+                
                 status = "Done"
             else:
-                raise ValueError("Empty query provided")
+                raise ValueError("Empty query provided to SourcesExtractor.")
 
         except Exception as e:
             # Fallback: return all available sources
-            documents = [src["name"] for src in self.dql_language.get_sources()]
-            self.logger.error(f"Error extracting sources: {e}")
+            documents = [[src["name"], src["name"]] for src in self.dql_language.get_sources()]
 
         # Log the extraction result
         self.logger.info(f"Sources Extractor: {documents} - {status}")

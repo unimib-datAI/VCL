@@ -5,12 +5,12 @@
         "",
         "CATEGORIE FUNZIONALI",
         "",
-        "{language_commands}",
+        "{commands}",
         "",
         "WORKFLOW",
         "",
         "\t- Analisi della Richiesta: Interpreta il comando dell'utente per comprenderne l'obiettivo funzionale primario.",
-        "\t- Valutazione delle Categorie: Confronta l'intento identificato con la descrizione di ciascuna categoria (da 'a' a 'j').",
+        "\t- Valutazione delle Categorie: Confronta l'intento identificato con la descrizione di ciascuna categoria (da '{first_key}' a '{last_key}').",
         "\t- Assegnazione Esclusiva: Seleziona la singola lettera che rappresenta la corrispondenza più precisa. La scelta deve essere univoca. Se nessuna categoria si adatta perfettamente, seleziona '{default_key}'.",
         "\t- Generazione dell'Output: Formula la tua risposta finale utilizzando unicamente la lettera della categoria scelta.",
         "",
@@ -26,12 +26,18 @@
 
     "examples": [],
     
-    "params": [
-        "feedback",
-        "query",
-        "default_key",
-        "language_commands"
-    ],
+    "params": {
+        "from_user": [
+            "feedback", 
+            "query"
+        ],
+        "from_DQL": [
+            "default_key",
+            "first_key",
+            "last_key",
+            "commands"
+        ]
+    },
 
-    "output": ["command", "name"]
+    "parser": "str"
 }

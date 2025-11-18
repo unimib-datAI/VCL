@@ -70,11 +70,11 @@ def initialize_session_state():
     if "state_initialized" in st.session_state:
         return
 
-    if "logic_config" not in st.session_state or not st.session_state.logic_config:
+    if "assistant" not in st.session_state or not st.session_state.assistant:
         st.error("Errore: Configurazione utente non caricata.")
         st.stop()
         
-    st.session_state.language_class = st.session_state.logic_config.language
+    st.session_state.language_class = st.session_state.assistant.get_language()
     reload_data_from_class()
     st.session_state.state_initialized = True
 

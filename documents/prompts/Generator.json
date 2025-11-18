@@ -23,7 +23,6 @@
     ],
     
     "human": [
-        "Contesto:",
         "{context}",
         "---",
         "Richiesta Utente:",
@@ -32,12 +31,16 @@
     
     "examples": [],
 
-    "params": [
-        "context",
-        "query_str",
-        "guidelines",
-        "description_command",
-        "how",
-        "feedback"
-    ]
+    "params": {
+        "from_user": [
+            "context",
+            "query_str",
+            "guidelines",
+            "description_command",
+            "how",
+            "feedback"
+        ]
+    },
+
+    "parser": "str"
 }

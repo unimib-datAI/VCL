@@ -22,10 +22,10 @@ if "page" not in st.query_params:
 if "authenticator" not in st.session_state:
     st.session_state.authenticator = Storage.get_instance()
     
-if "auth_status" not in st.session_state or "username" not in st.session_state or "logic_config" not in st.session_state:
+if "auth_status" not in st.session_state or "username" not in st.session_state or "assistant" not in st.session_state:
     st.session_state.auth_status = False
     st.session_state.username = None
-    st.session_state.logic_config = None
+    st.session_state.assistant = None
     
 if st.session_state.auth_status and st.session_state.username:
     with st.sidebar:
@@ -42,7 +42,7 @@ if st.session_state.auth_status and st.session_state.username:
         if st.button("Logout"):
             st.session_state.auth_status = False
             st.session_state.username = None
-            st.session_state.logic_config = None
+            st.session_state.assistant = None
             st.query_params["page"] = "Login"
             
             if "messages" in st.session_state:

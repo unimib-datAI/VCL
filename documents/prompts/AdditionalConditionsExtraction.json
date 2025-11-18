@@ -40,14 +40,16 @@
 
     "examples": [],
 
-    "params": [
-      "feedback",
-      "query",
-	  "documents_name",
-	  "documents_reference",
-      "query_str",
-      "what"
-    ],
+    "params": {
+		"from_user": [
+			"feedback",
+			"query",
+			"documents_name",
+			"documents_reference",
+			"query_str",
+			"what"
+		]
+	},
 
-   "output": "how"
+	"parser": "dict"
 }

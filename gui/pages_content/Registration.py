@@ -1,7 +1,7 @@
 import streamlit as st
 import re
 
-from utils.config import Config
+from logic.orchestrator import Orchestrator
 
 PAGE_TITLE = "Benvenuto in DQL!"
 
@@ -28,7 +28,7 @@ def show_registration():
                         
                         st.session_state.username = username
                         st.session_state.auth_status = True
-                        st.session_state.logic_config = Config(username)
+                        st.session_state.assistant = Orchestrator(username)
                         
                         st.query_params["page"] = "Home"
                         st.rerun()

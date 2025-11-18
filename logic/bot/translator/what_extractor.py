@@ -1,4 +1,3 @@
-import os
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
 
@@ -24,18 +23,19 @@ class WhatExtractor:
         Initialize the WhatExtractor with configuration and dependencies.
 
         Args:
-            cfg (Config): Global configuration object providing logger, LLM, and DQL language data.
+            cfg (Config): Global configuration object providing logger, LLM,
+                          and DQL language data.
         """
-        self.llm = cfg.llm
-        self.logger = cfg.get_logger("What Extractor")
-        self.project_root = cfg.project_root
-        self.dql_language: DQLLanguage = cfg.language
+        self._llm = cfg.llm
+        self._logger = cfg.get_logger("What Extractor")
+        self._project_root = cfg.project_root
+        self._dql_language: DQLLanguage = cfg.language
 
     # ------------------------------
     # --- Main Extraction Method ---
     # ------------------------------
     
-    def extract(self, query: str, sources: str) -> str:
+    def extract(self, query: str, sources: list[str]) -> str:
         """
         Extract the 'what' element from a user query given the selected sources.
 
@@ -47,13 +47,18 @@ class WhatExtractor:
 
         Args:
             query (str): User input query to analyze.
-            sources (str): Relevant sources or documents associated with the query.
+            sources (list[str]): Relevant sources or documents associated
+                                 with the query.
 
         Returns:
             str: Extracted 'what' content or a default fallback string.
         """
-        language_what_str = self.what_string(self.dql_language.get_available_what(sources))
+        # Get a formatted string of available 'what' elements based on sources
+        language_what_str = self._what_string(
+            self._dql_language.get_available_what(sources)
+        )
 
+        # Prepare the input dictionary for the LLM prompt
         query_dict = {
             "query": query,
             "language_what": language_what_str,
@@ -61,53 +66,54 @@ class WhatExtractor:
         }
 
         what = ""
-        status = "Error"
+        status = "Error"  # Initial status for logging
 
         try:
+            # Retrieve the specific prompt for 'what' extraction
+            prompt = self._dql_language.prompts.get("WhatExtraction.json", None)
+            
+            if not prompt:
+                raise ValueError("WhatExtraction.json prompt not found.")
+            
             if query_dict.get("query", "").strip():
                 # Invoke LLM to extract 'what' from query
-                what = self.llm.invoke(
-                    os.path.join(
-                        self.project_root,
-                        "documents",
-                        "prompts",
-                        "rewriting",
-                        "6 - WhatExtraction.json"
-                    ),
+                what = self._llm.invoke(
+                    prompt,
                     query_dict,
                     True
                 )
+                
                 status = "Done"
             else:
-                raise ValueError("Empty query provided")
+                raise ValueError("Empty query provided to WhatExtractor.")
 
         except Exception as e:
-            # Fallback to default value if extraction fails
+            # Fallback to default value (e.g., "intero documento") if extraction fails
+            # Note: "intero documento" is Italian, maintained from original logic.
             what = "intero documento"
-            self.logger.error(f"Error extracting 'what': {e}")
+            self._logger.error(f"Error extracting 'what': {e}")
 
         # Log the extraction result
-        self.logger.info(f"What Extractor: {what} - {status}")
+        self._logger.info(f"What Extractor: {what} - {status}")
 
         return what
 
-    # ---------------------
-    # --- Helper Method ---
-    # ---------------------
+    # ----------------------
+    # --- Helper Methods ---
+    # ----------------------
     
     @staticmethod
-    def what_string(what_elements) -> str:
+    def _what_string(what_list: list[str]) -> str:
         """
-        Generate a formatted string of available 'what' elements for LLM input or logging.
+        Generate a formatted string of available 'what' elements for the LLM prompt.
 
         Args:
-            what_elements (list[tuple]): List of tuples where each tuple contains
-                                         ('what_key', 'description').
+            what_list (list[str]): List of 'what' strings.
 
         Returns:
-            str: A formatted string listing all available 'what' elements.
+            str: A newline-separated string listing all 'what' elements.
         """
-        what_list = [
-            f'\t- "{what[0]}": {what[1]}' for what in what_elements
-        ]
-        return "\n".join(what_list)
+        # Creates a string like:
+        # - "element1"
+        # - "element2"
+        return "\n".join(f"- \"{item}\"" for item in what_list)

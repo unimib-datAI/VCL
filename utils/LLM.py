@@ -4,14 +4,9 @@ import os
 import threading
 import time
 
+from copy import deepcopy
 from langchain.chat_models import init_chat_model
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import (
-    ChatPromptTemplate,
-    FewShotChatMessagePromptTemplate,
-    HumanMessagePromptTemplate,
-    AIMessagePromptTemplate,
-)
 
 from utils.file_manager import FileHandler
 
@@ -25,7 +20,7 @@ class LLM:
     (Gemini, OpenAI, Copilot, HuggingFace) while ensuring that only a single 
     model instance is created across threads. It handles provider-specific 
     API key management, prompt template construction, and controlled invocation
-    with configurable delay between requests.
+    with a configurable delay between requests.
 
     Supported providers:
         - google_genai (Gemini)
@@ -37,12 +32,12 @@ class LLM:
     automatically falls back to Gemini ("gemini-2.0-flash").
 
     Attributes:
-        model_name (str): The name of the LLM model (e.g., "gpt-4o-mini", "gemini-2.0-flash").
-        provider (str): The provider name ("google_genai", "openai", "copilot", "huggingface").
-        llm: The initialized LangChain chat model instance.
+        _model_name (str): The name of the LLM model (e.g., "gpt-4o-mini").
+        _provider (str): The provider name ("google_genai", "openai", etc.).
+        _llm: The initialized LangChain chat model instance.
         parser (StrOutputParser): Default parser for string-based model responses.
-        seconds (int): Delay (in seconds) between consecutive LLM invocations.
-        project_root (Path): Root directory used to locate API key files.
+        _seconds (int): Delay (in seconds) between consecutive LLM invocations.
+        _project_root (Path): Root directory used to locate API key files.
     """
 
     # Singleton instance and thread lock
@@ -67,7 +62,7 @@ class LLM:
         provider: str = "google_genai",
     ):
         """
-        Initialize the LLM instance.
+        Initialize the LLM instance. (Private, use get_instance())
 
         Args:
             api_key (str, optional): Provider API key.
@@ -76,16 +71,16 @@ class LLM:
             model_name (str): Name of the model to use.
             provider (str): LLM provider ('google_genai', 'openai', 'copilot', 'huggingface').
         """
-        self.project_root = project_root
+        self._project_root = project_root
 
         try:
             self._initialize_llm(api_key, model_name, provider)
         except Exception as e:
             # Fallback to Gemini in case of provider failure
-            print(f"Default LLM: {e}")
+            print(f"Failed to initialize requested LLM ({provider}/{model_name}). Falling back to Gemini. Error: {e}")
             self._initialize_llm(None, "gemini-2.0-flash", "google_genai")
 
-        self.seconds = seconds
+        self._seconds = seconds
         self._initialized = True
 
     @classmethod
@@ -99,6 +94,16 @@ class LLM:
     ):
         """
         Retrieve the singleton instance of the LLM in a thread-safe manner.
+
+        Args:
+            api_key (str, optional): Provider API key.
+            seconds (int): Delay between LLM invocations.
+            project_root (Path): Root directory for key files.
+            model_name (str): Name of the model to use.
+            provider (str): LLM provider.
+        
+        Returns:
+            LLM: The singleton LLM instance.
         """
         if cls._instance is None:
             with cls._lock:
@@ -120,11 +125,11 @@ class LLM:
         """
         Initialize the LangChain chat model for the specified provider and model.
         """
-        self.model_name = model_name
-        self.provider = provider
+        self._model_name = model_name
+        self._provider = provider
 
         # Path for provider-specific API key
-        api_path = self.project_root / "settings" / f"api_key_{provider}.txt"
+        api_path = self._project_root / "settings" / f"api_key_{provider}.txt"
 
         # Load API key
         api_key = self._load_api_key(api_key, api_path)
@@ -133,7 +138,7 @@ class LLM:
         self._set_env_key(provider, api_key)
 
         # Initialize model
-        self.llm = init_chat_model(model_name, model_provider=provider)
+        self._llm = init_chat_model(model_name, model_provider=provider)
 
     def _set_env_key(self, provider: str, api_key: str):
         """
@@ -160,24 +165,33 @@ class LLM:
 
         Returns:
             str: Valid API key.
+            
+        Raises:
+            ValueError: If no API key is provided and none can be found at api_path.
         """
+        # If no key is passed, try to read it from the designated file
         if not api_key and os.path.exists(api_path) and os.path.isfile(api_path):
             api_key = FileHandler().read_file(api_path)
 
+        # If still no key, it's an error
         if not api_key:
-            raise ValueError("No API key could be found or loaded.")
+            raise ValueError(f"No API key could be found or loaded. Searched at: {api_path}")
 
+        # (Over)write the key file to ensure it's stored for next time
         FileHandler().write_file(api_path, api_key)
         return api_key
 
-    # --------------------
-    # --- JSON Parsers ---
-    # --------------------
+    # ------------------------
+    # --- Output Formatter ---
+    # ------------------------
 
+    # --- JSON Formatter ---
+    
     @staticmethod
     def str_in_dict(output: str) -> dict:
         """
         Safely extract and parse a dictionary from a string.
+        Handles both JSON and Python literal dict formats.
 
         Args:
             output (str): String containing a JSON or Python dictionary.
@@ -186,12 +200,16 @@ class LLM:
             dict: Parsed dictionary or empty dict if parsing fails.
         """
         try:
+            # Find the first '{' and last '}'
             output = output[output.index("{"): output.rfind("}") + 1]
             try:
+                # Try parsing as JSON (strict)
                 return json.loads(output)
             except json.JSONDecodeError:
+                # Fallback to parsing as Python literal (more permissive)
                 return ast.literal_eval(output)
         except (ValueError, SyntaxError):
+            # Return empty if no dict is found or parsing fails
             return {}
 
     @staticmethod
@@ -206,121 +224,83 @@ class LLM:
             list: Parsed list or empty list if parsing fails.
         """
         try:
+            # Find the first '[' and last ']'
             output = output[output.index("["): output.rfind("]") + 1]
             return ast.literal_eval(output)
         except (ValueError, SyntaxError):
             return []
-
-    # ---------------------------
-    # --- Prompt Construction ---
-    # ---------------------------
-
-    def build_from_file(self, file_name: str, inputs: dict) -> ChatPromptTemplate:
+            
+    # --- String Formatter ---
+    
+    def _clean_response(self, result: str, lower: bool) -> str:
         """
-        Build a LangChain ChatPromptTemplate from a structured JSON file.
-
+        Normalize and clean the raw LLM response.
+        Removes common preamble markers (like "result:") and normalizes case.
+        
         Args:
-            file_name (str): Path to the JSON prompt template file.
-            inputs (dict): Input values to fill template parameters.
-
+            result (str): The raw output from the LLM.
+            lower (bool): Whether to convert the result to lowercase.
+            
         Returns:
-            tuple[ChatPromptTemplate, dict]: The constructed prompt template and input map.
+            str: The cleaned string.
         """
-        template = FileHandler().read_file(file_name)
+        if lower:
+            result = result.lower()
 
-        system_msg = "\n".join(template.get("system", []))
-        human_msg = "\n".join(template.get("human", []))
-        params = template.get("params", [])
-        examples = template.get("examples", [])
+        # These markers (some in Italian) are specific to the app's prompts
+        for marker in ["risultato:", "risposta:", "result:", "response:"]:
+            if marker in result.lower():
+                # Find index of marker and strip everything before it
+                idx = result.lower().index(marker) + len(marker)
+                result = result[idx:]
 
-        input_template = self._resolve_template_params(params, inputs)
-
-        if examples:
-            few_shot_prompt = self._build_few_shot_prompt(examples)
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", system_msg),
-                few_shot_prompt,
-                ("human", human_msg),
-            ])
-        else:
-            prompt = ChatPromptTemplate.from_messages([
-                ("system", system_msg),
-                ("human", human_msg),
-            ])
-
-        return prompt, input_template
-
-    def _resolve_template_params(self, params, inputs) -> dict:
-        """
-        Resolve template parameters from user-provided inputs.
-        """
-        input_template = {}
-        for p in params:
-            if isinstance(p, list) and len(p) == 2:
-                input_template["_".join(p)] = str(inputs[p[0]][p[1]])
-            elif isinstance(p, str):
-                input_template[p] = str(inputs[p])
-        return input_template
-
-    def _build_few_shot_prompt(self, examples: list) -> FewShotChatMessagePromptTemplate:
-        """
-        Construct a few-shot prompt section using given examples.
-        """
-        formatted_examples = [
-            {
-                "input": "\n".join(ex["input"]).strip(),
-                "reasoning": ex["reasoning"],
-                "output": str(ex["output"]),
-            }
-            for ex in examples
-        ]
-
-        example_prompt = ChatPromptTemplate.from_messages([
-            HumanMessagePromptTemplate.from_template("{input}"),
-            AIMessagePromptTemplate.from_template(
-                "Reasoning: {reasoning}\nResult: {output}"
-            ),
-        ])
-
-        return FewShotChatMessagePromptTemplate(
-            example_prompt=example_prompt,
-            examples=formatted_examples,
-        )
+        result = result.strip()
+        # Handle cases where the LLM returns an empty string literal
+        return "" if result == "''" else result
 
     # ----------------------
     # --- LLM Invocation ---
     # ----------------------
 
-    def invoke(self, file_name: str, input_state: dict, lower: bool = False) -> str:
+    def invoke(self, prompt_info: tuple, info_user: dict, lower: bool = False) -> str | list | dict:
         """
         Invoke the LLM with the given prompt template and input data.
 
         Args:
-            file_name (str): Path to the prompt template file.
-            input_state (dict): Data for filling in prompt placeholders.
-            lower (bool): Whether to convert the output to lowercase.
+            prompt_info (tuple): A tuple containing prompt components:
+                (prompt_template, static_params, user_param_keys, parser_type)
+            info_user (dict): A dictionary containing user-specific data
+                              (e.g., {"query": "...", "context": "..."}).
+            lower (bool, optional): Whether to lowercase the final result.
 
         Returns:
-            str: Cleaned LLM response text.
+            str | list | dict: The cleaned and parsed LLM response. The
+                               type depends on the `parser_type` in prompt_info.
         """
-        prompt, input_prompt = self.build_from_file(file_name, input_state)
-        chain = prompt | self.llm | self.parser
+        # Unpack the prompt information tuple
+        prompt, params_DQL, params_user, parser_type = prompt_info
+        
+        # Build the input prompt dictionary
+        input_prompt = deepcopy(params_DQL) if params_DQL else {}
+        for param_key in params_user:
+            # Map keys from info_user (e.g., "query") to the prompt
+            input_prompt[param_key] = info_user.get(param_key, "")
+
+        # Create and invoke the LangChain chain
+        chain = prompt | self._llm | self.parser
         result = chain.invoke(input_prompt)
-        time.sleep(self.seconds)
+        
+        # Clean the raw string output
+        result = self._clean_response(result, lower)
+        
+        # Parse the result based on the expected type
+        if parser_type == "list":
+            result = self.str_in_list(result)
+        elif parser_type == "dict":
+            result = self.str_in_dict(result)
+        # If parser_type is not "list" or "dict", the raw string is returned
+        
+        # Enforce a delay to avoid rate-limiting
+        time.sleep(self._seconds)
 
-        return self._clean_response(result, lower)
-
-    def _clean_response(self, result: str, lower: bool) -> str:
-        """
-        Normalize and clean the raw LLM response.
-        """
-        if lower:
-            result = result.lower()
-
-        for marker in ["risultato:", "risposta:", "result:", "response:"]:
-            if marker in result.lower():
-                idx = result.lower().index(marker) + len(marker)
-                result = result[idx:]
-
-        result = result.strip()
-        return "" if result == "''" else result
+        return result

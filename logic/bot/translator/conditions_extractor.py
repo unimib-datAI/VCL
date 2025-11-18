@@ -1,15 +1,16 @@
-import os
 from utils.config import Config
+from utils.DQL_language import DQLLanguage
 
 
 class ConditionsExtractor:
     """
-    Extracts additional conditions or constraints from user queries using an LLM.
+    Extracts additional conditions or constraints (the 'how') from user
+    queries using an LLM.
 
     Responsibilities:
-        - Format query input for the LLM.
+        - Format the query and its context (command, what, from) for the LLM.
         - Invoke the LLM to extract conditions.
-        - Convert LLM output into a dictionary.
+        - Convert LLM output (expected to be JSON/dict) into a dictionary.
         - Log results and handle errors gracefully.
     """
     
@@ -22,71 +23,80 @@ class ConditionsExtractor:
         Initialize the ConditionsExtractor with configuration and dependencies.
 
         Args:
-            cfg (Config): Global configuration instance providing logger, LLM, and project paths.
+            cfg (Config): Global configuration instance providing logger, LLM,
+                          and DQL language data.
         """
-        self.llm = cfg.llm
-        self.logger = cfg.get_logger("Conditions Extractor")
-        self.project_root = cfg.project_root
+        self._llm = cfg.llm
+        self._logger = cfg.get_logger("Conditions Extractor")
+        self._project_root = cfg.project_root
+        self._dql_language: DQLLanguage = cfg.language
 
     # ------------------------------
     # --- Main Extraction Method ---
     # ------------------------------
     
-    def extract(self, query: str, query_str: dict, docs) -> dict:
+    def extract(self, query: str, query_str: dict, docs: list) -> dict:
         """
-        Extract additional conditions from a user query.
+        Extract additional conditions ('how') from a user query.
 
         Steps:
-            1. Prepare the input dictionary for the LLM.
+            1. Prepare the input dictionary for the LLM, including the raw
+               query, the structured query, and document context.
             2. Invoke the LLM to extract conditions.
             3. Convert the result into a dictionary.
-            4. Handle empty queries or errors with fallback.
+            4. Handle empty queries or errors with a fallback (empty dict).
 
         Args:
-            query (str): The user input query.
-            query_str (dict): Structured representation of the query (e.g., parsed components).
+            query (str): The raw user input query.
+            query_str (dict): Structured representation of the query
+                              (containing 'command', 'what', 'from').
+            docs (list): A list of document tuples (name, reference)
+                         extracted in a previous step.
 
         Returns:
-            dict: Extracted conditions as key-value pairs.
+            dict: Extracted conditions as key-value pairs (e.g.,
+                  {"format": "list", "language": "english"}).
         """
+        # Prepare the input dictionary for the LLM prompt
         query_dict = {
             "query": query,
             "query_str": str(query_str),
             "documents_name": ", ".join([doc[0] for doc in docs]),
-	        "documents_reference": ", ".join([doc[1] for doc in docs]),
+            "documents_reference": ", ".join([doc[1] for doc in docs]),
             "feedback": "",
             "what": query_str.get("what", "")
         }
 
         conditions = {}
-        status = "Error"
+        status = "Error"  # Initial status for logging
 
         try:
+            # Retrieve the specific prompt for condition extraction
+            prompt = self._dql_language.prompts.get("AdditionalConditionsExtraction.json", None)
+            
+            if not prompt:
+                raise ValueError("AdditionalConditionsExtraction.json prompt not found.")
+            
+            # Only process if the original query was non-empty
             if query_dict.get("query", "").strip():
                 # Invoke LLM to extract conditions
-                llm_result = self.llm.invoke(
-                    os.path.join(
-                        self.project_root,
-                        "documents",
-                        "prompts",
-                        "rewriting",
-                        "7 - AdditionalConditionsExtraction.json"
-                    ),
+                conditions = self._llm.invoke(
+                    prompt,
                     query_dict,
-                    True
+                    True  # Assuming this flag enables JSON/dict mode
                 )
 
-                # Convert LLM output to dictionary
-                conditions = self.llm.str_in_dict(llm_result)
                 status = "Done"
+            else:
+                raise ValueError("Empty query provided to ConditionsExtractor.")
 
         except Exception as e:
-            # Fallback for errors
+            # Fallback to an empty dictionary in case of any error
+            self._logger.error(f"Error extracting conditions: {e}")
             conditions = {}
             status = "Error"
-            self.logger.error(f"Error extracting conditions: {e}")
 
         # Log the extraction result
-        self.logger.info(f"Conditions Extractor: {conditions} - {status}")
+        self._logger.info(f"Conditions Extractor: {conditions} - {status}")
 
         return conditions

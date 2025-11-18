@@ -6,7 +6,7 @@
       "Il tuo compito è mappare l'istruzione a una e una sola delle seguenti CATEGORIE TARGET predefinite:",
       "",
       "- \"intero documento\": l'operazione richiesta (es. riassunto, analisi) deve essere applicata alla totalità del documento selezionato, dall'intestazione al dispositivo.",  
-      "{language_what}",
+      "{what}",
       "- \"altro\": qualsiasi elemento non coperto dalle categorie sopra elencate.",
       "",
       "WORKFLOW",
@@ -96,11 +96,13 @@
       }
    ],
 
-   "params": [
-      "feedback",
-      "query",
-      "language_what"
-   ],
+   "params": {
+      "from_user": [
+         "feedback",
+         "query",
+         "what"
+      ]
+   },
 
-   "output": ["what", "name"]
+   "parser": "str"
 }

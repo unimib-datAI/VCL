@@ -9,9 +9,9 @@
 	
 	"examples": [],
 	
-	"params": [
-		"query"
-	],
+	"params": {
+		"from_user": ["query"]
+	},
 
-	"output": "query"
+	"parser": "str"
 }
