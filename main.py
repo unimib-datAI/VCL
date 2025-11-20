@@ -23,7 +23,7 @@ def parse_args() -> argparse.Namespace:
         required=False,
         help=(
             "API key for the Gemini model.\n"
-            "If not specified, it will be read from 'settings/api_key_<provider>.txt'."
+            "If not specified, it will be read from '.env'."
         ),
     )
 
@@ -34,7 +34,7 @@ def parse_args() -> argparse.Namespace:
         required=False,
         help=(
             "MongoDB connection URI.\n"
-            "If not specified, it will be read from 'settings/mongo_uri.txt'."
+            "If not specified, it will be read from '.env'."
         )
     )
 

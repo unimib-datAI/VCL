@@ -36,12 +36,13 @@ class Config:
     # Standard format for all log messages
     _LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     
-    def __init__(self, user_id: str):
+    def __init__(self, user_id: str, role):
         """
         Initialize a new user-specific configuration.
 
         Args:
             user_id (str): The unique identifier for the user.
+            role (str): The role of the user (Giudice, Avvocato, Altro)
         """
         self._user_id = user_id
         self._request_id = None  # Lazily initialized on first use
@@ -57,8 +58,9 @@ class Config:
         
         # --- Initialize user-specific components ---
         self.language = DQLLanguage(self._user_id,
-                                      self.storage, 
-                                      self.project_root)
+                                    self.storage, 
+                                    self.project_root,
+                                    role)
         
         # --- Setup logging directory ---
         self._log_dir = os.path.join(self.project_root, "logs")
@@ -70,42 +72,33 @@ class Config:
     
     def get_logger(self, name: str, level=logging.INFO) -> logging.Logger:
         """
-        Create or retrieve a logger configured for the current request.
-
-        This method ensures that log handlers are reset for each request
-        to log to a new, request-specific file.
+        Create or retrieve a logger configured with console and file handlers.
 
         Args:
-            name (str): Name of the logger (e.g., "Orchestrator").
-            level (int, optional): Logging level. Defaults to logging.INFO.
+            name (str): Name of the logger (usually __name__).
+            level (int, optional): Logging level (default: logging.INFO).
 
         Returns:
             logging.Logger: Configured logger instance.
         """
-        
-        # Log file is unique to this request
-        log_file = os.path.join(self._log_dir, f"{self.get_request_id()}.log")
-        
+        log_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
+        os.makedirs("logs", exist_ok=True)
+
+        log_file = os.path.join("logs", f"{self.get_request_id()}.log")
         logger = logging.getLogger(name)
         logger.setLevel(level)
 
-        # Reset handlers: This is crucial. Because loggers are singletons,
-        # we must clear old handlers (e.g., from a previous request)
-        # to ensure we log to the correct new file (log_file).
-        if logger.hasHandlers():
-            logger.handlers.clear()
+        # Avoid duplicate handlers
+        if not logger.handlers:
+            # Console handler
+            console_handler = logging.StreamHandler()
+            console_handler.setFormatter(logging.Formatter(log_format))
+            logger.addHandler(console_handler)
 
-        # --- Add new handlers for this request ---
-        
-        # Console handler
-        console_handler = logging.StreamHandler()
-        console_handler.setFormatter(logging.Formatter(self._LOG_FORMAT))
-        logger.addHandler(console_handler)
-
-        # File handler (specific to this request_id)
-        file_handler = logging.FileHandler(log_file, encoding="utf-8")
-        file_handler.setFormatter(logging.Formatter(self._LOG_FORMAT))
-        logger.addHandler(file_handler)
+            # File handler
+            file_handler = logging.FileHandler(log_file, encoding="utf-8")
+            file_handler.setFormatter(logging.Formatter(log_format))
+            logger.addHandler(file_handler)
 
         return logger
     
@@ -130,10 +123,10 @@ class Config:
             str: The unique request ID.
         """
         if not self._request_id:
-            self._request_id = self._generate_request_id()
+            self.generate_request_id()
         return self._request_id
 
-    def _generate_request_id(self) -> str:
+    def generate_request_id(self) -> str:
         """
         Generate a unique request ID.
         
@@ -145,4 +138,4 @@ class Config:
         timestamp = datetime.now(timezone.utc).isoformat()
         # Sanitize timestamp for use in filenames
         sanitized = timestamp.replace(":", "").replace(".", "")
-        return f"{self._user_id}_{sanitized}"
+        self._request_id = f"{self._user_id}_{sanitized}"

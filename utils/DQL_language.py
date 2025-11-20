@@ -1,6 +1,5 @@
 import os
 import re
-import ast
 
 from copy import deepcopy
 
@@ -34,7 +33,7 @@ class DQLLanguage:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, user_id, storage: Storage, project_root):
+    def __init__(self, user_id, storage: Storage, project_root, role: str = "Altro"):
         """
         Initialize the DQLLanguage instance for a specific user.
 
@@ -42,6 +41,7 @@ class DQLLanguage:
             user_id (str): The unique identifier for the user.
             storage (Storage): The application's storage (MongoDB) instance.
             project_root (Path): The root directory of the project.
+            role (str): The role of the user (Giudice, Avvocato, Altro)
             
         Raises:
             ValueError: If user_id is None.
@@ -52,6 +52,7 @@ class DQLLanguage:
         self._user_id = user_id
         self._storage = storage
         self._project_root = project_root
+        self._role = role
         
         # Internal cache for the user's full language definition
         self._full_language: dict | None = None
@@ -213,6 +214,7 @@ class DQLLanguage:
         # Build internal helper maps
         self._set_default_command()
         self._build_command_maps()
+        self._build_what_maps()
         
         # Generate dynamic assets
         self._generate_prompts()
@@ -309,6 +311,28 @@ class DQLLanguage:
     # -------------------------
     # --- "What" Management ---
     # -------------------------
+    
+    def _build_what_maps(self):
+        """
+        Build internal dictionaries for fast lookup of what properties.
+        - `_what_description_map`: maps name -> human-readable description
+        """
+        self._what_description_map: dict[str, str] = {}
+
+        for what in self._what:
+            self._what_description_map[what.get("name", "")] = what.get("description")
+            
+    def get_description_from_what(self, key: str) -> str:
+        """
+        Retrieve the description for a what element, given its name.
+
+        Args:
+            key (str): What name.
+
+        Returns:
+            str: Description text, or an empty string if not found.
+        """
+        return self._what_description_map.get(key, "")
 
     def get_available_what(self, sources: list[str]) -> list[tuple[str, str]]:
         """
@@ -534,7 +558,17 @@ class DQLLanguage:
         """
         resolved = {}
         for param in params:
-            if "key" in param:
+            if "role" in param:
+                resolved[param] = FileHandler().read_file(
+                    os.path.join(
+                        self._project_root, 
+                        "documents", 
+                        "prompts", 
+                        "header", 
+                        f"{self._role}.txt"
+                    )
+                )
+            elif "key" in param:
                 if "default" in param:
                     resolved[param] = self._default_command.get("key", "")
                 elif "first" in param:

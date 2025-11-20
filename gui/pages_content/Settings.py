@@ -1,6 +1,7 @@
 import pandas as pd
 import streamlit as st
 import time
+from typing import Any, Union, List
 
 # ------------------
 # --- Page setup ---
@@ -8,26 +9,27 @@ import time
 
 PAGE_TITLE = "Definisci il linguaggio DQL"
 
-# st.set_page_config() is called in app.py
-
 # -------------------------------
 # --- Language Initialization ---
 # -------------------------------
 
-def convert_from_df_to_editable(df: pd.DataFrame) -> pd.DataFrame:
-    """Converts the 'synonyms' column from a list to a string for editing."""
+def _convert_to_editable(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Converts list columns (like 'synonyms') to semicolon-separated strings for the data editor.
+    """
     editable_df = df.copy()
     if "synonyms" in editable_df.columns:
         editable_df["synonyms"] = editable_df["synonyms"].apply(
             lambda lst: "; ".join(lst) if isinstance(lst, list) else (lst if isinstance(lst, str) else "")
         )
-    # Ensures column exists even for empty dfs
     elif "synonyms" not in editable_df.columns:
          editable_df["synonyms"] = ""
     return editable_df
 
-def convert_from_df_to_savable(df: pd.DataFrame) -> pd.DataFrame:
-    """Reconverts the 'synonyms' column from a string to a list for saving."""
+def _convert_to_savable(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Parses semicolon-separated strings back into lists for storage.
+    """
     savable_df = df.copy()
     if "synonyms" in savable_df.columns:
         savable_df["synonyms"] = savable_df["synonyms"].apply(
@@ -35,10 +37,10 @@ def convert_from_df_to_savable(df: pd.DataFrame) -> pd.DataFrame:
         )
     return savable_df
 
-def reload_data_from_class():
+def _reload_data_from_class() -> None:
     """
-    Reloads all data from the language_class instance into the session_state.
-    Used after saving or restoring to default values.
+    Fetches current configuration from the Assistant's Language class 
+    and populates session state dataframes.
     """
     language_class = st.session_state.language_class
 
@@ -52,7 +54,7 @@ def reload_data_from_class():
 
     # edited_what/edited_from contain the data for the editor (with strings)
     st.session_state.edited_what = st.session_state.df_what.copy()
-    st.session_state.edited_from = convert_from_df_to_editable(st.session_state.df_from)
+    st.session_state.edited_from = _convert_to_editable(st.session_state.df_from)
 
     st.session_state.available_sources = list({
         src.get("name") for src in from_data if src.get("name")
@@ -62,11 +64,10 @@ def reload_data_from_class():
         cmd.get("command") for cmd in commands_data if cmd.get("command")
     })
 
-def initialize_session_state():
+def _initialize_session_state() -> None:
     """
-    Initialize session_state variables *only once*.
+    Initialize session_state variables *only once* ensuring assistant is ready.
     """
-    
     if "state_initialized" in st.session_state:
         return
 
@@ -75,14 +76,15 @@ def initialize_session_state():
         st.stop()
         
     st.session_state.language_class = st.session_state.assistant.get_language()
-    reload_data_from_class()
+    _reload_data_from_class()
     st.session_state.state_initialized = True
 
 # --------------------------
 # --- Actions ---
 # --------------------------
 
-def is_empty_value(x):
+def _is_empty_value(x: Any) -> bool:
+    """Checks if a value is considered empty."""
     if x is None:
         return True
     if isinstance(x, str) and x.strip() == "":
@@ -91,49 +93,52 @@ def is_empty_value(x):
         return True
     return False
 
-def has_empty_values(df):
-    return df.map(is_empty_value).values.any()
+def _has_empty_values(df: pd.DataFrame) -> bool:
+    """Checks if any cell in the dataframe is empty."""
+    return df.map(_is_empty_value).values.any()
 
-def save_changes():
+def _save_changes() -> Union[bool, None]:
     """
-    Saves data from 'edited_what'/'edited_from' to the class.
-    Returns True if the save is successful, False otherwise.
+    Persists data from 'edited_what'/'edited_from' back to the Language Class.
+    
+    Returns:
+        bool: True if save successful.
+        None: If validation fails (empty values).
     """
     df_what = st.session_state.edited_what.copy()
     df_from_editable = st.session_state.edited_from.copy() 
 
-    if has_empty_values(df_what) or has_empty_values(df_from_editable):
+    if _has_empty_values(df_what) or _has_empty_values(df_from_editable):
         return None
 
-    df_from_processed = convert_from_df_to_savable(df_from_editable)
+    df_from_processed = _convert_to_savable(df_from_editable)
     
     language_class = st.session_state.language_class
     result_what = language_class.set_what(df_what.to_dict(orient="records"))
     result_sources = language_class.set_sources(df_from_processed.to_dict(orient="records"))
     
     if result_what or result_sources:
-        reload_data_from_class()
+        _reload_data_from_class()
     
     return result_what or result_sources
 
-def cancel_changes():
+def _cancel_changes() -> bool:
     """
-    Reloads the "saved" data (df_what/df_from), overwriting
-    the changes in 'edited_what'/'edited_from'.
+    Discards changes by reloading the last saved state.
     """
     st.session_state.edited_what = st.session_state.df_what.copy()
-    st.session_state.edited_from = convert_from_df_to_editable(st.session_state.df_from)
+    st.session_state.edited_from = _convert_to_editable(st.session_state.df_from)
     return True
 
-def reset_language():
+def _reset_language() -> bool:
     """
-    Resets the default data and reloads it into the state.
+    Resets configuration to the default hardcoded language definition.
     """
     language_class = st.session_state.language_class
     result = language_class.set_default_language()
     
     if result:
-        reload_data_from_class()
+        _reload_data_from_class()
         
     return result
 
@@ -141,28 +146,24 @@ def reset_language():
 # --- UI Components ---
 # ---------------------------
 
-def display_confirmation_ui():
+def _display_confirmation_ui() -> None:
     """
-    Shows the confirmation interface (instead of the form).
-    This function handles "Yes" and "No" clicks.
+    Renders the confirmation UI for sensitive actions (Save, Cancel, Reset).
     """
     action = st.session_state.action_pending
     
-    if action == "save":
-        message = "Sei sicuro di voler salvare le modifiche?"
-        function_to_run = save_changes
-    elif action == "cancel":
-        message = "Vuoi annullare le modifiche?"
-        function_to_run = cancel_changes
-    elif action == "reset":
-        message = "Ripristinare i valori originali? Questa operazione non può essere annullata!"
-        function_to_run = reset_language
-    else:
-        # Failsafe: If the state is invalid, clear it and reload
+    action_map = {
+        "save": ("Sei sicuro di voler salvare le modifiche?", _save_changes),
+        "cancel": ("Vuoi annullare le modifiche?", _cancel_changes),
+        "reset": ("Ripristinare i valori originali? Questa operazione non può essere annullata!", _reset_language),
+    }
+
+    if action not in action_map:
         del st.session_state.action_pending
         st.rerun()
         return
 
+    message, function_to_run = action_map[action]
     st.warning(message)
     
     if st.button("✅ Sì, confermo", use_container_width=True):
@@ -170,35 +171,23 @@ def display_confirmation_ui():
         
         if success is True:
             st.success("✅ Modifiche salvate con successo!")
+        elif success is None:
+            st.warning("⚠️ Impossibile salvare: sono presenti valori vuoti nei dati.")
         else:
-            if success is None:
-                st.warning("⚠️ Impossibile salvare: sono presenti valori vuoti nei dati.")
-            else:
-                st.error("❌ Si è verificato un errore durante il salvataggio delle modifiche.")
-                
+            st.error("❌ Si è verificato un errore durante il salvataggio delle modifiche.")
+            
         time.sleep(1)
         
-        # Clear the flag and reload to return to the form
         del st.session_state.action_pending
         st.rerun()
             
     if st.button("❌ No, annulla", use_container_width=True):
-        # Clear the flag and reload to return to the form
         del st.session_state.action_pending
         st.rerun()
-        
-def update_available_sources(new_sources):
-    """
-    Updates the list of available sources in the session_state.
-    This is called when the 'from' data_editor is changed.
-    """
-    st.session_state.available_sources = new_sources
-    st.rerun()
 
-def display_form_ui():
+def _display_form_ui() -> None:
     """
-    Displays the form with the data_editor and submit buttons.
-    This function sets the 'action_pending' flag when a button is pressed.
+    Renders the main data editor forms and action buttons.
     """
     with st.form(key="language_form"):
         st.markdown("### Sezione FROM")
@@ -211,11 +200,11 @@ def display_form_ui():
             column_config={
                 "name": st.column_config.TextColumn(
                     "Documento",
-                    help="Inserisci il nome del documento.", # Aggiunto help
+                    help="Inserisci il nome del documento.",
                 ),
                 "description": st.column_config.TextColumn(
                     "Breve Descrizione",
-                    help="Fornisci una breve descrizione del documento.", # Aggiunto help
+                    help="Fornisci una breve descrizione del documento.",
                 ),
                 "synonyms": st.column_config.TextColumn(
                     "Sinonimi",
@@ -272,20 +261,16 @@ def display_form_ui():
 
     # --- Handling logic *after* form submission ---
     if save_pressed:
-        # Save modified data in state
         st.session_state.edited_what = edited_what_df
         st.session_state.edited_from = edited_from_df
-        # Set the flag to show confirmation on next rerun
         st.session_state.action_pending = "save"
         st.rerun()
 
     elif cancel_pressed:
-        # Do NOT save data. Set the flag only.
         st.session_state.action_pending = "cancel"
         st.rerun()
 
     elif reset_pressed:
-        # Do NOT save data. Set the flag only.
         st.session_state.action_pending = "reset"
         st.rerun()
 
@@ -295,19 +280,15 @@ def display_form_ui():
 
 def show_settings():
     """
-    Main entry point.
-    It acts as a "router" that displays the confirmation interface
-    or the form interface based on the state.
+    Main entry point. Acts as a router between editing and confirmation states.
     """
     st.title(PAGE_TITLE)
-    initialize_session_state() 
+    _initialize_session_state() 
 
     if "action_pending" in st.session_state:
-        # Status = "confirm"
-        display_confirmation_ui()
+        _display_confirmation_ui()
     else:
-        # Status = "editing" (default)
-        display_form_ui()
+        _display_form_ui()
 
 if __name__ == "__main__":
     show_settings()

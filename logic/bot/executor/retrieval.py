@@ -145,7 +145,7 @@ class Retrieval:
         """Retrieve document from MongoDB storage scoped by user/session."""
         # Try retrieving by type, then ID, then name
         for method in [self._storage.get_document_by_type,
-                           self._storage.get_document_by_id,
+                           #self._storage.get_document_by_id,
                            self._storage.get_document_by_name]:
             doc = method(self._user_id, doc_name)
             if doc and "text" in doc:

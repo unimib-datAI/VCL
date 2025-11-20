@@ -105,7 +105,8 @@ class Executor:
                 "context": self._build_context(docs, operation.get("from", [])),
                 "guidelines": self._language.get_guidelines_from_command(operation.get("command", "")),
                 "description_command": self._language.get_description_from_command(operation.get("command", "")),
-                "query_str": str(deepcopy(operation))
+                "what": operation.get("what", ""),
+                "description_what": self._language.get_description_from_what(operation.get("what", ""))
             }
             prompt = self._language.prompts.get("Generator.json")
 

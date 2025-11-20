@@ -2,37 +2,36 @@ import os
 import json
 import html
 import markdown
-import re
-import streamlit as st
 import sys
 import threading
 import time
 import queue
-
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
+from typing import List, Dict, Optional, Generator
 
+import streamlit as st
+
+# Add Root Directory to sys.path
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
 APP_TITLE = "DQL"
 
-# --------------------------
-# --- Page Configuration ---
-# --------------------------
-
-# st.set_page_config() is called in app.py
-
 # ---------------------------
 # --- Chat Initialization ---
 # ---------------------------
 
-def initialize_chat():
+def _initialize_chat() -> None:
     """
-    Initialize the chat session state if not already set.
+    Initialize the chat session state by retrieving history from storage.
+    Sets a default greeting message if the history is empty.
     """ 
-    st.session_state.messages = st.session_state.assistant.get_storage().get_chat(st.session_state.username)
+    st.session_state.messages = st.session_state.assistant.get_storage().get_chat_messages(
+        st.session_state.username,
+        st.query_params.chat
+    )
     
     first_message = [
         {
@@ -42,31 +41,17 @@ def initialize_chat():
         }
     ]
     
-    if "messages" not in st.session_state or st.session_state.messages == []:
+    if "messages" not in st.session_state or not st.session_state.messages:
         st.session_state.messages = first_message
-        save_message(st.session_state.messages)
-    else:
-        cutoff_time = datetime.now() - timedelta(hours=2)
-        st.session_state.messages = [
-            m for m in st.session_state.messages
-            if datetime.fromisoformat(m.get("time", (datetime.now() - timedelta(hours=3)).isoformat())) >= cutoff_time
-        ]
-        
-        if st.session_state.messages == []:
-            st.session_state.messages = first_message
-        
-        st.session_state.assistant.get_storage().replace_chat(
-            st.session_state.username,
-            st.session_state.messages
-        )
+        _save_messages(st.session_state.messages)
 
 # --------------------
 # --- Chat History ---
 # --------------------
 
-def display_chat_history():
+def _display_chat_history() -> None:
     """
-    Display all previous chat messages stored in session state.
+    Iterates through session messages and renders them in the UI.
     """
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
@@ -77,110 +62,160 @@ def display_chat_history():
 # --- Chat Input Handling ---
 # ---------------------------
 
-def display_gui_components():
+def _handle_suggestions_and_controls() -> Optional[str]:
     """
-    Display and Handle user input from chat_input and suggestion buttons.
-    """
-    # --- Suggestion Button ---
-    prompt_from_button = st.session_state.pop("prompt_from_button", None)
-
-    with st.popover("💡 Suggerimenti"):
-        st.markdown("Prova a chiedere:")
-        
-        # Ensure assistant is loaded
-        if st.session_state.assistant:
-            for i, suggestion in enumerate(st.session_state.assistant.get_language().gui_examples):
-                if st.button(suggestion, key=f"suggestion_{i}"):
-                    st.session_state.prompt_from_button = suggestion
-                    st.rerun()
-        else:
-            st.info("Caricamento configurazione...")
+    Renders the top control bar (Suggestions, New Chat, Delete Chat).
     
-    # --- Chat History ---
-    display_chat_history()
+    Returns:
+        Optional[str]: A prompt string if a suggestion is clicked, otherwise None.
+    """
+    col1, col2, col3 = st.columns([0.70, 0.15, 0.15])
+    prompt_selected = None
+    
+    # Col 1: Suggestions
+    with col1:
+        # Retrieve stored suggestion trigger if page reloaded
+        prompt_from_button = st.session_state.pop("prompt_from_button", None)
+        if prompt_from_button:
+            prompt_selected = prompt_from_button
 
-    # --- Chat Input ---
+        with st.popover("💡 Suggerimenti"):
+            st.markdown("Prova a chiedere:")
+            if st.session_state.assistant:
+                for i, suggestion in enumerate(st.session_state.assistant.get_language().gui_examples):
+                    if st.button(suggestion, key=f"suggestion_{i}"):
+                        st.session_state.prompt_from_button = suggestion
+                        st.rerun()
+            else:
+                st.info("Caricamento configurazione...")
+    
+    # Col 2: New Chat
+    with col2:
+        if st.button("📝 Nuova conversazione"):
+            st.query_params.chat = st.session_state.authenticator.create_new_chat(st.session_state.username)
+            st.rerun()
+        
+    # Col 3: Delete Chat
+    with col3:
+        if st.button("❌ Elimina conversazione"):
+            st.session_state.authenticator.delete_chat(st.session_state.username, st.query_params.chat)
+            
+            all_keys = st.session_state.authenticator.get_all_chats(st.session_state.username).keys()
+            all_keys = sorted(all_keys, reverse=True)
+            
+            if not all_keys:
+                st.query_params.chat = st.session_state.authenticator.create_new_chat(st.session_state.username)
+            else:
+                st.query_params.chat = all_keys[0]
+                
+            st.rerun()
+
+    return prompt_selected
+
+def _display_gui_components() -> None:
+    """
+    Main render function for the chat interface components.
+    """
+    # 1. Controls & Suggestions
+    suggestion_prompt = _handle_suggestions_and_controls()
+
+    # 2. History
+    _display_chat_history()
+
+    # 3. Input
     chat_prompt = st.chat_input("Scrivi un messaggio...")
 
-    prompt_to_submit = prompt_from_button or chat_prompt
+    # Determine if we have a prompt to process
+    prompt_to_submit = suggestion_prompt or chat_prompt
     
     if prompt_to_submit:
-        submit_prompt(prompt_to_submit)
+        _submit_prompt(prompt_to_submit)
 
-
-def submit_prompt(prompt: str):
+def _submit_prompt(prompt: str) -> None:
     """
-    Sends the prompt to the assistant and handles displaying the response.
+    Orchestrates the user prompt submission: updates UI, calls assistant thread,
+    handles log streaming, and saves results.
 
     Args:
-    prompt (str): The prompt text to send.
+        prompt (str): The user's prompt.
     """
     # --- 1. Display user's message ---
-    st.session_state.messages.append(
-        {
-            "role": "user", 
-            "content": prompt,
-            "time": datetime.now().isoformat()
-        }
-    )
+    user_msg = {
+        "role": "user", 
+        "content": prompt,
+        "time": datetime.now().isoformat()
+    }
+    st.session_state.messages.append(user_msg)
     
     with st.chat_message("user"):
         st.markdown(prompt)
 
-    # --- 2. Display assistant's message ---
+    # --- 2. Handle assistant's response ---
     with st.chat_message("assistant"):
-        # Threading setup
         placeholder = st.empty()
         stop_event = threading.Event()
         result_queue = queue.Queue()
-
-        # Run assistant logic in background
+        
+        st.session_state.assistant.get_cfg().generate_request_id()
+        
+        # Start Assistant in background thread
         thread = threading.Thread(
-            target=call_assistant, 
-            args=(
-                prompt, 
-                st.session_state.assistant, 
-                stop_event, 
-                result_queue
-            )
+            target=_call_assistant_thread, 
+            args=(prompt, st.session_state.assistant, stop_event, result_queue)
         )
         thread.start()
 
-        # Display logs while waiting for response
-        log_list = _display_log(placeholder, stop_event)
+        # Stream logs while waiting
+        log_list = _stream_logs_to_ui(placeholder, stop_event)
 
-        # Wait for the assistant thread to finish (just in case)
+        # Ensure thread completion
         thread.join()
         
-        # Get the result from the queue
+        # Retrieve result
         result = result_queue.get()
         text = result.get("result", "")
         
-        # Display assistant's response
-        ## Text
-        _display_result(text, placeholder)
+        # Render final output
+        _typewriter_effect(text, placeholder)
+        _show_expander(result, log_list[1:]) # Skip the "LOGS:" header
         
-        ## Expander with details
-        _show_expander(result, log_list[1:])
+        # Append to session state
+        assistant_msg = {
+            "role": "assistant", 
+            "content": text,
+            "time": datetime.now().isoformat(),
+            "full_details": result, 
+            "logs": log_list[1:]
+        }
+        st.session_state.messages.append(assistant_msg)
     
-        # Save assistant's response in session state
-        st.session_state.messages.append(
-            {
-                "role": "assistant", 
-                "content": text,
-                "time": datetime.now().isoformat(),
-                "full_details": result, 
-                "logs": log_list[1:]
-            }
-        )
+    # --- 3. Persist messages ---
+    # Save only the last exchange (user + assistant)
+    _save_messages(st.session_state.messages[-2:])
+
+# -------------------------------
+# --- Threading & Log Helpers ---
+# -------------------------------
+
+def _call_assistant_thread(prompt: str, assistant, stop_event: threading.Event, result_queue: queue.Queue) -> None:
+    """
+    Wrapper to run the heavy assistant logic in a thread.
+    """
+    try:
+        response = assistant.chat(prompt)
+        result_queue.put(response)
+    except Exception as e:
+        result_queue.put({"result": f"Error: {str(e)}"})
+    finally:
+        stop_event.set()
+
+def _stream_logs_to_ui(placeholder, stop_event: threading.Event) -> List[str]:
+    """
+    Follows the log file and updates the UI placeholder until the stop_event is set.
     
-    # Save messages in DB
-    save_message(
-        st.session_state.messages[-2:]
-    )
-    
-def _display_log(placeholder, stop_event: threading.Event):
-    # Log streaming display
+    Returns:
+        List[str]: Collected log lines.
+    """
     log_file = os.path.join(
         st.session_state.assistant.get_cfg().project_root, 
         "logs", 
@@ -188,106 +223,73 @@ def _display_log(placeholder, stop_event: threading.Event):
     )
     
     log_list = ["LOGS:"]
-
-    for line in follow_log(log_file, stop_event):
+    
+    # Generator yields lines from file
+    for line in _follow_log_generator(log_file, stop_event):
         log_list.append(line)
+        # Update UI with current logs
         placeholder.markdown("\n\n".join(log_list).strip())
-
-        if stop_event.is_set():
-            placeholder.markdown("")
-            break
         
+        if stop_event.is_set():
+            placeholder.markdown("") # Clear logs from main view when done
+            break
+            
     return log_list
 
-def _display_result(text, placeholder):
-    # Typing effect for assistant's response
-    typed_text = ""
-    for char in text:
-        typed_text += char
-        placeholder.markdown(typed_text)
-        time.sleep(0.01)
-    
-
-# -------------------------------
-# --- Orchestrator Communication ---
-# -------------------------------
-
-def call_assistant(prompt: str, assistant, stop_event: threading.Event, result_queue: queue.Queue):
+def _follow_log_generator(file_path: str, stop_event: threading.Event, wait_time: float = 0) -> Generator[str, None, None]:
     """
-    Execute the assistant call in a separate thread and signal completion.
-
-    Args:
-        prompt (str): The user's input message.
-        assistant (Orchestrator): Orchestrator instance for handling the conversation.
-        stop_event (threading.Event): Event used to signal completion.
-        result_queue (queue.Queue): Queue to store the result for later retrieval.
+    Generator that reads a log file like 'tail -f'.
     """
-    result_queue.put(assistant.chat(prompt))
-    stop_event.set()
-
-# ----------------------------
-# --- LOG Following in GUI ---
-# ----------------------------
-
-def follow_log(file_path: str, stop_event: threading.Event, wait_time: float = 0.05):
-    """
-    Continuously read and yield lines from a log file until stopped.
-
-    Args:
-        file_path (str): Path to the log file.
-        stop_event (threading.Event): Event to stop reading.
-        wait_time (float): Polling interval between file reads.
-
-    Yields:
-        str: New log lines as they appear.
-    """
-    # Wait until log file exists or stop event triggered
+    # Wait for file creation
     while not (os.path.exists(file_path) or stop_event.is_set()):
         time.sleep(wait_time)
 
     if os.path.exists(file_path):
         try:
             with open(file_path, "r") as f:
-                f.seek(0, 2)  # Move to end of file
+                f.seek(0, 2) # Optional: Start at end if we only want new logs. 
+                # Since file is new per request, starting at 0 is fine.
+                
                 while not stop_event.is_set():
                     line = f.readline()
                     if not line:
                         time.sleep(wait_time)
                         continue
                     
+                    # Clean up log lines for display
                     for label in ["INFO", "ERROR", "WARNING"]:
                         if f"- {label} -" in line:
                             line = line.split(f"- {label} -", 1)[-1].strip()
 
-                    line = f"\t{line}"
-                    
-                    yield line
+                    yield f"\t{line}"
         except Exception:
-            # There may be a race condition
             yield "\t (Errore lettura log)"
 
-# ----------------------------------------------
-# --- Expander in every assistant’s response ---
-# ----------------------------------------------
+def _typewriter_effect(text: str, placeholder) -> None:
+    """Simulates typing effect for the assistant response."""
+    typed_text = ""
+    for char in text:
+        typed_text += char
+        placeholder.markdown(typed_text)
+        time.sleep(0.01)
 
-def _show_expander(full_details: dict, logs: list = []):
+# ------------------------------
+# --- UI Details (Expanders) ---
+# ------------------------------
+
+def _show_expander(full_details: Dict, logs: List[str] = []) -> None:
     """
-    Display structured details and intermediate operations of the assistant’s response.
-
-    Args:
-        full_details (dict): Structured response details including operations, commands, and results.
+    Renders the details expander containing input structure, operations, and logs.
     """
     if not (full_details and full_details.get("structured_input", {})):
         return
 
     with st.expander("Visualizza i dettagli"):
         operations = full_details.get("operations", [])
-        if len(operations) > 1:
-            op_string = f"Il comando è stato scomposto in {len(operations)} operazioni."
-        else:
-            op_string = "Il comando non è stato necessario scomporlo."
+        op_count_str = (f"Il comando è stato scomposto in {len(operations)} operazioni." 
+                        if len(operations) > 1 else "Il comando non è stato necessario scomporlo.")
 
-        # Show structured input overview
+        # 1. Structured Input
         command_json = json.dumps(full_details.get("structured_input", {}), indent=4)
         st.markdown(
             f"""
@@ -296,24 +298,21 @@ def _show_expander(full_details: dict, logs: list = []):
                 Il comando identificato per la richiesta è stato:
                 <p></p>
                 <pre><code class="language-json">{command_json}</code></pre>
-                {op_string}
+                {op_count_str}
             </details>
             """,
             unsafe_allow_html=True,
         )
 
-        # Display operations (if multiple)
+        # 2. Operations
         if len(operations) > 1:
             for index, operation in enumerate(operations, start=1):
-                display_operation(index, operation)
-
+                _display_operation(index, operation)
             st.markdown("</details>", unsafe_allow_html=True)
         
-        # Display logs (if available)
-        if len(logs) > 0:
-            text = "\n".join([l.strip() for l in logs]).strip()
-            # Escaping HTML
-            text_escaped = html.escape(text)
+        # 3. Logs
+        if logs:
+            text_escaped = html.escape("\n".join([l.strip() for l in logs]).strip())
             st.markdown(
                 f"""
                 <details style="margin-left:20px; margin-top:10px;">
@@ -329,26 +328,19 @@ def _show_expander(full_details: dict, logs: list = []):
             
         st.markdown("\n", unsafe_allow_html=True)
 
-
-def display_operation(index: int, operation: dict):
-    """
-    Render a single operation block inside the expander.
-
-    Args:
-        index (int): Sequential index of the operation.
-        operation (dict): Operation data with command, inputs, and result.
-    """
-    new_dict = {
+def _display_operation(index: int, operation: Dict) -> None:
+    """Renders a single operation detail block."""
+    
+    # Create a clean subset for display
+    display_dict = {
         "command": operation.get("command", ""),
         "from": operation.get("from", []),
     }
-
-    # Include optional fields if present
     for key in ["what", "how"]:
-        if operation.get(key, ""):
-            new_dict[key] = operation.get(key, "")
+        if operation.get(key):
+            display_dict[key] = operation.get(key)
 
-    operation_json = json.dumps(new_dict, indent=4)
+    operation_json = json.dumps(display_dict, indent=4)
     operation_result = markdown.markdown(operation.get("result", ""))
 
     st.markdown(
@@ -369,31 +361,32 @@ def display_operation(index: int, operation: dict):
         unsafe_allow_html=True,
     )
 
-def save_message(messages: list):
+def _save_messages(messages: List[Dict]) -> None:
+    """Helper to persist messages to storage."""
     if "assistant" in st.session_state and st.session_state.username:
         for message in messages:
             st.session_state.assistant.get_storage().add_chat_message(
                 st.session_state.username,
+                st.query_params.chat,
                 message
             )
-        
+
 # -------------------
 # --- Entry Point ---
 # -------------------
 
 def show_home():
     """
-    Main entry point for the Streamlit DQL app.
-    Sets up layout, restores chat history, and handles user interactions.
+    Main page entry point.
     """
-
-    # Verify that assistant has been loaded correctly
-    if not st.session_state.assistant:
+    # Guard clause for missing state
+    required_keys = ["assistant", "username", "authenticator"]
+    if not all(hasattr(st.session_state, k) and getattr(st.session_state, k) for k in required_keys) or not st.query_params.get("chat"):
         st.warning("Inizializzazione della configurazione in corso... Ricarica se il messaggio persiste.")
         st.stop()
 
-    initialize_chat()
-    display_gui_components()
+    _initialize_chat()
+    _display_gui_components()
 
 if __name__ == "__main__":
     show_home()

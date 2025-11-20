@@ -22,3 +22,67 @@ services:
     volumes:
       - ./settings:/app/settings
       - /var/run/docker.sock:/var/run/docker.sock
+
+#services:
+#  mongodb:
+#    image: mongo:4.4.6
+#    container_name: dql-mongodb
+#    restart: always
+#    environment:
+#      MONGO_INITDB_ROOT_USERNAME: ${MONGO_INITDB_ROOT_USERNAME}
+#      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_INITDB_ROOT_PASSWORD}
+#    ports:
+#      # Espongo la porta di mongo solo sull'host locale per sicurezza
+#      # Se altri servizi esterni ne hanno bisogno, usa "27019:27017"
+#      - "127.0.0.1:27019:27017"
+#    volumes:
+#      - ./data:/data/db
+#    networks:
+#      - dql-net
+#
+#  dql-system:
+#    build: .
+#    container_name: dql-system
+#    depends_on:
+#      - mongodb
+#    restart: always
+#    # NON esponiamo più la porta 8501 all'host.
+#    # Solo Caddy potrà raggiungerla tramite la rete interna.
+#    # ports:
+#    #   - "8501:8501"
+#    volumes:
+#      - ./settings:/app/settings
+#      - /var/run/docker.sock:/var/run/docker.sock
+#    environment:
+#      - MONGO_URI=
+#    networks:
+#      - dql-net
+#
+#  caddy:
+#    image: caddy:2-alpine
+#    container_name: dql-caddy
+#    restart: always
+#    depends_on:
+#      - dql-system
+#    ports:
+#      # Caddy riceve il traffico HTTP e lo redireziona a HTTPS
+#      - "14000:80"
+#      # Caddy riceve il traffico HTTPS
+#      - "14500:443"
+#    volumes:
+#      # Monta il Caddyfile dalla tua directory locale
+#      - ./Caddyfile:/etc/caddy/Caddyfile
+#      # Volume per memorizzare i certificati SSL (persistente)
+#      - caddy_data:/data
+#      # Volume per la configurazione di Caddy
+#      - caddy_config:/config
+#    networks:
+#      - dql-net
+#
+#volumes:
+#  caddy_data:
+#  caddy_config:
+#
+#networks:
+#  dql-net:
+#    driver: bridge

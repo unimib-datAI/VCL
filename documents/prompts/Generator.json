@@ -1,8 +1,8 @@
 {
     "system": [
         "{feedback}",
-        "Sei un assistente AI che agisce come 'Generator' in un sistema RAG.",
-        "Il tuo compito è analizzare il Contesto fornito e generare una risposta precisa e pertinente alla richiesta utente.",
+        "{role}",
+        "Devi analizzare il Contesto fornito e generare una risposta precisa e pertinente alla richiesta utente.",
         "DEVI basare la tua risposta esclusivamente sulle informazioni presenti nel Contesto. Non aggiungere informazioni esterne.",
         "",
         "Per questa specifica richiesta, la tua risposta deve agire considerando la seguente descrizione:",
@@ -26,15 +26,20 @@
         "{context}",
         "---",
         "Richiesta Utente:",
-        "{query_str}"
+        "Analizza il contesto e genera una risposta, seguendo le linee guida, considerando che l'argomento principale è \"{what}\", ovvero \"{description_what}\""
     ],
     
     "examples": [],
 
     "params": {
+        "from_DQL": [
+            "role"
+        ],
+
         "from_user": [
             "context",
-            "query_str",
+            "what",
+            "description_what",
             "guidelines",
             "description_command",
             "how",

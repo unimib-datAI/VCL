@@ -43,14 +43,16 @@ class Orchestrator:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, username: str = None):
+    def __init__(self, username: str = None, role: str = "Altro"):
         """
         Initialize the Orchestrator instance.
 
         Args:
             username (str): The identifier for the user, used to load
                             the correct configuration and storage.
-        
+            role (str):     The role of the user, used to load the correct
+                            header of Generator prompt
+            
         Raises:
             ValueError: If username is not provided.
         """
@@ -59,19 +61,9 @@ class Orchestrator:
             raise ValueError("Username must be provided to initialize Orchestrator.")
         
         self._username = username
-        self._CFG = Config(username)
+        self._CFG = Config(username, role)
         self._storage = self._CFG.storage
         self._language = self._CFG.language
-
-        # Initialize core components
-        self._logger = self._CFG.get_logger("Orchestrator")
-        self._preprocessor = Preprocessor(self._CFG)
-        self._translator = Translator(self._CFG)
-        self._planner = Planner(self._CFG)
-        
-        # The Executor is stateful (depends on the prompt)
-        # and will be initialized within the chat() method.
-        self._executor = None
 
     # ----------------------
     # --- Public Methods ---
@@ -94,12 +86,15 @@ class Orchestrator:
             dict: Final response containing structured input, operations,
                   results, and used documents.
         """
+        # Initialize core components
+        self._logger = self._CFG.get_logger("Orchestrator")
+        self._preprocessor = Preprocessor(self._CFG)
+        self._translator = Translator(self._CFG)
+        self._planner = Planner(self._CFG)
+        self._executor = Executor(self._CFG, prompt)
+        
         # Log the incoming request
         self._logger.info(f"Request Received: \"{prompt}\"")
-        
-        # Initialize the prompt-specific Executor
-        # This component holds prompt-specific state (e.g., original query)
-        self._executor = Executor(self._CFG, prompt)
 
         try:
             # --- Pipeline Execution ---

@@ -1,0 +1,6 @@
+https://vm.chronos.disco.unimib.it {
+
+    tls internal
+    reverse_proxy dql-system:8501
+	
+}

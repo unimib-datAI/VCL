@@ -1,14 +1,14 @@
 import bcrypt
 import os
+import re
 import threading
-import pymongo.errors
 
+from copy import deepcopy
 from dotenv import load_dotenv
 from pymongo import MongoClient
-from pymongo.server_api import ServerApi
 from bson import ObjectId
 from datetime import datetime
-from typing import Optional, List, Any
+from typing import Optional, List, Any, Dict
 
 from utils.file_manager import FileHandler
 
@@ -59,7 +59,7 @@ class Storage:
         )
 
         # Initialize MongoDB client and collections
-        client = MongoClient(mongo_uri, server_api=ServerApi('1'))
+        client = MongoClient(mongo_uri)
         db = client["auth_db"]
         self._users = db["users"]
         
@@ -67,7 +67,7 @@ class Storage:
         self._users.create_index("username", unique=True)
         
         # --- Initialize caches and their locks ---
-        self._chat_cache = {}
+        self._chat_cache: Dict[str, Dict[str, List[dict]]] = {} 
         self._lang_cache = {}
         self._chat_cache_lock = threading.Lock()
         self._lang_cache_lock = threading.Lock()
@@ -131,7 +131,7 @@ class Storage:
     # --- Authentication ---
     # ----------------------
     
-    def register_user(self, username, email, password) -> bool:
+    def register_user(self, username, email, password, role) -> tuple[bool, Optional[dict]]:
         """
         Register a new user with default documents and language settings.
 
@@ -139,38 +139,41 @@ class Storage:
             username (str): The desired username.
             email (str): The user's email.
             password (str): The user's plain-text password.
+            role (str): The user's role.
 
         Returns:
-            bool: True if registration was successful, False if user/email exists.
+            tuple[bool, Optional[dict]]: (True se successo, info utente) o (False, None).
         """
         # Check for existing user or email
         if self._users.find_one({"username": username}) or self._users.find_one({"email": email}):
-            return False
+            return False, None
         
         # Hash the password
         hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
         
         try:
             # Insert the new user document
-            self._users.insert_one({
+            new_user = {
                 "_id": ObjectId(),
                 "username": username,
                 "email": email,
                 "password": hashed_pw,
+                "role": role,
                 "data": {
                     "persisted_docs": self._get_default_docs(),
-                    "chat": []
+                    "chat": {} 
                 },
                 "settings": {
                     "language": self._get_default_language()
                 }
-            })
-            return True
-        except pymongo.errors.DuplicateKeyError:
-             # Should be caught by the initial check, but as a safeguard
-             return False
+            }
+            
+            self._users.insert_one(new_user)
+            return True, new_user
+        except Exception:
+             return False, None
 
-    def login_user(self, username, password) -> bool:
+    def login_user(self, username, password) -> tuple[bool, Optional[dict]]:
         """
         Verify a user's login credentials.
 
@@ -179,18 +182,18 @@ class Storage:
             password (str): The plain-text password to check.
 
         Returns:
-            bool: True if credentials are valid, False otherwise.
+            tuple[bool, Optional[dict]]: (True se valido, info utente) o (False, None).
         """
         user = self._users.find_one({"username": username})
         
         if not user:
-            return False
+            return False, None
         
         # Check the provided password against the stored hash
-        if bcrypt.checkpw(password.encode("utf-8"), user["password"]):
-            return True
+        if bcrypt.checkpw(password.encode("utf-8"), user.get("password", "")):
+            return True, user
         
-        return False
+        return False, None
 
     # ---------------------------
     # --- Document Operations ---
@@ -225,10 +228,10 @@ class Storage:
             return result["data"][key[0]][0]
         return None
     
-    def get_document_by_id(self, user_id: str, value: str) -> Optional[dict]:
-        """Retrieves a single chat document by its 'id'."""
-        return self._get_document(user_id, ("chat", "id"), value)
-    
+    # def get_document_by_id(self, user_id: str, value: str) -> Optional[dict]:
+    #     """Retrieves a single chat document by its 'id'."""
+    #     return self._get_document(user_id, ("chat", "id"), value) # Rimosso
+
     def get_document_by_type(self, user_id: str, value: str) -> Optional[dict]:
         """Retrieves a single persisted document by its 'type_doc'."""
         return self._get_document(user_id, ("persisted_docs", "type_doc"), value)
@@ -346,7 +349,8 @@ class Storage:
         
         # 4. Store in cache (thread-safe)
         with lock:
-            cache[user_id] = data
+            if data is not None: # Only if data not found
+                cache[user_id] = data
             
         return data
 
@@ -354,16 +358,14 @@ class Storage:
     # --- Chat Operations ---
     # -----------------------
     
-    def get_chat(self, user_id: str) -> Optional[list]:
+    def get_all_chats(self, user_id: str) -> Optional[Dict[str, List[dict]]]:
         """
-        Retrieve the entire chat history for the user, using cache.
-
-        Args:
-            user_id (str): The user's username.
+        Method to retrieve a user's entire chat dictionary, using the cache.
 
         Returns:
-            Optional[list]: The user's chat history list, or None.
+            Optional[Dict[str, List[dict]]]: The user's {chat_id: [messages], ...} dictionary, or None.
         """
+        # The _chat_cache stores the entire chat dictionary for a user
         return self._get_cached_data(
             user_id,
             self._chat_cache,
@@ -371,55 +373,136 @@ class Storage:
             {"data.chat": 1, "_id": 0},
             ["data", "chat"]
         )
-    
-    
-    def add_chat_message(self, user_id: str, message: dict) -> bool:
+
+    def get_chat_messages(self, user_id: str, chat_id: str) -> Optional[List[dict]]:
         """
-        Append a single message to the user's chat array and invalidate cache.
+        Retrieves the message list for a specific chat_id.
 
         Args:
             user_id (str): The user's username.
-            message (dict): The chat message to add.
+            chat_id (str): The conversation ID.
 
         Returns:
-            bool: True if the database was modified.
+            Optional[List[dict]]: The message list, or None if chat_id does not exist.
         """
+        chat_history = self.get_all_chats(user_id)
+        
+        if chat_history is None:
+            return []
+        
+        return chat_history.get(chat_id, [])
+
+    def add_chat_message(self, user_id: str, chat_id: str, message: dict) -> bool:
+        """
+Adds a single message to the specified chat's message array
+and invalidates the cache.
+
+Args:
+user_id (str): The user's username.
+chat_id (str): The ID of the conversation to add the message to.
+message (dict): The message to add.
+
+Returns:
+bool: True if the database has been modified.
+"""
         message.setdefault("timestamp", datetime.utcnow())
-
+        
+        # MongoDB $push to the specific field inside the 'chat' dictionary
+        update_field = f"data.chat.{chat_id}"
+        
+        # $push creates the array if it doesn't exist, which is the desired behavior
         result = self._users.update_one(
             {"username": user_id},
-            {"$push": {"data.chat": message}}
+            {"$push": {update_field: message}}
         )
         
         # Invalidate cache on successful update
         if result.modified_count > 0:
             self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
-        
+            
         return result.modified_count > 0
-    
-    def replace_chat(self, user_id: str, chat: list) -> bool:
+
+    def replace_chat_messages(self, user_id: str, chat_id: str, messages: List[dict]) -> bool:
         """
-        Replace the entire chat history for the user and invalidate cache.
+        Replaces the entire message list for a given chat_id and invalidates the cache.
+        Also used to create a new chat if the chat_id does not exist.
 
         Args:
             user_id (str): The user's username.
-            chat (list): The new chat history list.
+            chat_id (str): The ID of the conversation to replace/create.
+            messages (List[dict]): The new message list.
 
         Returns:
-            bool: True if the database was modified.
+            bool: True if the database has been modified.
         """
+
+        # MongoDB $set on the specific field within the 'chat' dictionary
+        update_field = f"data.chat.{chat_id}"
         
         result = self._users.update_one(
             {"username": user_id},
-            {"$set": {"data.chat": chat}}
+            {"$set": {update_field: messages}}
         )
         
         # Invalidate cache on successful update
         if result.modified_count > 0:
             self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
-        
+            
         return result.modified_count > 0
     
+    def create_new_chat(self, user_id: str) -> Optional[str]:
+        """
+        Creates a new conversation (chat) and adds it to the user.
+
+        Args:
+        user_id (str): The user's username.
+
+        Returns:
+        Optional[str]: The newly generated chat_id, or None if the operation fails.
+        """
+        new_chat_id = re.sub(r"[^0-9]", "", str(datetime.now().isoformat()))
+        if self.replace_chat_messages(user_id, new_chat_id, []):
+            self._clean_chats(user_id, [new_chat_id])
+            return new_chat_id
+    
+        return None
+    
+    def _clean_chats(self, user_id: str, exceptions: list = []) -> bool:
+        all_chats = deepcopy(self.get_all_chats(user_id))
+        
+        for chat in all_chats.keys():
+            if chat in exceptions:
+                continue
+                
+            if len(all_chats.get(chat, [])) < 2:
+                self.delete_chat(user_id, chat)
+
+    def delete_chat(self, user_id: str, chat_id: str) -> bool:
+        """
+        Removes a specific chat from the user.
+
+        Args:
+            user_id (str): The user's username.
+            chat_id (str): The ID of the chat to delete.
+
+        Returns:
+            bool: True if the database has been modified.
+        """
+        
+        # MongoDB $unset removes a field
+        unset_field = f"data.chat.{chat_id}"
+        
+        result = self._users.update_one(
+            {"username": user_id},
+            {"$unset": {unset_field: ""}}
+        )
+        
+        # Invalidate cache on successful update
+        if result.modified_count > 0:
+            self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
+            
+        return result.modified_count > 0
+
     # ---------------------------
     # --- Language Operations ---
     # ---------------------------

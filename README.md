@@ -88,9 +88,17 @@ Some features have already been partially implemented:
 
 4. **VPN Connection for Elasticsearch**: If you need to access the Elasticsearch database, ensure you are connected to your university's VPN before running the script.
 
+5. **Docker compose**: Execute the following commands (with Docker installed)
+```bash
+docker compose build
+```
+```bash
+docker compose up -d
+```
+
 5. **Running the Application**
-    Execute the Streamlit application using the `main.py` script.
-    The base command is:
+    Execute the Streamlit application using the `main.py` script or go to `localhost:8501`.
+    If you wanna access using the `main.py` script, the base command is:
     ```bash
     python main.py
     ```
