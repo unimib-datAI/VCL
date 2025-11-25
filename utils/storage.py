@@ -20,7 +20,7 @@ class Storage:
     - User authentication (registration, login)
     - User-specific data (chat history, documents)
     - User-specific settings (DQL language configuration)
-    - In-memory caching for chat and language settings with thread-safe
+    - In-memory caching for chat, documents, and language settings with thread-safe
       access and invalidation.
     """
     
@@ -69,8 +69,11 @@ class Storage:
         # --- Initialize caches and their locks ---
         self._chat_cache: Dict[str, Dict[str, List[dict]]] = {} 
         self._lang_cache = {}
+        self._docs_cache: Dict[str, List[dict]] = {}
+        
         self._chat_cache_lock = threading.Lock()
         self._lang_cache_lock = threading.Lock()
+        self._docs_cache_lock = threading.Lock()
         
         self._initialized = True
 
@@ -146,7 +149,7 @@ class Storage:
         """
         # Check for existing user or email
         if self._users.find_one({"username": username}) or self._users.find_one({"email": email}):
-            return False, None
+            return False, "ae"
         
         # Hash the password
         hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
@@ -170,8 +173,8 @@ class Storage:
             
             self._users.insert_one(new_user)
             return True, new_user
-        except Exception:
-             return False, None
+        except Exception as e:
+             return False, str(e)
 
     def login_user(self, username, password) -> tuple[bool, Optional[dict]]:
         """
@@ -201,17 +204,11 @@ class Storage:
     
     def _get_document(self, user_id, key: tuple, value: str) -> Optional[dict]:
         """
-        Private helper to find a specific document in a user's data array.
+        Private helper to find a specific document in a user's data array directly from DB.
         Uses MongoDB's $ projection to return only the matched array element.
-
-        Args:
-            user_id (str): The user's username.
-            key (tuple): A tuple like ("array_name", "field_name_to_match").
-                          Example: ("chat", "id")
-            value (str): The value to match against.
-
-        Returns:
-            Optional[dict]: The found document or None.
+        
+        NOTE: Used only if bypassing cache is necessary, otherwise prefer using
+        get_all_documents() and filtering in Python.
         """
         # e.g., "data.chat.id"
         query_key = f"data.{key[0]}.{key[1]}"
@@ -227,18 +224,46 @@ class Storage:
         if result and "data" in result and key[0] in result["data"]:
             return result["data"][key[0]][0]
         return None
-    
-    # def get_document_by_id(self, user_id: str, value: str) -> Optional[dict]:
-    #     """Retrieves a single chat document by its 'id'."""
-    #     return self._get_document(user_id, ("chat", "id"), value) # Rimosso
+
+    def get_all_documents(self, user_id: str) -> Optional[List[dict]]:
+        """
+        Method to retrieve all persisted documents for a user, using the cache.
+
+        Args:
+            user_id (str): The user's username.
+
+        Returns:
+            Optional[List[dict]]: The list of persisted documents or None.
+        """
+        return self._get_cached_data(
+            user_id,
+            self._docs_cache,
+            self._docs_cache_lock,
+            {"data.persisted_docs": 1, "_id": 0},
+            ["data", "persisted_docs"]
+        )
 
     def get_document_by_type(self, user_id: str, value: str) -> Optional[dict]:
-        """Retrieves a single persisted document by its 'type_doc'."""
-        return self._get_document(user_id, ("persisted_docs", "type_doc"), value)
+        """Retrieves a single persisted document by its 'type_doc' using cache."""
+        docs = self.get_all_documents(user_id)
+        if not docs:
+            return None
+        
+        for doc in docs:
+            if doc.get("type_doc") == value:
+                return doc
+        return None
     
     def get_document_by_name(self, user_id: str, value: str) -> Optional[dict]:
-        """Retrieves a single persisted document by its 'name'."""
-        return self._get_document(user_id, ("persisted_docs", "name"), value)
+        """Retrieves a single persisted document by its 'name' using cache."""
+        docs = self.get_all_documents(user_id)
+        if not docs:
+            return None
+            
+        for doc in docs:
+            if doc.get("name") == value:
+                return doc
+        return None
     
     def _get_default_docs(self) -> list:
         """
@@ -247,12 +272,11 @@ class Storage:
         Returns:
             list: A list of default document dictionaries.
         """
-        doc_names = ["S1 - AN.json", "S2 - AN.json", "M2 - AN.json", "R2 - AN.json"]
         doc_path = os.path.join(self._project_root, "documents")
         
         return [
-            self._file_handler.read_file(os.path.join(doc_path, name))
-            for name in doc_names
+            self._file_handler.read_file(os.path.join(doc_path, file))
+            for file in os.listdir(doc_path) if str(file).endswith(".json")
         ]
 
     def upsert_persisted_doc(self, user_id: str, doc: dict) -> bool:
@@ -290,6 +314,10 @@ class Storage:
                 {"username": user_id},
                 {"$push": {"data.persisted_docs": doc}}
             )
+
+        # Invalidate cache if any modification happened
+        if result.modified_count > 0 or result.matched_count > 0:
+            self._invalidate_cache(user_id, self._docs_cache, self._docs_cache_lock)
 
         return result.modified_count > 0
 
@@ -394,17 +422,17 @@ class Storage:
 
     def add_chat_message(self, user_id: str, chat_id: str, message: dict) -> bool:
         """
-Adds a single message to the specified chat's message array
-and invalidates the cache.
+        Adds a single message to the specified chat's message array
+        and invalidates the cache.
 
-Args:
-user_id (str): The user's username.
-chat_id (str): The ID of the conversation to add the message to.
-message (dict): The message to add.
+        Args:
+        user_id (str): The user's username.
+        chat_id (str): The ID of the conversation to add the message to.
+        message (dict): The message to add.
 
-Returns:
-bool: True if the database has been modified.
-"""
+        Returns:
+        bool: True if the database has been modified.
+        """
         message.setdefault("timestamp", datetime.utcnow())
         
         # MongoDB $push to the specific field inside the 'chat' dictionary

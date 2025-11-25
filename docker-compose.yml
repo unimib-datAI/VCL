@@ -11,17 +11,17 @@ services:
     volumes:
       - ./data:/data/db
 
-  dql-system:
-    build: .
-    container_name: dql-system
-    depends_on:
-      - mongodb
-    restart: always
-    ports:
-      - "8010:8501"
-    volumes:
-      - ./settings:/app/settings
-      - /var/run/docker.sock:/var/run/docker.sock
+#  dql-system:
+#    build: .
+#    container_name: dql-system
+#    depends_on:
+#      - mongodb
+#    restart: always
+#    ports:
+#      - "8010:8501"
+#    volumes:
+#      - ./settings:/app/settings
+#      - /var/run/docker.sock:/var/run/docker.sock
 
 #services:
 #  mongodb:

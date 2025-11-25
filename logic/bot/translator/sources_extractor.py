@@ -1,4 +1,3 @@
-import os
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
 
@@ -25,10 +24,10 @@ class SourcesExtractor:
         Args:
             cfg (Config): Global configuration object providing logger, LLM, and DQL language data.
         """
-        self.llm = cfg.llm
-        self.logger = cfg.get_logger("Sources Extractor")
-        self.project_root = cfg.project_root
-        self.dql_language: DQLLanguage = cfg.language
+        self._llm = cfg.llm
+        self._logger = cfg.get_logger("Sources Extractor")
+        self._project_root = cfg.project_root
+        self._dql_language: DQLLanguage = cfg.language
 
     # ------------------------------
     # --- Main Extraction Method ---
@@ -50,27 +49,25 @@ class SourcesExtractor:
         Returns:
             list: List of document/source names deemed relevant.
         """
-        language_sources_str = self.sources_string(self.dql_language.get_sources())
 
         query_dict = {
             "query": query,
-            "language_sources": language_sources_str,
-            "number": len(self.dql_language.get_sources()),
             "feedback": ""
         }
 
         documents = []
         status = "Error"
-
+        
         try:
-            prompt = self.dql_language.prompts.get("ExplicitDocumentsExtraction.json", None)
+            # Retrieve the specific prompt for 'sources' extraction
+            prompt = self._dql_language.prompts.get("ExplicitDocumentsExtraction.json", None)
             
             if not prompt:
-                raise ValueError("Error during prompt retrieval")
+                raise ValueError("ExplicitDocumentsExtraction.json prompt not found.")
             
             if query_dict.get("query", "").strip():
-                # Invoke LLM to select relevant documents
-                documents = self.llm.invoke(
+                # Invoke LLM to extract from query
+                documents = self._llm.invoke(
                     prompt,
                     query_dict,
                     True
@@ -78,41 +75,12 @@ class SourcesExtractor:
                 
                 status = "Done"
             else:
-                raise ValueError("Empty query provided to SourcesExtractor.")
-
+                raise ValueError("Empty query provided to ExplicitDocumentsExtraction.")
         except Exception as e:
             # Fallback: return all available sources
-            documents = [[src["name"], src["name"]] for src in self.dql_language.get_sources()]
+            documents = [[src["name"], src["name"]] for src in self._dql_language.get_sources()]
 
         # Log the extraction result
-        self.logger.info(f"Sources Extractor: {documents} - {status}")
+        self._logger.info(f"Sources Extractor: {documents} - {status}")
 
         return documents
-
-    # -------------------------------------------------------------------------
-    # Helper Method
-    # -------------------------------------------------------------------------
-    @staticmethod
-    def sources_string(sources: list) -> str:
-        """
-        Generate a formatted string of available sources for LLM input or logging.
-
-        Args:
-            sources (list): List of source dictionaries with 'name', 'description', and 'synonyms'.
-
-        Returns:
-            str: A formatted string listing all available sources and synonyms.
-        """
-        synonyms = [
-            f"'{synonym.strip()}'" for src in sources for synonym in src.get("synonyms", [])
-        ]
-
-        sources_list = [
-            f'\t\t- "{src["name"]}" (or {",".join(synonyms[index])}): {src["description"]}'
-            for index, src in enumerate(sources)
-        ]
-
-        if sources_list:
-            sources_list = ["\t- \"Legal Documents\": Only the following are available:"] + sources_list
-
-        return "\n".join(sources_list)

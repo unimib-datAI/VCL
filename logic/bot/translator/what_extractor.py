@@ -54,14 +54,15 @@ class WhatExtractor:
             str: Extracted 'what' content or a default fallback string.
         """
         # Get a formatted string of available 'what' elements based on sources
+        available_what = self._dql_language.get_available_what(sources)
         language_what_str = self._what_string(
-            self._dql_language.get_available_what(sources)
+            available_what
         )
 
         # Prepare the input dictionary for the LLM prompt
         query_dict = {
             "query": query,
-            "language_what": language_what_str,
+            "what": language_what_str,
             "feedback": ""
         }
 
@@ -82,6 +83,10 @@ class WhatExtractor:
                     query_dict,
                     True
                 )
+                
+                if what not in available_what and what != "altro" and what != "intero documento":
+                    self._logger.info(f"What Extractor: \"{what}\" not in available what")
+                    what = "altro"
                 
                 status = "Done"
             else:
@@ -113,7 +118,4 @@ class WhatExtractor:
         Returns:
             str: A newline-separated string listing all 'what' elements.
         """
-        # Creates a string like:
-        # - "element1"
-        # - "element2"
-        return "\n".join(f"- \"{item}\"" for item in what_list)
+        return "\n".join(f"- \"{item}\": {what_list[item]}" for item in what_list)

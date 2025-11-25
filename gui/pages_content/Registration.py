@@ -46,6 +46,7 @@ def show_registration():
                     st.success("Registrazione avvenuta con successo!")
                     _initialize_user_session(user)
                 else:
+                    st.error(user)
                     st.error("Username/Email non disponibili")
     
     st.markdown("---")

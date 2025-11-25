@@ -6,7 +6,7 @@
         "FORMATO OUTPUT",
         "",
         "\t- L'output deve essere un testo in linguaggio naturale scorrevole comprensibile",
-        "\t- Evidenzia però all'utente che l'applicazione è pensata per rispondere a domande di tema legale",
+        "\t- Se la richiesta non riguarda un tema legale, informa l’utente che l’applicazione è progettata per offrire supporto esclusivamente in ambito legale.",
         "\t- Non ci sono limitazioni sull'uso di elenchi puntati o tabelle"
     ],
     

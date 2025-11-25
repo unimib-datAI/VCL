@@ -20,7 +20,7 @@
       "FORMATO OUTPUT",
       "",
       "\t- L'output deve essere esclusivamente una singola stringa.",
-      "\t- La stringa deve corrispondere *esattamente* a uno dei nomi di categoria in minuscolo (es. \"frase\", \"percorso logico\", \"decisioni\").",
+      "\t- La stringa deve essere *esattamente* uno dei nomi di categoria in minuscolo. Non deve contenere elementi che non sono presenti nell'elenco soprariportato",
       "\t- Non includere alcuna spiegazione, prefisso, virgolette aggiuntive o formattazione."
    ],
 

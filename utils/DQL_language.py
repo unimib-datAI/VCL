@@ -1,6 +1,8 @@
 import os
 import re
 
+import threading
+
 from copy import deepcopy
 
 from utils.file_manager import FileHandler
@@ -32,8 +34,12 @@ class DQLLanguage:
     # ----------------------
     # --- Initialization ---
     # ----------------------
+    
+    # Singleton instance and thread lock
+    _instance = None
+    _lock = threading.Lock()
 
-    def __init__(self, user_id, storage: Storage, project_root, role: str = "Altro"):
+    def __init__(self, user_id, storage: Storage, project_root):
         """
         Initialize the DQLLanguage instance for a specific user.
 
@@ -52,7 +58,7 @@ class DQLLanguage:
         self._user_id = user_id
         self._storage = storage
         self._project_root = project_root
-        self._role = role
+        self._role = "Altro"
         
         # Internal cache for the user's full language definition
         self._full_language: dict | None = None
@@ -72,7 +78,41 @@ class DQLLanguage:
 
         # Initialize language and all derived properties
         self._update_parameters(to_retrieve=True)
+        
+        self._initialized = True
+        
+    @classmethod
+    def get_instance(
+        cls,
+        user_id = None, 
+        storage: Storage = None, 
+        project_root = None
+    ) -> "Storage":
+        """
+        Retrieve or create the singleton instance of DQLLanguage (thread-safe).
 
+        Args:
+            user_id (str): The unique identifier for the user.
+            storage (Storage): The application's storage (MongoDB) instance.
+            project_root (Path): The root directory of the project.
+
+        Returns:
+            Storage: Singleton instance.
+        """
+        if cls._instance is None:
+            with cls._lock:
+                # Double-check lock
+                if cls._instance is None:
+                    cls._instance = cls(user_id, 
+                                        storage,
+                                        project_root)
+        return cls._instance
+    
+    
+    def set_role(self, role):
+        self._role = role
+        self._update_parameters(to_retrieve=True)
+        
     # ---------------------------
     # --- Language Management ---
     # ---------------------------
@@ -334,7 +374,7 @@ class DQLLanguage:
         """
         return self._what_description_map.get(key, "")
 
-    def get_available_what(self, sources: list[str]) -> list[tuple[str, str]]:
+    def get_available_what(self, sources: list[str]) -> dict:
         """
         Retrieve 'what' elements available for a given set of sources.
         
@@ -345,19 +385,20 @@ class DQLLanguage:
             sources (list[str]): List of selected source names.
 
         Returns:
-            list[tuple[str, str]]: Tuples of (name, definition) for
+            dict: Dict of (name, definition) for
                                     available 'what' elements.
         """
         if not sources:
-            return []
+            return {}
 
         source_set = set(sources)
         
-        what_elements = [
-            (what.get("name", ""), what.get("definition", ""))
-            for what in self._what
-            if source_set.issubset(what.get("available", []))
-        ]
+        what_elements = {}
+        
+        for what in self._what:
+            if source_set.issubset(what.get("available", [])):
+                what_elements[what.get("name", "")] = what.get("definition", "")
+                
         return what_elements
     
     def _check_what_coherence(self):
@@ -657,7 +698,7 @@ class DQLLanguage:
             
             # Build the parts of the string
             name_part = f'"{src["name"]}"'
-            paren_part = f" (or {', '.join(synonyms)})" if synonyms else ""
+            paren_part = f" (o {', '.join(synonyms)})" if synonyms else ""
             desc_part = f': {src["description"]}'
             
             sources_list.append(f'\t\t- {name_part}{paren_part}{desc_part}')

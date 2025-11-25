@@ -57,10 +57,12 @@ class Config:
         self.spell_check_without_llm = self._system_CFG.spell_check_without_llm
         
         # --- Initialize user-specific components ---
-        self.language = DQLLanguage(self._user_id,
-                                    self.storage, 
-                                    self.project_root,
-                                    role)
+        self.language = DQLLanguage.get_instance(
+            self._user_id,
+            self.storage, 
+            self.project_root
+        )
+        self.language.set_role(role)
         
         # --- Setup logging directory ---
         self._log_dir = os.path.join(self.project_root, "logs")
@@ -72,33 +74,40 @@ class Config:
     
     def get_logger(self, name: str, level=logging.INFO) -> logging.Logger:
         """
-        Create or retrieve a logger configured with console and file handlers.
+        Create or retrieve a logger configured for the current request.
+
+        This method ensures that log handlers are reset for each request
+        to log to a new, request-specific file.
 
         Args:
-            name (str): Name of the logger (usually __name__).
-            level (int, optional): Logging level (default: logging.INFO).
+            name (str): Name of the logger (e.g., "Orchestrator").
+            level (int, optional): Logging level. Defaults to logging.INFO.
 
         Returns:
             logging.Logger: Configured logger instance.
         """
-        log_format = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
-        os.makedirs("logs", exist_ok=True)
-
-        log_file = os.path.join("logs", f"{self.get_request_id()}.log")
+        
+        # Log file is unique to this request
+        log_file = os.path.join(self._log_dir, f"{self.get_request_id()}.log")
+        
         logger = logging.getLogger(name)
         logger.setLevel(level)
 
-        # Avoid duplicate handlers
-        if not logger.handlers:
-            # Console handler
-            console_handler = logging.StreamHandler()
-            console_handler.setFormatter(logging.Formatter(log_format))
-            logger.addHandler(console_handler)
+        # Reset handlers: This is crucial. Because loggers are singletons,
+        # we must clear old handlers (e.g., from a previous request)
+        # to ensure we log to the correct new file (log_file).
+        if logger.hasHandlers():
+            logger.handlers.clear()
+        
+        # Console handler
+        console_handler = logging.StreamHandler()
+        console_handler.setFormatter(logging.Formatter(self._LOG_FORMAT))
+        logger.addHandler(console_handler)
 
-            # File handler
-            file_handler = logging.FileHandler(log_file, encoding="utf-8")
-            file_handler.setFormatter(logging.Formatter(log_format))
-            logger.addHandler(file_handler)
+        # File handler (specific to this request_id)
+        file_handler = logging.FileHandler(log_file, encoding="utf-8")
+        file_handler.setFormatter(logging.Formatter(self._LOG_FORMAT))
+        logger.addHandler(file_handler)
 
         return logger
     

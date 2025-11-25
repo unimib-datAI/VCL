@@ -120,12 +120,10 @@ class Retrieval:
         ]
 
         for label, method in retrieval_methods:
-            self._logger.info(f"Attempting to retrieve '{doc_name}' via {label}...")
             doc = method(doc_name)
             if doc:
                 self._logger.info(f"Document '{doc_name}' successfully retrieved from {label}.")
                 return doc
-            self._logger.info(f"'{doc_name}' not found in {label}.")
 
         # Fallback: If no document is found, treat the input
         # string 'doc_name' as raw text content.

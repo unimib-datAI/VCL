@@ -3,144 +3,137 @@
         {
             "key": "a",
             "command": "cerca",
-            "description": "Esegue una ricerca concettuale per individuare entità (parti, giudici, luoghi), istituti giuridici, o principi di diritto semanticamente correlati alla richiesta, andando oltre la mera corrispondenza testuale.",
+            "description": "Individua ed estrae puntualmente passaggi relativi a entità, istituti giuridici o concetti richiesti, garantendo la massima completezza informativa.",
             "guidelines": [
- 				"- Focalizzazione sulla Pertinenza: Estrai esclusivamente i passaggi di testo che rispondono direttamente e in modo inequivocabile alla richiesta dell'utente.",
- 				"- Esclusione del Superfluo: Ometti qualsiasi informazione che sia irrilevante, accessoria, solo vagamente correlata o che costituisca rumore rispetto all'obiettivo della ricerca.",
- 				"- Fedeltà Assoluta: Il contenuto estratto deve essere identico all'originale. Non sono permesse modifiche, sintesi, correzioni o parafrasi.",
- 				"- Completezza Contestuale: Assicurati di includere tutti i frammenti pertinenti, anche se dislocati in diverse parti del documento, affinché il risultato aggregato sia informativo e comprensibile.",
- 				"- Nessuna Aggiunta Esterna: L'output deve contenere solo il testo estratto dal documento, senza commenti, spiegazioni, introduzioni o qualsiasi testo non proveniente dalla fonte."
+                "- Pertinenza Rigorosa: Seleziona solo i passaggi che rispondono inequivocabilmente alla richiesta.",
+                "- Esaustività: Non limitarti a un singolo risultato; estrai TUTTE le occorrenze pertinenti presenti nel documento.",
+                "- Fedeltà Testuale: Riporta il testo esattamente come appare. Non parafrasare e non correggere.",
+                "- Gestione del Vuoto: Se il concetto cercato non esiste nel testo, scrivi: 'Nessuna corrispondenza trovata nel documento'. Non forzare collegamenti inesistenti.",
+                "- No Rumore: Escludi testo circostante se non strettamente necessario alla comprensione del frammento estratto."
             ]
         },
-
         {
             "key": "b",
             "command": "riassumi",
-            "description": "Produce una sintesi concisa del documento (es. atto, sentenza), preservando i punti chiave del fatto, le argomentazioni giuridiche e il dispositivo, eliminando le informazioni accessorie.",
+            "description": "Elabora una sintesi tecnica del documento, preservando integralmente i fatti determinanti, le argomentazioni in diritto e il dispositivo, eliminando solo le ridondanze stilistiche.",
             "guidelines": [
- 				"- Selezione dell'Essenziale: Isola i concetti chiave, i fatti principali, le argomentazioni portanti e le decisioni (come il dispositivo), scartando metodicamente tutto ciò che è accessorio.",
- 				"- Eliminazione delle Ridondanze: Rimuovi attivamente dettagli marginali, esempi superflui, ripetizioni e informazioni già espresse con altri termini.",
- 				"- Gestione delle Contraddizioni: Se emergono informazioni contrastanti all'interno del testo, privilegia il contenuto che appare più chiaro, completo e coerente con il contesto generale del documento.",
- 				"- Autosufficienza Informativa: Il riassunto deve essere logicamente autonomo e permettere la piena comprensione dell'argomento trattato senza necessitare la lettura del testo originale.",
- 				"- Riscrittura Concettuale: Il risultato non deve essere un \"copia-incolla\" di frasi selezionate, ma una nuova esposizione che fonde e rielabora i concetti fondamentali in un testo coeso e scorrevole."
+                "- Focus Legale: Mantieni intatti i riferimenti normativi, le date cruciali, i nomi delle parti e il cuore logico delle argomentazioni.",
+                "- Densità Informativa: Non sacrificare dettagli sostanziali per la brevità. Il riassunto deve essere denso di informazioni utili a un avvocato.",
+                "- Coerenza: Se il testo originale è contraddittorio, riporta la contraddizione senza tentare di risolverla arbitrariamente.",
+                "- Autonomia: Il testo prodotto deve permettere al professionista di comprendere il documento senza dover leggere l'originale.",
+                "- Assenza di Giudizio: Non aggiungere valutazioni personali sulla qualità del documento riassunto."
             ]
         },
-        
         {
             "key": "c",
             "command": "estrai semantico",
-            "description": "Isola e restituisce sezioni specifiche del documento giuridico dotate di autonoma rilevanza, come la ricostruzione del 'fatto', i 'motivi' della decisione, o il 'dispositivo'.",
+            "description": "Isola sezioni semanticamente autonome (es. 'Svolgimento del processo', 'Motivi', 'Dispositivo') anche se non esplicitamente titolate, restituendole con ricchezza di dettagli.",
             "guidelines": [
- 				"- Estrazione dell'Implicito: Identifica e porta alla luce gli elementi non testuali, come premesse sottintese, conclusioni non dichiarate e la struttura concettuale che sorregge il testo (es. la sezione \"fatto\" o \"motivi\" anche se non titolata).",
- 				"- Ricostruzione delle Relazioni: Mappa le relazioni semantiche tra le diverse parti del testo (es. come i fatti supportano una specifica richiesta, o come i motivi portano a una decisione).",
- 				"- Fedeltà Concettuale: Riformula liberamente i concetti individuati per renderli chiari e diretti. La priorità è preservare il significato e le relazioni tra le idee, non le parole originali.",
- 				"- Completezza Strutturale: Assicurati di includere tutte le componenti semantiche richieste (es. se si estraggono i \"motivi\", includerli tutti) per fornire un quadro completo.",
- 				"- Presentazione come Analisi: Il risultato deve essere un'esposizione autonoma che spiega la struttura semantica sottostante al documento."
+                "- Identificazione Implicita: Riconosci le sezioni in base al contenuto (es. narrazione dei fatti) anche in assenza di intestazioni.",
+                "- Completezza della Sezione: Quando estrai una parte (es. i 'motivi'), includi TUTTE le argomentazioni che ne fanno parte, non solo le principali.",
+                "- Riformulazione Chiara: Puoi riorganizzare la sintassi per chiarezza, ma non alterare il significato giuridico né omettere sfumature rilevanti.",
+                "- Onestà Intellettuale: Se una sezione semantica (es. 'conclusioni') è assente, dichiaralo esplicitamente anziché dedurla.",
+                "- Struttura Logica: Presenta il risultato in modo che sia evidente la funzione della parte estratta."
             ]
         },
-        
         {
             "key": "d",
             "command": "estrai logico",
-            "description": "Ricostruisce l'iter argomentativo e la catena di inferenze logiche (es. sillogismi) utilizzate per giungere alla decisione o per fondare una tesi difensiva.",
+            "description": "Mappa l'intero iter logico-argomentativo, esplicitando premesse, passaggi inferenziali e conclusioni, evidenziando la struttura del ragionamento giuridico.",
             "guidelines": [
- 				"- Estrazione dell'Implicito: Identifica e porta alla luce gli elementi non testuali, come premesse sottintese, conclusioni non dichiarate, sillogismi nascosti e l'intera struttura argomentativa implicita.",
- 				"- Ricostruzione del Ragionamento: L'obiettivo è mappare la catena logica (relazioni di causa-effetto, premesse-conseguenze) e l'organizzazione inferenziale che sorregge il testo.",
- 				"- Fedeltà Logica: Riformula liberamente i concetti individuati per renderli chiari. La priorità assoluta è preservare il significato logico e le relazioni inferenziali, non le parole originali.",
- 				"- Completezza Argomentativa: Assicurati di includere tutti i passaggi logici necessari per comprendere il percorso di ragionamento, anche quelli che potrebbero sembrare secondari, per evitare salti logici.",
- 				"- Presentazione come Analisi: Il risultato deve essere un'esposizione originale e autonoma che spiega il percorso di ragionamento sottostante al documento."
+                "- Dettaglio Sequenziale: Ricostruisci la catena logica passo dopo passo. Non saltare i passaggi intermedi anche se sembrano ovvi.",
+                "- Esplicitazione del Non Detto: Rendi manifesti i sillogismi impliciti o le premesse sottintese solo se chiaramente deducibili dal testo.",
+                "- Fedeltà al Ragionamento: Non correggere errori logici del testo originale; riporta il ragionamento esattamente come è stato formulato dall'autore.",
+                "- Completezza: Includi tutte le tesi (anche quelle subordinate o rigettate) se funzionali alla comprensione della decisione finale.",
+                "- Output Analitico: Struttura la risposta per mostrare chiaramente le relazioni causa-effetto o premessa-conseguenza."
             ]
         },
-        
         {
             "key": "e",
             "command": "confronta",
-            "description": "Esegue un'analisi comparativa tra due o più documenti (es. atto di citazione e comparsa di risposta, sentenza di primo e secondo grado) evidenziando concordanze e discordanze fattuali, normative o argomentative.",
+            "description": "Esegue un'analisi comparativa granulare tra documenti, evidenziando ogni singola convergenza o divergenza su fatti, norme e conclusioni.",
             "guidelines": [
- 				"- Identificazione di Concordanze: Individua e raggruppa tutti gli elementi comuni ai documenti: concetti, temi, fatti descritti in modo analogo, tesi condivise e conclusioni identiche.",
- 				"- Evidenziazione delle Discordanze: Isola e spiega le differenze di contenuto, come diverse ricostruzioni fattuali, diverse norme invocate, prospettive opposte, o conclusioni divergenti.",
- 				"- Confronto delle Argomentazioni: Non limitarti ai fatti, ma analizza e confronta i ragionamenti sottostanti, le premesse da cui partono e la coerenza logica con cui arrivano alle rispettive conclusioni.",
- 				"- Supporto con Prove Testuali: Se utile per chiarire un punto di concordanza o discordanza, utilizza brevi citazioni fedeli tratte dai documenti come prova fattuale a supporto dell'analisi.",
- 				"- Neutralità Analitica: L'analisi deve essere oggettiva, limitandosi a registrare le similitudini e le differenze senza esprimere giudizi di valore, opinioni o preferenze."
+                "- Analisi Differenziale Dettagliata: Non limitarti alle differenze macroscopiche; scendi nel dettaglio delle sfumature (es. date diverse, interpretazioni normative lievi).",
+                "- Supporto Probatorio: Cita brevi passaggi testuali dai documenti a confronto per sostanziare le differenze rilevate.",
+                "- Oggettività Totale: Registra le discrepanze senza indicare quale documento sia 'corretto', a meno che uno non smentisca esplicitamente l'altro.",
+                "- Struttura Chiara: Usa tabelle o elenchi contrapposti per rendere immediata la visualizzazione delle differenze.",
+                "- Esaustività del Confronto: Copri tutti gli aspetti (fatto, diritto, conclusioni) senza tralasciarne nessuno per brevità."
             ]
         },
-        
         {
             "key": "f",
             "command": "integra",
-            "description": "Fonde il contenuto di più documenti o versioni (es. diverse bozze di un atto) in un unico testo consolidato, risolvendo ridondanze o contraddizioni.",
+            "description": "Genera un testo unico consolidato fondendo più fonti, risolvendo le sovrapposizioni e mantenendo ogni singolo dettaglio informativo unico presente nelle fonti.",
             "guidelines": [
- 				"- Identificazione delle Sovrapposizioni: Analizza tutti i documenti sorgente per trovare informazioni identiche, quasi identiche o palesemente ridondanti.",
- 				"- Consolidamento del Contenuto: Mantieni una sola versione dell'informazione ridondante, scegliendo quella più completa, aggiornata e chiara.",
- 				"- Risoluzione dei Conflitti: Se i documenti presentano contraddizioni (es. date diverse, fatti contrastanti), segnala l'incongruenza o, se il contesto lo permette, seleziona l'informazione palesemente corretta (es. la versione di un atto successivo).",
- 				"- Creazione di un Testo Unico: Fondi tutto il contenuto non duplicato e quello risolto in un singolo testo coeso.",
- 				"- Completezza Finale: Assicurati che il testo consolidato contenga tutte le informazioni uniche e pertinenti di tutti i documenti di partenza, senza perdere dati essenziali nel processo di fusione."
+                "- Conservazione dell'Informazione: Se un dettaglio è presente in un solo documento, DEVE essere presente nel testo finale.",
+                "- Gestione Conflitti: In caso di dati inconciliabili (es. due date diverse per lo stesso evento), riportali entrambi segnalando l'incongruenza.",
+                "- Pulizia: Elimina solo le ripetizioni identiche. Le variazioni di contenuto devono essere preservate.",
+                "- Coesione: Il testo finale deve scorrere come un documento unico, con raccordi logici tra le parti integrate.",
+                "- Completezza Massima: Il risultato non deve essere più breve della somma delle parti uniche; la lunghezza non è un vincolo."
             ]
         },
-        
         {
             "key": "g",
             "command": "verifica",
-            "description": "Effettua un controllo di coerenza interna del documento, verificando la correttezza dei riferimenti normativi e giurisprudenziali citati e la congruenza delle argomentazioni.",
+            "description": "Effettua un controllo tecnico su riferimenti normativi/giurisprudenziali e coerenza interna, segnalando solo errori oggettivi o incongruenze palesi.",
             "guidelines": [
- 				"- Controllo dei Riferimenti: Estrai tutti i riferimenti a norme e giurisprudenza. Verifica la loro correttezza formale (es. numero articolo, data sentenza) e la loro pertinenza (se sono applicabili al caso descritto).",
- 				"- Analisi di Coerenza Interna: Esamina il documento per individuare eventuali contraddizioni logiche o fattuali (es. affermazioni in palese contrasto tra loro in diverse sezioni).",
- 				"- Valutazione della Congruenza Argomentativa: Verifica che le conclusioni tratte (es. la decisione) siano una conseguenza logica e giuridicamente fondata delle premesse (fatti e norme invocate).",
- 				"- Segnalazione Esclusiva delle Anomalie: L'output deve evidenziare solamente le anomalie riscontrate: riferimenti errati, incoerenze fattuali, o fallacie logiche nel ragionamento.",
- 				"- Astenersi dal Merito: La verifica è tecnica e non deve esprimere un'opinione sul \"merito\" (se la decisione è \"giusta\" o \"sbagliata\"), ma solo sulla sua correttezza formale e logica interna."
+                "- Controllo Puntuale: Verifica l'esistenza e la correttezza formale delle citazioni (articoli, sentenze).",
+                "- Rilevazione Contraddizioni: Segnala passaggi in cui il documento contraddice se stesso (es. premessa A, conclusione non-A).",
+                "- Astensione dal Merito: Non giudicare la strategia difensiva o la giustizia della sentenza. Limitati alla correttezza logico-formale.",
+                "- Precisione nella Segnalazione: Indica esattamente dove si trova l'errore o l'incongruenza.",
+                "- Output Negativo: Se non ci sono errori, rispondi: 'L'analisi non ha rilevato incongruenze formali o errori nei riferimenti'."
             ]
         },
-        
         {
             "key": "h",
             "command": "analizza",
-            "description": "Scompone il documento nelle sue parti costitutive (es. eccezioni, motivi, domande) per valutarne la struttura, la completezza formale e la tenuta logico-giuridica dell'impianto argomentativo.",
+            "description": "Decompone il documento nei suoi elementi costitutivi (fatti, diritti, richieste) valutandone la completezza tecnica rispetto allo scopo dell'atto.",
             "guidelines": [
- 				"- Scomposizione Strutturale: Identifica e isola le componenti logico-giuridiche fondamentali del documento (es. petizione, eccezioni, motivi di impugnazione, domande, dispositivo).",
- 				"- Valutazione di Completezza: Per ogni componente identificata, valuta se contiene tutti gli elementi essenziali richiesti (es. una domanda è supportata da fatti e da una richiesta specifica? Un motivo è articolato?).",
- 				"- Analisi della Tenuta Logica: Esamina l'impianto argomentativo complessivo, valutando come le diverse parti si supportano a vicenda e se il ragionamento che le lega è solido e privo di vizi logici evidenti.",
- 				"- Focus sulla Funzione: L'analisi deve spiegare la funzione di ciascuna parte (es. \"questa sezione serve a contestare il nesso causale\") e valutarne l'efficacia nel contesto dell'atto.",
- 				"- Output come Report: Il risultato è un report analitico che scompone l'atto e ne valuta criticamente la struttura e la solidità argomentativa."
+                "- Anatomia dell'Atto: Isola ogni componente (es. 'domanda riconvenzionale') e descrivine il contenuto dettagliato.",
+                "- Valutazione di Completezza: Per ogni elemento, verifica se sono presenti i requisiti minimi (es. 'la domanda manca di petitum specifico').",
+                "- Analisi Relazionale: Spiega come le parti si connettono (es. 'l'eccezione preliminare rende assorbita la domanda X').",
+                "- Nessuna Invenzione: Se una parte essenziale manca, segnalalo chiaramente come 'elemento assente'.",
+                "- Report Dettagliato: Fornisci un quadro esaustivo della struttura, senza omettere sezioni secondarie."
             ]
         },
-        
         {
             "key": "i",
             "command": "riorganizza",
-            "description": "Ristruttura il testo o parti di esso secondo un ordine logico, cronologico (es. sequenza dei fatti) o per materia (es. raggruppando i motivi di appello).",
+            "description": "Ristruttura le informazioni esistenti secondo un nuovo criterio logico o cronologico, senza alterare, riassumere o perdere alcun contenuto originale.",
             "guidelines": [
- 				"- Identificazione del Criterio: Determina il criterio di riordino richiesto (es. cronologico per i fatti, tematico per i motivi, logico-deduttivo per le argomentazioni).",
- 				"- Scomposizione in Unità: Fraziona il testo originale in unità informative minime (es. singoli fatti, singole argomentazioni, singole norme citate).",
- 				"- Riaggregazione secondo Criterio: Ricostruisci un nuovo testo assemblando le unità informative nell'ordine definito dal criterio (es. tutti i fatti dall'inizio alla fine; tutti gli argomenti relativi al danno patrimoniale raggruppati).",
- 				"- Preservazione Assoluta del Contenuto: Il contenuto di ogni singola unità informativa deve rimanere inalterato nella sua sostanza. L'intervento riguarda solo la sequenza e la struttura.",
- 				"- Coerenza del Testo Finale: Assicurati che il testo riorganizzato sia scorrevole e che le transizioni tra le parti riordinate siano logiche."
+                "- Criterio Rigido: Attieniti strettamente al criterio di ordinamento richiesto (es. cronologico, per materia).",
+                "- Integrità dei Dati: Ogni singola informazione del testo originale deve essere ricollocata nel nuovo ordine. Non tagliare nulla.",
+                "- Atomicità: Sposta i singoli blocchi informativi (fatti, argomenti) nella loro interezza.",
+                "- Fluidità: Assicura che, nonostante il riordino, il testo rimanga leggibile e grammaticalmente coeso.",
+                "- Verifica Finale: Assicurati che nessun concetto sia stato perso nel processo di spostamento."
             ]
         },
-        
         {
             "key": "j",
             "command": "classifica",
-            "description": "Attribuisce a singole porzioni di testo un'etichetta giuridica specifica (es. 'domanda riconvenzionale', 'motivo d'impugnazione', 'norma applicabile'), indicandone la funzione processuale o argomentativa.",
+            "description": "Attribuisce etichette giuridiche precise a porzioni di testo, basandosi sulla funzione sostanziale e non solo sulla forma.",
             "guidelines": [
- 				"- Analisi Funzionale del Testo: Leggi il documento e identifica blocchi di testo che svolgono una funzione giuridica, processuale o argomentativa specifica.",
- 				"- Attribuzione dell'Etichetta: Assegna a ciascun blocco identificato l'etichetta giuridica più precisa possibile (es. \"eccezione di prescrizione\", \"motivo di appello - violazione di legge\", \"ricostruzione del fatto\", \"petitum\").",
- 				"- Corrispondenza Esatta: L'etichettatura deve essere granulare. Se una sezione contiene sia un'eccezione sia una domanda, devono essere identificate e classificate separatamente.",
- 				"- Focus sulla Sostanza: La classificazione non si basa sui titoli (es. \"In Fatto\"), ma sulla reale funzione che quel testo svolge nell'atto (es. \"esposizione dei fatti costitutivi della domanda\").",
- 				"- Output come Mappatura: Il risultato deve presentare la mappatura chiara tra le porzioni di testo (o il loro contenuto sintetico) e l'etichetta giuridica attribuita."
+                "- Granularità: Classifica ogni segmento rilevante. Non limitarti a etichette generiche per interi paragrafi.",
+                "- Precisione Terminologica: Usa la terminologia giuridica corretta (es. 'eccezione di incompetenza' non solo 'eccezione').",
+                "- Sostanza su Forma: Classifica in base a ciò che il testo *fa* (es. introduce un fatto), non a come è intitolato.",
+                "- Mappatura Completa: Associa chiaramente ogni classificazione al testo o al concetto di riferimento.",
+                "- Non Inventare Categorie: Usa categorie giuridiche note; se un testo è ambiguo, segnalalo come 'non classificabile univocamente'."
             ]
         },
-        
         {
             "key": "k",
             "command": "altro",
-            "description": "L'intento dell'utente non è riconducibile a uno dei comandi specifici predefiniti.",
-            "default": true,
-            "atomic": ["*"],
+            "description": "Gestisce richieste non standard applicando i principi generali di fedeltà al testo, esaustività e pertinenza legale.",
             "guidelines": [
- 				"- Comprensione dell'Intento: Analizza la richiesta dell'utente per capire l'obiettivo finale, anche se non corrisponde a un comando standard.",
- 				"- Applicazione dei Principi Generali: Esegui l'operazione richiesta applicando i principi fondamentali di pertinenza, accuratezza e fedeltà al contenuto.",
- 				"- Flessibilità Operativa: Adatta il processo per soddisfare la richiesta specifica, combinando se necessario elementi di ricerca, sintesi o analisi per produrre il risultato desiderato.",
- 				"- Risposta Diretta: Fornisci una risposta che sia direttamente utile e comprensibile, rispondendo nel modo più fedele possibile all'intento non classificato."
+                "- Interpretazione Conservativa: Cerca di soddisfare la richiesta attenendoti strettamente ai dati presenti.",
+                "- Massima Dettagliatezza: In dubbio, fornisci più dettagli piuttosto che meno.",
+                "- Trasparenza: Se la richiesta richiede un'operazione impossibile con i dati forniti, dichiaralo subito.",
+                "- Stile Professionale: Mantieni il tono formale e l'assenza di concetti irrilevanti per il dominio legale.",
+                "- Adattabilità Rigorosa: Usa gli strumenti di analisi, sintesi o estrazione secondo necessità, ma senza mai inventare informazioni."
+            ],
+            "default": true,
+            "atomic": [
+                "*"
             ]
         }
     ],
@@ -153,21 +146,51 @@
         },
 
         {
-            "name": "sentenza di secondo grado",
-            "synonyms": ["s. app.", "sent. ii° gr", "s2"],
-            "description": "Provvedimento decisorio emesso dall'organo giudicante di appello (es. Corte d'Appello) in seguito all'impugnazione della sentenza di primo grado."
+            "name": "atto di citazione",
+            "synonyms": [],
+            "description": "È l'atto introduttivo del giudizio con cui l'attore (chi inizia la causa) chiama in giudizio il convenuto, espone i fatti e formula le sue richieste al giudice"
         },
 
         {
-            "name": "memoria giudiziale",
-            "synonyms": ["memoria", "m1", "m2"],
-            "description": "Atto processuale scritto, depositato da una parte costituita in giudizio, contenente argomentazioni, istanze o repliche (es. memoria ex art. 183 c.p.c.)."
+            "name": "atto difensivo costituzione iniziale convenuta",
+            "synonyms": [],
+            "description": "È il primo atto difensivo del convenuto (chi viene chiamato in causa). Con questo documento il convenuto si presenta in giudizio, contesta le richieste dell'attore e propone le proprie difese ed eccezioni"
         },
 
         {
-            "name": "ricorso giudiziale",
-            "synonyms": ["ricorso", "r1", "r2"],
-            "description": "Atto introduttivo del giudizio o mezzo di impugnazione (es. ricorso per cassazione) con cui si adisce un'autorità giudiziaria per ottenere un provvedimento."
+            "name": "memoria attrice: precisazione delle domande",
+            "synonyms": [],
+            "description": "La parte attrice precisa o modifica le domande e le eccezioni già proposte, senza però introdurne di nuove."
+        },
+
+        {
+            "name": "memoria attrice: richieste mezzi istruttori",
+            "synonyms": [],
+            "description": "La parte attrice richiede i mezzi di prova (es. testimoni, documenti) che si vogliono utilizzare per dimostrare i fatti."
+        },
+
+        {
+            "name": "memoria convenuta: precisazione delle difese",
+            "synonyms": [],
+            "description": "La parte convenuta precisa o modifica le difese già proposte, senza però introdurne di nuove."
+        },
+
+        {
+            "name": "memoria convenuta: richieste mezzi istruttori",
+            "synonyms": [],
+            "description": "La parte convenuta richiede i mezzi di prova (es. testimoni, documenti) che si vogliono utilizzare per dimostrare i fatti."
+        },
+
+        {
+            "name": "memoria convenuta: prova contraria finale",
+            "synonyms": [],
+            "description": "La parte convenuta indica le prove \"contrarie\" per rispondere alle richieste di prova della controparte."
+        },
+
+        {
+            "name": "atto conclusivo finale difesa attrice",
+            "synonyms": [],
+            "description": "È l'atto difensivo finale scritto, depositato al termine della causa. Riassume l'intero svolgimento del processo e illustra le ragioni di fatto e di diritto per cui il giudice dovrebbe accogliere le proprie conclusioni, alla luce di quanto emerso durante l'istruttoria."
         }
     ],
 
@@ -176,10 +199,15 @@
             "name": "frase",
             "definition": "L'operazione si focalizza su una specifica proposizione o un estratto testuale letterale (es. 'cerca questa citazione').",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "cerca"
@@ -190,10 +218,15 @@
             "name": "persona",
             "definition": "La ricerca o l'analisi è mirata a persone fisiche (es. Tizio, Caio), parti processuali (attore, convenuto, terzo intervenuto) o organi giudicanti (es. il Giudice Istruttore).",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "cerca"
@@ -204,10 +237,15 @@
             "name": "fonte",
             "definition": "Ricerca mirata a riferimenti normativi (es. 'art. 2043 c.c.'), giurisprudenziali (massime o sentenze) o dottrinali citati all'interno del testo.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "cerca"
@@ -218,10 +256,15 @@
             "name": "organizzazione",
             "definition": "La ricerca è focalizzata su entità giuridiche, pubbliche o private, menzionate nel testo (es. società, enti pubblici, istituti di credito).",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "cerca"
@@ -232,10 +275,15 @@
             "name": "luogo",
             "definition": "Ricerca di toponimi o luoghi geografici rilevanti ai fini della competenza territoriale o della descrizione dei fatti (es. 'il luogo del sinistro').",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "cerca"
@@ -246,10 +294,15 @@
             "name": "denaro",
             "definition": "Ricerca o estrazione di qualsiasi importo monetario, inclusi il petitum (somma richiesta), il risarcimento del danno, o la liquidazione delle spese di lite.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "cerca"
@@ -260,10 +313,15 @@
             "name": "precedente",
             "definition": "Ricerca specifica di precedenti giurisprudenziali (sentenze passate) invocati a sostegno di una tesi o utilizzati dal giudice come fondamento della decisione.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "cerca"
@@ -274,10 +332,15 @@
             "name": "sillogismo",
             "definition": "Estrazione di uno specifico schema argomentativo che applica una norma (premessa maggiore) a un fatto (premessa minore) per trarne una conclusione giuridica.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "estrai logico"
@@ -288,10 +351,15 @@
             "name": "percorso logico",
             "definition": "Ricostruzione dell'intera catena argomentativa (ratio decidendi) seguita dal giudice o dalla parte, dall'analisi dei fatti all'applicazione delle norme.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "estrai logico"
@@ -302,10 +370,15 @@
             "name": "passaggio logico",
             "definition": "Analisi di una singola inferenza o di uno specifico snodo argomentativo all'interno del ragionamento giuridico complessivo.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "estrai logico"
@@ -316,10 +389,15 @@
             "name": "fatto",
             "definition": "Estrazione delle parti del testo relative alla ricostruzione storica degli eventi, alle circostanze materiali e alle prove che costituiscono l'oggetto della controversia.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -330,10 +408,15 @@
             "name": "decisioni",
             "definition": "Estrazione del dispositivo della sentenza, ovvero la parte finale che contiene la statuizione decisoria del giudice (es. 'accoglie', 'respinge', 'condanna').",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -344,10 +427,15 @@
             "name": "motivi",
             "definition": "Estrazione delle argomentazioni in fatto e in diritto (ratio decidendi) che costituiscono la motivazione e il fondamento logico-giuridico della decisione.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -358,10 +446,15 @@
             "name": "richieste",
             "definition": "Estrazione delle conclusioni o delle istanze formulate dalle parti (es. domande principali, eccezioni, richieste istruttorie) e rivolte al giudice.",
             "available": [
-                "sentenza di primo grado",
-                "sentenza di secondo grado",
-                "memoria giudiziale",
-                "ricorso giudiziale"
+                "atto conclusivo finale difesa attrice",
+                "atto di citazione",
+                "atto difensivo costituzione iniziale convenuta",
+                "memoria attrice: precisazione delle domande",
+                "memoria attrice: richieste mezzi istruttori",
+                "memoria convenuta: richieste mezzi istruttori",
+                "memoria convenuta: precisazione delle difese",
+                "memoria convenuta: prova contraria finale",
+                "sentenza di primo grado"
             ],
             "relative_command": [
                 "estrai semantico"

@@ -1,6 +1,7 @@
+import itertools
+
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
-
 
 class Planner:
     """
@@ -69,8 +70,40 @@ class Planner:
                 # Only one source, no decomposition needed
                 self._logger.info("No decomposition required: Single operation.")
                 return [query]
-
-        # Case 2: The query's command is a final command (e.g., 'summarize')
+        elif command_key == "riassumi" and len(query.get("from", [])) > 1:
+            middle_step = [
+                {
+                    "id": f"{query.get('id', '')}_{i}",
+                    "command": command_key,
+                    "from": [source],
+                    "what": query.get("what", "")
+                }
+                for i, source in enumerate(query.get("from", []))
+            ]
+            
+            last_ids = [op.get("id", "") for op in middle_step]
+            
+            final_op = {
+                "id": f"{query.get('id', '')}",
+                "command": "integra",
+                "from": last_ids,
+                "what": query.get("what", ""),
+                "how": query.get("how", {})
+            }
+            
+            ops = []
+            
+            for op in middle_step:
+                ops.append(self._create_operations(op, middle_commands[0], command_key))
+                
+            ops = list(itertools.chain.from_iterable(
+                x if isinstance(x, list) else [x] for x in ops
+            ))
+            ops.append(final_op)
+            
+            return ops
+                
+        # Case 3: The query's command is a final command (e.g., 'summarize')
         # We must first run the appropriate middle command (e.g., 'search')
         # on all sources, and then run the final command.
         self._logger.info("Decomposition required: Creating intermediate and final operations.")
@@ -125,6 +158,8 @@ class Planner:
             "how": query.get("how", {}) # Apply conditions here
         }
 
+        i = len(atomic_ops)
+        
         self._logger.info("Final aggregation operation:")
         str_command = final_op.get("command", "")
         str_from = str(final_op.get("from", []))

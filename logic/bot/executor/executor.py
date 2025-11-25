@@ -16,7 +16,18 @@ Dependencies:
 import re
 from copy import deepcopy
 
-from logic.bot.executor.retrieval import Retrieval
+from logic.bot.executor.tools.retrieval import Retrieval
+from logic.bot.executor.tools.altro import altro
+from logic.bot.executor.tools.analizza import analizza
+from logic.bot.executor.tools.cerca import cerca
+from logic.bot.executor.tools.classifica import classifica
+from logic.bot.executor.tools.confronta import confronta
+from logic.bot.executor.tools.estrai_logico import estrai_logico
+from logic.bot.executor.tools.estrai_semantico import estrai_semantico
+from logic.bot.executor.tools.integra import integra
+from logic.bot.executor.tools.riassumi import riassumi
+from logic.bot.executor.tools.riorganizza import riorganizza
+from logic.bot.executor.tools.verifica import verifica
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
 
@@ -35,6 +46,19 @@ class Executor:
 
     # Regex to find markdown-style headings (e.g., # Heading, ## Subheading)
     _pattern = r'(?m)^\s*(#{1,6})\s*(.+)$'
+    
+    FUNCTION_MAP = {
+        "analizza": analizza,
+        "cerca": cerca,
+        "classifica": classifica,
+        "confronta": confronta,
+        "estrai logico": estrai_logico,
+        "estrai semantico": estrai_semantico,
+        "integra": integra,
+        "riassumi": riassumi,
+        "riorganizza": riorganizza,
+        "verifica": verifica
+    }
 
     # ----------------------
     # --- Initialization ---
@@ -74,50 +98,21 @@ class Executor:
             tuple[str, dict]: Generated text and the (potentially modified)
                               operation dict.
         """
+        command = operation.get("command", "altro")
+        
         # Step 1: Retrieve relevant documents for this operation
         docs = Retrieval(self._cfg, operations).execute(operation)
-
-        # Step 2: Handle special case: request for the full document
-        # If 'what' is "intero documento" and there's only one doc,
-        # return its text directly without calling the LLM.
-        if operation.get("what", "") == "intero documento" and len(docs) == 1:
-            result = "\n\n".join([d["text"] for d in docs]).strip()
-            self._logger.info("Full document requested. Skipping LLM invocation.")
-            return result, operation
-
-        # Step 3: Select prompt and build state based on the command
         
-        # Case a: 'altro' (default/other command)
-        # This uses a simpler prompt that relies on the raw query and context.
-        if operation.get("command", "") == "altro" or operation.get("what", "") == "altro":
-            state = {
-                "query": self._or_query,
-                "context": self._build_context(docs, operation.get("from", []))
-            }
-            prompt = self._language.prompts.get("GeneratorDefault.json")
+        context = self._build_context(docs)
+        what = operation.get("what", "")
+        how = self._format_conditions(operation.get("how", {}))
         
-        # Case b: Standard DQL command (e.g., 'riassumi', 'confronta')
-        # This uses a structured prompt with guidelines, conditions, etc.
+        if command == "altro":
+            result = altro(self._or_query, context)
         else:
-            state = {
-                "feedback": "",
-                "how": self._format_conditions(operation.get("how", {})),
-                "context": self._build_context(docs, operation.get("from", [])),
-                "guidelines": self._language.get_guidelines_from_command(operation.get("command", "")),
-                "description_command": self._language.get_description_from_command(operation.get("command", "")),
-                "what": operation.get("what", ""),
-                "description_what": self._language.get_description_from_what(operation.get("what", ""))
-            }
-            prompt = self._language.prompts.get("Generator.json")
+            result = self.FUNCTION_MAP.get(command)(context, what, how)
 
-        # Step 4: Invoke LLM with the selected prompt and state
-        if not prompt:
-            self._logger.error(f"Could not find a generator prompt for command: {operation.get('command')}")
-            return "Error: Could not determine how to process this request.", operation
-            
-        result = self._llm.invoke(prompt, state)
-
-        # Step 5: Format headings in the result (e.g., # -> **)
+        # Format headings in the result (e.g., # -> **)
         result = re.sub(self._pattern, self._format_heading, result)
 
         return result, operation
@@ -143,11 +138,11 @@ class Executor:
             return ""
 
         # Start of the conditions block
-        conditions = ["However, the response must satisfy the following conditions:"]
+        conditions = ["Tuttavia, l'utente ha posto esplicitamente che la risposta debba soddisfare le seguenti condizioni:"]
         for key, value in how.items():
             if value:
                 # Add each valid condition
-                conditions.append(f"- Condition \"{key}\": {value}")
+                conditions.append(f"- Condizione \"{key}\": {value}")
 
         if len(conditions) == 1:
             # No valid conditions were added
@@ -158,14 +153,12 @@ class Executor:
             return "\n".join(conditions)
 
     @staticmethod
-    def _build_context(docs: list[dict], names: list[str]) -> str:
+    def _build_context(docs: list[dict]) -> str:
         """
         Build a formatted context string from retrieved documents.
 
         Args:
             docs (list[dict]): List of retrieved document dictionaries.
-            names (list[str]): List of document names/identifiers from the
-                               operation's 'from' field.
 
         Returns:
             str: A single string containing all concatenated document context.
@@ -177,13 +170,8 @@ class Executor:
         
         # Label documents with their source names (e.g., "op_1", "doc_A")
         # This helps the LLM link intermediate results.
-        if len(docs) == len(names):
-            for i, doc in enumerate(docs):
-                context_lines.append(f"[Document {i + 1}: \"{names[i]}\"]\n\n{doc['text']}\n\n---")
-        else:
-            # Fallback if names and docs mismatch (should not happen)
-            for i, doc in enumerate(docs):
-                context_lines.append(f"[Document {i + 1}]\n\n{doc['text']}")
+        for doc in docs:
+            context_lines.append(f"[D. \"{doc['type']}\"]\n\n{doc['text']}\n\n---")
         
         context_str = "\n\n".join(context_lines).strip()
         

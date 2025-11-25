@@ -5,6 +5,8 @@ from gui.pages_content.Login import show_login
 from gui.pages_content.Registration import show_registration
 from gui.pages_content.Home import show_home
 from gui.pages_content.Settings import show_settings
+from gui.pages_content.Documents import show_documents
+from gui.pages_content.Info import show_info
 
 from utils.storage import Storage
 
@@ -16,6 +18,8 @@ PAGE_MAP: Dict[str, Callable] = {
     "Registration": show_registration,
     "Home": show_home,
     "Settings": show_settings,
+    "Documents": show_documents,
+    "Info": show_info
 }
 
 # --- Session Management Helpers ---
@@ -58,6 +62,12 @@ def _handle_logout() -> None:
         
     if "messages" in st.session_state:
         del st.session_state["messages"]
+        
+    if "docs" in st.session_state:
+        del st.session_state["docs"]
+        
+    if "current_doc" in st.session_state:
+        del st.session_state["current_doc"]
 
     st.query_params["page"] = "Login"
     st.rerun()
@@ -96,6 +106,18 @@ def _render_sidebar() -> None:
                 st.rerun()
         
         st.divider()
+        
+        # Documents
+        if st.button("📁 Visualizza Documenti", use_container_width=True):
+            if st.query_params.get("page") != "Documents":
+                st.query_params["page"] = "Documents"
+                st.rerun()
+                
+        # Informazioni Linguaggio
+        if st.button("ℹ️ Informazioni Linguaggio", use_container_width=True):
+            if st.query_params.get("page") != "Info":
+                st.query_params["page"] = "Info"
+                st.rerun()
         
         # Settings
         if st.button("⚙️ Impostazioni", use_container_width=True):

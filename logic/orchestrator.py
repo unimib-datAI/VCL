@@ -109,7 +109,7 @@ class Orchestrator:
             self._logger.error("Request processing failed")
             self._logger.exception(e)
             # Define a safe fallback response
-            structured_query, operations, result = {}, [], f"Si è verificato un errore. Riprova."
+            structured_query, operations, result = {}, [], f"Si è verificato un errore. Riprova. {e}"
 
         # Compile and return the final response object
         response = self._finalize_response(prompt, structured_query, operations, result)
