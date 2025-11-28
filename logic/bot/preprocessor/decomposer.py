@@ -8,18 +8,24 @@ class Decomposer():
     _instance = None  # Holds the singleton instance
     _lock = threading.Lock()  # Thread lock for safe initialization
     
+    # ----------------------
+    # --- Initialization ---
+    # ----------------------
+
     def __init__(self, cfg: Config):
         """
-        Initialize the Decompose class.
+        Initialize the Decomposer with configuration and resources.
 
         Args:
-            cfg (Config): The global configuration instance containing logger
-                          and other settings.
+            cfg (Config): The global configuration object providing access to
+                          the LLM instance, paths, and language settings.
         """
+        self._cfg = cfg
+        self._llm = cfg.llm
+        self._project_root = cfg.project_root
+        self._dql_language = cfg.language
         
-        self.llm = cfg.llm
-        self.logger = cfg.get_logger("Decompose")
-        self.project_root = cfg.project_root
+        self._logger = cfg.get_logger("Decomposer")
         
     @classmethod
     def get_instance(cls, cfg: Config):
@@ -38,50 +44,72 @@ class Decomposer():
                     cls._instance = cls(cfg)
         return cls._instance
         
-    def decompose(self, query: str) -> nx.DiGraph:
-        self.logger.info(f"Correction and Decomposition by LLM: Starting")
+    def decompose(self, query: str) -> list:
+        status = "Error"
         
-        query = self.llm.invoke(
-            os.path.join(self.project_root, "documents", "prompts", "rewriting", f"1 - CorrectionQuery.json"),
-            {"query": query}
-        )
+        query_dict = {
+            "query": query
+        }
+
+        try:
+            # Retrieve the specific prompt for query decomposition
+            prompt = self._dql_language.prompts.get("Decomposition.json", None)
+            
+            if not prompt:
+                self._logger.error("Decomposition.json prompt not found.")
+                raise ValueError("Error during prompt retrieval")
+            
+            if query_dict.get("query", "").strip():
+                # Invoke LLM to rewrite the query based on the prompt
+                result = self._llm.invoke(
+                    prompt,
+                    query_dict,
+                    True
+                )
+                
+                result = self.order_tasks(result)
+                
+                status = "Done"
+            else:
+                self._logger.warning("Query is empty after stripping.")
+                raise ValueError("Empty query provided")
+
+        except Exception:
+            result = [
+                {
+                    "id": 1,
+                    "prompt": query
+                }
+            ] # Return original text on failure
         
-        query_decomposed = self.llm.invoke(
-            os.path.join("prompts", "rewriting", "2 - Decomposition.json"), 
-            {"query": query}
-        )
-        
-        query_decomposed = self.llm.str_in_dict(query_decomposed)["subtasks"]
-        
-        self.logger.info(f"Correction and Decomposition by LLM: Done")
-        self.logger.info(f"Building graph: Starting")
-        
-        DG = self.build_graph(query_decomposed)
-        
-        self.logger.info(f"Building graph: Done")
-        self.logger.info(f"Found {str(DG.number_of_nodes())} subtasks")
-        
-        return DG
+        final_result = [
+            {
+                "id": f"{self._cfg.get_request_id()}_{str(q.get("id", i+1))}",
+                "prompt": q.get("prompt", "")
+            }
+            for i, q in enumerate(result)
+        ]
+            
+        self._logger.info(f"Decomposer: obtained {len(final_result)} task - {status}")
+
+        return final_result
         
     @staticmethod
-    def build_graph(tasks: list) -> nx.DiGraph:
+    def order_tasks(tasks: list) -> nx.DiGraph:
         DG = nx.DiGraph()
-        
-        for task in tasks:
-            DG.add_node(task["id"], data={
-                    "id": f"task_{task['id']}", 
-                    "prompt": task['prompt'], 
-                    "structured_query": {
-                        "command": task["command"], 
-                        "documents": task["dependences"]
-                    }
-                }
-            )
         
         list_edge = []
         for task in tasks:
-            for dependence in task["dependences"]:
-                edge = (dependence, task["id"])
+            DG.add_node(
+                task.get('id', ''), 
+                data={
+                    "id": task.get('id', ''), 
+                    "prompt": task.get('prompt', '')
+                }
+            )
+            
+            for dependence in task.get('dependences', []):
+                edge = (dependence, task.get('id', ''))
                 if edge not in list_edge:
                     list_edge.append(edge)
                     
@@ -90,20 +118,21 @@ class Decomposer():
         sink_nodes = [n for n in DG.nodes if DG.out_degree(n) == 0]
         
         if len(sink_nodes) > 1:
-            sink_nodes_str = ", ".join([f"[{s}]" for s in sink_nodes])
+            sink_nodes_str = ", ".join([f"#{s}" for s in sink_nodes])
+            
+            new_id = len(tasks) + 1
             
             new_task = {
-                "id": len(tasks) + 1,
-                "prompt": f"Integra in un'unica risposta i testi delle risposte {sink_nodes_str}",
-                "structured_query": {
-                    "documents": sink_nodes,
-                    "command": "integra"
-                }
+                "id": new_id, 
+                "prompt": f"Integra in un'unica risposta i testi delle risposte {sink_nodes_str}"
             }
             
-            new_edges = [(node, new_task["id"]) for node in sink_nodes]
+            new_edges = [(node, new_id) for node in sink_nodes]
             
-            DG.add_node(new_task["id"], data=new_task)
+            DG.add_node(new_id, data=new_task)
             DG.add_edges_from(new_edges)
         
-        return DG
+        ordered_ids = list(nx.topological_sort(DG))
+        ordered_prompts = [DG.nodes[n]["data"] for n in ordered_ids]
+        
+        return ordered_prompts

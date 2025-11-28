@@ -134,9 +134,9 @@ class Retrieval:
         """Retrieve document from previously computed operations."""
         for op in self._operations:
             # Check if an operation ID matches and has a result
-            if op.get("id") == doc_name and "result" in op and op.get("from"):
+            if op.get("id") == doc_name and "result" in op and op.get("structured_prompt", {}).get("from"):
                 # The 'type' is inferred from the source of the previous operation
-                return {"name": doc_name, "text": op["result"], "type": op["from"][0]}
+                return {"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]}
         return None
 
     def _get_from_mongo(self, doc_name: str) -> dict | None:

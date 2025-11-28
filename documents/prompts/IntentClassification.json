@@ -5,7 +5,7 @@
         "",
         "CATEGORIE FUNZIONALI",
         "",
-        "{commands}",
+        "{commands_key}",
         "",
         "WORKFLOW",
         "",
@@ -35,7 +35,7 @@
             "default_key",
             "first_key",
             "last_key",
-            "commands"
+            "commands_key"
         ]
     },
 

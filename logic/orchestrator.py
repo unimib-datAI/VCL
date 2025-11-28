@@ -19,6 +19,7 @@ Dependencies:
 - logic.bot.executor.Executor: Execute operations and generate results.
 """
 
+import itertools
 import os
 from copy import deepcopy
 
@@ -62,6 +63,7 @@ class Orchestrator:
         
         self._username = username
         self._CFG = Config(username, role)
+        
         self._storage = self._CFG.storage
         self._language = self._CFG.language
 
@@ -95,24 +97,33 @@ class Orchestrator:
         
         # Log the incoming request
         self._logger.info(f"Request Received: \"{prompt}\"")
+        
+        response = {
+            "id": self._CFG.get_request_id(),
+            "prompt": prompt
+        }
 
         try:
             # --- Pipeline Execution ---
-            prompt_clean = self._preprocess(prompt)
-            structured_query = self._translate(prompt_clean)
-            operations = self._plan(structured_query)
-            result = self._execute(operations)
-            # --------------------------
             
+            tasks = self._preprocess(prompt)
+            structured_tasks = self._translate(tasks)
+            # operations = self._plan(structured_tasks)
+            result, last_result = self._execute(structured_tasks)
+            
+            # --------------------------
         except Exception as e:
             # Handle any failure during the pipeline execution
-            self._logger.error("Request processing failed")
-            self._logger.exception(e)
+            self._logger.error(f"Request processing failed: {e}")
+            
             # Define a safe fallback response
-            structured_query, operations, result = {}, [], f"Si è verificato un errore. Riprova. {e}"
+            structured_tasks = []
+            last_result = f"Si è verificato un errore. Riprova."
 
-        # Compile and return the final response object
-        response = self._finalize_response(prompt, structured_query, operations, result)
+        response["tasks"] = result
+        response["result"] = last_result
+        
+        self._logger.info("Request Completed")
 
         return response
     
@@ -142,21 +153,19 @@ class Orchestrator:
     # --- Private Helper Methods ---
     # ------------------------------
     
-    def _preprocess(self, prompt: str) -> str:
+    def _preprocess(self, prompt: str) -> list:
         """Run preprocessing pipeline on the user input."""
         self._logger.info("Step 1 (Preprocessing): Starting")
         prompt_clean = self._preprocessor.process(prompt)
         self._logger.info("Step 1 (Preprocessing): Done")
         return prompt_clean
 
-    def _translate(self, prompt: str) -> dict:
-        """Translate the cleaned prompt into a structured query."""
+    def _translate(self, tasks: list) -> list:
+        """Translate the prompts into structured queries."""
         self._logger.info("Step 2 (Translator): Starting")
-        structured_query = self._translator.rewrite(prompt)
-        # Assign a unique ID to this request
-        structured_query["id"] = self._CFG.get_request_id()
+        structured_queries = self._translator.rewrite(tasks)    
         self._logger.info("Step 2 (Translator): Done")
-        return structured_query
+        return structured_queries
 
     def _plan(self, structured_query: dict) -> list[dict]:
         """Decompose structured query into operations."""
@@ -169,38 +178,18 @@ class Orchestrator:
 
     def _execute(self, operations: list[dict]) -> str:
         """Execute all planned operations and generate final result."""
-        final_result = ""
         for index, operation in enumerate(operations):
-            self._logger.info(
-                f"Executing operation ID: {operation.get('id', '')} "
-                f"with command: {operation.get('command', '')}"
-            )
+            operation_input = operation.get("structured_prompt", {})
             self._logger.info("Step 4 (Executor): Starting")
-            operation["order"] = index
             # The executor generates the result for the current operation
-            operation["result"], _ = self._executor.generate(operation, operations)
-            # The final result is the result of the last operation
-            final_result = operation["result"]
+            operation["order"] = index
+            operation["result"], _ = self._executor.generate(operation_input, operations)
             self._logger.info("Step 4 (Executor): Done")
+        
+        if len(operations) < 1:
+            raise Exception("Tasks not found")
             
-        self._logger.info("Request Completed")
-        return final_result
-
-    def _finalize_response(self, prompt: str, structured_query: dict, operations: list[dict], result: str) -> dict:
-        """Prepare the final response structure including used documents."""
-        response = {
-            "id": self._CFG.get_request_id(),
-            "structured_input": structured_query,
-            "input": prompt,
-            "operations": operations,
-            "result": result
-        }
-
-        # Aggregate all documents used across all operations
-        used_docs = [doc for op in operations for doc in op.get("from", [])]
-        # Store only unique document identifiers
-        response["used_documents"] = list(set(used_docs))
-        return response
+        return operations, operations[-1].get("result", "")
 
     def store_response(self, response: dict):
         """

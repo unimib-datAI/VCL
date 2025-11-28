@@ -391,13 +391,20 @@ class DQLLanguage:
         if not sources:
             return {}
 
-        source_set = set(sources)
+        dql_sources = [s.get('name', '') for s in self._sources]
+        source_set = set([s for s in sources if s in dql_sources])
         
         what_elements = {}
         
-        for what in self._what:
-            if source_set.issubset(what.get("available", [])):
-                what_elements[what.get("name", "")] = what.get("definition", "")
+        for item in self._what:
+            available = set(item.get("available", []))
+            name = item.get("name", "")
+            definition = item.get("definition", "")
+
+            # If the sources, after filtering, is empty, we include everything.
+            # Otherwise, we check that all the requested sources are available.
+            if not source_set or source_set.issubset(available):
+                what_elements[name] = definition
                 
         return what_elements
     
@@ -609,6 +616,13 @@ class DQLLanguage:
                         f"{self._role}.txt"
                     )
                 )
+            elif "commands" in param:
+                if "|" in param:
+                    resolved[param] = str(len(self._commands))
+                elif "key" in param:
+                    resolved[param] = self.commands_string(self._commands, 'key')
+                else:
+                    resolved[param] = self.commands_string(self._commands, 'command')
             elif "key" in param:
                 if "default" in param:
                     resolved[param] = self._default_command.get("key", "")
@@ -621,15 +635,9 @@ class DQLLanguage:
                     resolved[param] = str(len(self._sources))
                 else:
                     resolved[param] = self.sources_string(self._sources)
-            elif "commands" in param:
-                if "|" in param:
-                    resolved[param] = str(len(self._commands))
-                else:
-                    resolved[param] = self.commands_string(self._commands)
             elif "what" in param:
                 if "|" in param:
                     resolved[param] = str(len(self._what))
-                # Note: 'what' full string formatting is not implemented here
                     
         return resolved
 
@@ -710,7 +718,7 @@ class DQLLanguage:
         return "\n".join(sources_list)
     
     @staticmethod
-    def commands_string(commands: list) -> str:
+    def commands_string(commands: list, main_key: str = 'key') -> str:
         """
         Generate a formatted string of available commands for logging or display.
 
@@ -722,6 +730,6 @@ class DQLLanguage:
             str: A formatted string listing all available commands.
         """
         commands_list = [
-            f"- \"{cmd['key']}\": {cmd['description']}" for cmd in commands
+            f"- \"{cmd[main_key]}\": {cmd['description']}" for cmd in commands
         ]
         return "\n".join(commands_list)

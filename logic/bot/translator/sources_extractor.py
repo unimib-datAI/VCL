@@ -1,6 +1,7 @@
+import re
+
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
-
 
 class SourcesExtractor:
     """
@@ -33,7 +34,13 @@ class SourcesExtractor:
     # --- Main Extraction Method ---
     # ------------------------------
     
-    def extract(self, query: str) -> list:
+    def extract(self, query: str, tasks_id: list) -> list:
+        documents = self._explicit_documents_extraction(query) + self._task_id_extraction(query, tasks_id)
+        documents = [d for d in documents if not str(d[0]).startswith("#")]
+        self._logger.info(str(documents))
+        return documents
+    
+    def _explicit_documents_extraction(self, query: str) -> list:
         """
         Extract relevant sources/documents from a user query.
 
@@ -84,3 +91,7 @@ class SourcesExtractor:
         self._logger.info(f"Sources Extractor: {documents} - {status}")
 
         return documents
+    
+    def _task_id_extraction(self, query: str, ids) -> list:
+        found_ids = [int(x) for x in re.findall(r"#(\d+)", query)]
+        return [[ids[i - 1], f"#{i}"] for i in found_ids if i <= len(ids)]

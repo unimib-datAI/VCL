@@ -36,7 +36,7 @@ class CommandClassifier:
     # --- Main Classification Method ---
     # ----------------------------------
     
-    def classify(self, query: str) -> dict:
+    def classify(self, query: str) -> str:
         """
         Classify the user query into a DQL command.
 
@@ -50,8 +50,7 @@ class CommandClassifier:
             query (str): User input query to classify.
 
         Returns:
-            dict: Dictionary containing 'name' and 'description' of
-                  the classified command.
+            str: containing 'name' of the classified command.
         """
 
         # Prepare the input dictionary for the LLM prompt
@@ -79,14 +78,8 @@ class CommandClassifier:
                     True
                 )
 
-                # Map the LLM result (e.g., a key) to a standardized command name
-                command_key = self._dql_language.get_command_from_key(llm_result)
-
                 # Retrieve full command information
-                command_info = {
-                    "name": command_key,
-                    "description": self._dql_language.get_description_from_command(command_key)
-                }
+                command_info = self._dql_language.get_command_from_key(llm_result)
 
                 status = "Done"
             else:
@@ -95,15 +88,11 @@ class CommandClassifier:
         except Exception as e:
             self._logger.error(f"Command classification failed: {e}. Falling back to default.")
             # Fallback to the default 'altro' (other) command in case of any error
-            default_key = "altro"
-            command_info = {
-                "name": default_key,
-                "description": self._dql_language.get_description_from_command(default_key)
-            }
+            command_info = "altro"
 
         # Log the classification result
         self._logger.info(
-            f"Intent Classification: {command_info.get('name', 'altro')} - {status}"
+            f"Intent Classification: {command_info} - {status}"
         )
 
         return command_info
