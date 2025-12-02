@@ -54,7 +54,7 @@ class Translator:
     # --- Main Rewriting Method ---
     # -----------------------------
     
-    def rewrite(self, prompts: list) -> dict:
+    def rewrite(self, prompts: list, user_id, chat_id: str) -> dict:
         """
         Rewrite a raw user query into a structured query dictionary.
 
@@ -93,7 +93,7 @@ class Translator:
         
         # Step 2: (Thread 2) Extract sources
         thread2 = threading.Thread(
-            target=self._sources_extractor, args=(deepcopy(prompts), result_sources)
+            target=self._sources_extractor, args=(deepcopy(prompts), user_id, chat_id, result_sources)
         )
         
         # Start parallel execution
@@ -165,7 +165,7 @@ class Translator:
         
         result_queue.put(result)
         
-    def _sources_extractor(self, prompts: list, result_queue: queue.Queue):
+    def _sources_extractor(self, prompts: list, user_id, chat_id, result_queue: queue.Queue):
         """
         Thread target function to run sources extraction.
         Places a tuple of (sources, from_sources, what) into the queue.
@@ -180,7 +180,7 @@ class Translator:
             ids = sorted([t.get('id', '') for t in prompts])
             
             for t in prompts:
-                sources = self._sources_extractor_class.extract(t.get("prompt", ''), ids)
+                sources = self._sources_extractor_class.extract(t.get("prompt", ''), user_id, chat_id, ids)
                 result_sources.append(sources)
         except Exception as e:
             result_sources = [["", ""]] * len(prompts)

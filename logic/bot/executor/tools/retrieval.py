@@ -50,7 +50,7 @@ class Retrieval:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config, operations: list[dict] = None):
+    def __init__(self, cfg: Config, chat_id, operations: list[dict] = None):
         """
         Initialize the Retrieval component.
 
@@ -63,6 +63,7 @@ class Retrieval:
         self._client = Elasticsearch(cfg.DB_URL)
         self._storage = cfg.storage
         self._user_id = cfg.get_user_id()
+        self._chat_id = chat_id
         self._operations = operations or []
         self._project_root = cfg.project_root
         self._logger = cfg.get_logger("Retrieval")
@@ -114,7 +115,8 @@ class Retrieval:
         # Define the retrieval strategies in order of priority.
         retrieval_methods = [
             ("Operations List", self._get_from_operations_list),
-            ("MongoDB", self._get_from_mongo),
+            ("MongoDB (DOC)", self._get_doc_from_mongo),
+            ("MongoDB (CHAT)", self._get_chat_from_mongo),
             ("LocalSystem", self._get_from_local_system),
             ("ElasticSearch", self._get_from_elastic_search)
         ]
@@ -139,15 +141,22 @@ class Retrieval:
                 return {"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]}
         return None
 
-    def _get_from_mongo(self, doc_name: str) -> dict | None:
+    def _get_doc_from_mongo(self, doc_name: str) -> dict | None:
         """Retrieve document from MongoDB storage scoped by user/session."""
         # Try retrieving by type, then ID, then name
         for method in [self._storage.get_document_by_type,
-                           #self._storage.get_document_by_id,
-                           self._storage.get_document_by_name]:
+                        self._storage.get_document_by_name]:
             doc = method(self._user_id, doc_name)
             if doc and "text" in doc:
                 return {"name": doc["name"], "text": doc["text"], "type": doc_name}
+        return None
+    
+    def _get_chat_from_mongo(self, doc_name: str) -> dict | None:
+        """Retrieve document from MongoDB storage scoped by user/session."""
+        doc = self._storage.get_message(self._user_id, self._chat_id, doc_name)
+        
+        if doc and "content" in doc:
+            return {"name": doc["full_details"]["id"], "text": doc["content"], "type": doc_name}
         return None
 
     def _get_from_local_system(self, doc_name: str) -> dict | None:

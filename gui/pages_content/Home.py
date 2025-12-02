@@ -161,7 +161,7 @@ def _submit_prompt(prompt: str) -> None:
         # Start Assistant in background thread
         thread = threading.Thread(
             target=_call_assistant_thread, 
-            args=(prompt, st.session_state.assistant, stop_event, result_queue)
+            args=(prompt, st.session_state.username, st.query_params.chat, st.session_state.assistant, stop_event, result_queue)
         )
         thread.start()
 
@@ -197,12 +197,12 @@ def _submit_prompt(prompt: str) -> None:
 # --- Threading & Log Helpers ---
 # -------------------------------
 
-def _call_assistant_thread(prompt: str, assistant, stop_event: threading.Event, result_queue: queue.Queue) -> None:
+def _call_assistant_thread(prompt: str, user_id, chat_id: str, assistant, stop_event: threading.Event, result_queue: queue.Queue) -> None:
     """
     Wrapper to run the heavy assistant logic in a thread.
     """
     try:
-        response = assistant.chat(prompt)
+        response = assistant.chat(prompt, user_id, chat_id)
         result_queue.put(response)
     except Exception as e:
         result_queue.put({"result": f"Error: {str(e)}"})

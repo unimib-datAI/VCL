@@ -71,7 +71,7 @@ class Orchestrator:
     # --- Public Methods ---
     # ----------------------
     
-    def chat(self, prompt: str) -> dict:
+    def chat(self, prompt: str, user_id, chat_id: str) -> dict:
         """
         Process a user query through the full DQL pipeline.
 
@@ -107,9 +107,9 @@ class Orchestrator:
             # --- Pipeline Execution ---
             
             tasks = self._preprocess(prompt)
-            structured_tasks = self._translate(tasks)
+            structured_tasks = self._translate(tasks, user_id, chat_id)
             # operations = self._plan(structured_tasks)
-            result, last_result = self._execute(structured_tasks)
+            result, last_result = self._execute(structured_tasks, chat_id)
             
             # --------------------------
         except Exception as e:
@@ -160,10 +160,10 @@ class Orchestrator:
         self._logger.info("Step 1 (Preprocessing): Done")
         return prompt_clean
 
-    def _translate(self, tasks: list) -> list:
+    def _translate(self, tasks: list, user_id, chat_id: str) -> list:
         """Translate the prompts into structured queries."""
         self._logger.info("Step 2 (Translator): Starting")
-        structured_queries = self._translator.rewrite(tasks)    
+        structured_queries = self._translator.rewrite(tasks, user_id, chat_id)    
         self._logger.info("Step 2 (Translator): Done")
         return structured_queries
 
@@ -176,14 +176,14 @@ class Orchestrator:
         self._logger.info("Step 3 (Planner): Done")
         return operations
 
-    def _execute(self, operations: list[dict]) -> str:
+    def _execute(self, operations: list[dict], chat_id) -> str:
         """Execute all planned operations and generate final result."""
         for index, operation in enumerate(operations):
             operation_input = operation.get("structured_prompt", {})
             self._logger.info("Step 4 (Executor): Starting")
             # The executor generates the result for the current operation
             operation["order"] = index
-            operation["result"], _ = self._executor.generate(operation_input, operations)
+            operation["result"], _ = self._executor.generate(operation_input, chat_id, operations)
             self._logger.info("Step 4 (Executor): Done")
         
         if len(operations) < 1:

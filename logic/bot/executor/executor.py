@@ -82,7 +82,7 @@ class Executor:
     # --- Public Methods ---
     # ----------------------
     
-    def generate(self, operation: dict, operations: list[dict]) -> tuple[str, dict]:
+    def generate(self, operation: dict, chat_id, operations: list[dict]) -> tuple[str, dict]:
         """
         Generate a response for a single operation.
 
@@ -101,7 +101,7 @@ class Executor:
         command = operation.get("command", "altro")
         
         # Step 1: Retrieve relevant documents for this operation
-        docs = Retrieval(self._cfg, operations).execute(operation)
+        docs = Retrieval(self._cfg, chat_id, operations).execute(operation)
         
         context = self._build_context(docs)
         what = operation.get("what", "")

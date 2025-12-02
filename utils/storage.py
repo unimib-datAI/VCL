@@ -419,6 +419,16 @@ class Storage:
             return []
         
         return chat_history.get(chat_id, [])
+    
+    def get_message(self, user_id: str, chat_id: str, message_id: str) -> Optional[List[dict]]:
+        chat_history = self.get_chat_messages(user_id, chat_id)
+        
+        for chat in chat_history:
+            if str(chat.get("full_details", {}).get("id", "")).lower() == message_id.lower():
+                print(chat)
+                return deepcopy(chat)
+        
+        return None 
 
     def add_chat_message(self, user_id: str, chat_id: str, message: dict) -> bool:
         """
