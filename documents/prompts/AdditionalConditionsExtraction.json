@@ -17,7 +17,8 @@
 		"WORKFLOW",
 		"",
 		"\t- Analisi Comparativa: Confronta la Query Utente e la Query Strutturata per determinare l'intersezione dei vincoli.",
-		"\t- Considerazione del Riferimento Documentale: Considera che la Query Utente fa riferimento al/ai documento/i \"{documents_name}\" usando rispettivamente la/e stringa/e \"{documents_reference}\".",
+		"\t- Considerazione del Riferimento Documentale: Considera che nella Query Utente l'utente:",
+		"\t\t{documents}",
 		"\t- Estrazione dei Vincoli Aggiuntivi: Isola tutte le condizioni della Query Utente che non sono state rappresentate nella Query Strutturata.",
 		"\t- Categorizzazione: Mappa ciascun vincolo aggiuntivo a una delle tre chiavi: `section`, `data`, `response`. Le chiavi non devono essere omesse, se una sezione non contiene vincoli, il suo valore deve essere una stringa vuota `\"\"`.",
 		"",
@@ -44,8 +45,7 @@
 		"from_user": [
 			"feedback",
 			"query",
-			"documents_name",
-			"documents_reference",
+			"documents",
 			"query_str",
 			"what"
 		]

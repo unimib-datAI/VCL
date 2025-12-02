@@ -61,8 +61,7 @@ class ConditionsExtractor:
         query_dict = {
             "query": query,
             "query_str": str(query_str),
-            "documents_name": ", ".join([doc[0] for doc in docs]),
-            "documents_reference": ", ".join([doc[1] for doc in docs]),
+            "documents": self.docs_in_string(docs),
             "feedback": "",
             "what": query_str.get("what", "")
         }
@@ -100,3 +99,13 @@ class ConditionsExtractor:
         self._logger.info(f"Conditions Extractor: {conditions} - {status}")
 
         return conditions
+    
+    @staticmethod
+    def docs_in_string(docs):
+        info = [
+            f"- con la stringa \"{doc[1]}\" l'utente fa riferimento al documento \"{doc[0]}\""
+            for doc in docs
+            if len(doc) == 2 and doc[0] != doc[1]
+        ]
+        
+        return "\n\t\t".join(info).strip()
