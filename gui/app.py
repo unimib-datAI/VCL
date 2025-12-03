@@ -7,6 +7,7 @@ from gui.pages_content.Home import show_home
 from gui.pages_content.Settings import show_settings
 from gui.pages_content.Documents import show_documents
 from gui.pages_content.Info import show_info
+from gui.pages_content.QuestionsTracking import show_questions_tracking
 
 from utils.storage import Storage
 
@@ -19,7 +20,8 @@ PAGE_MAP: Dict[str, Callable] = {
     "Home": show_home,
     "Settings": show_settings,
     "Documents": show_documents,
-    "Info": show_info
+    "Info": show_info,
+    "QuestionTracking" : show_questions_tracking,
 }
 
 # --- Session Management Helpers ---
@@ -118,6 +120,12 @@ def _render_sidebar() -> None:
             if st.query_params.get("page") != "Info":
                 st.query_params["page"] = "Info"
                 st.rerun()
+
+        # Tracking domande utente
+        if st.button("ℹ️ Tracking Domande", use_container_width=True):
+                    if st.query_params.get("page") != "QuestionTracking":
+                        st.query_params["page"] = "QuestionTracking"
+                        st.rerun()
         
         # Settings
         if st.button("⚙️ Impostazioni", use_container_width=True):

@@ -9,15 +9,29 @@ import queue
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Generator
-
 import streamlit as st
+
+from openai import OpenAI
+import docx
 
 # Add Root Directory to sys.path
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 if str(ROOT_DIR) not in sys.path:
     sys.path.append(str(ROOT_DIR))
 
+LEGAL_DOCS_DIR = ROOT_DIR / "documents"
+
 APP_TITLE = "DQL"
+
+# --- Modelli disponibili (UI) ---
+MODEL_LABELS = {
+    "DQL": "DQL",
+    "GPT": "GPT",
+    "NotebookLM": "NotebookLM (coming soon)",
+    "Copilot": "Copilot (coming soon)",
+}
+
+DEFAULT_MODEL = "DQL"
 
 # ---------------------------
 # --- Chat Initialization ---
@@ -116,6 +130,9 @@ def _display_gui_components() -> None:
     """
     Main render function for the chat interface components.
     """
+    # 0. Selettore modello
+    selected_model = _render_model_selector()
+
     # 1. Controls & Suggestions
     suggestion_prompt = _handle_suggestions_and_controls()
 
@@ -129,23 +146,36 @@ def _display_gui_components() -> None:
     prompt_to_submit = suggestion_prompt or chat_prompt
     
     if prompt_to_submit:
-        _submit_prompt(prompt_to_submit)
+        _submit_prompt(prompt_to_submit, selected_model)
 
-def _submit_prompt(prompt: str) -> None:
+def _submit_prompt(prompt: str, selected_model: str) -> None:
     """
     Orchestrates the user prompt submission: updates UI, calls assistant thread,
     handles log streaming, and saves results.
 
     Args:
         prompt (str): The user's prompt.
+        selected_model (str): Selected engine key (e.g. 'DQL', 'GPT', ...)
     """
     # --- 1. Display user's message ---
     user_msg = {
         "role": "user", 
         "content": prompt,
-        "time": datetime.now().isoformat()
+        "time": datetime.now().isoformat(),
+        "model": selected_model,
     }
     st.session_state.messages.append(user_msg)
+
+    # --- USER QUESTION TRACKING ---
+    try:
+        storage = st.session_state.assistant.get_storage()
+        storage.log_user_question(
+            user_id=st.session_state.username,
+            question=prompt,
+            model=selected_model,
+        )
+    except Exception as e:
+        print(f"[WARN] Impossibile tracciare domanda utente: {e}")
     
     with st.chat_message("user"):
         st.markdown(prompt)
@@ -161,7 +191,7 @@ def _submit_prompt(prompt: str) -> None:
         # Start Assistant in background thread
         thread = threading.Thread(
             target=_call_assistant_thread, 
-            args=(prompt, st.session_state.assistant, stop_event, result_queue)
+            args=(prompt, selected_model, st.session_state.assistant, stop_event, result_queue)
         )
         thread.start()
 
@@ -185,7 +215,8 @@ def _submit_prompt(prompt: str) -> None:
             "content": text,
             "time": datetime.now().isoformat(),
             "full_details": result, 
-            "logs": log_list[1:]
+            "logs": log_list[1:],
+            "model": selected_model,
         }
         st.session_state.messages.append(assistant_msg)
     
@@ -193,21 +224,215 @@ def _submit_prompt(prompt: str) -> None:
     # Save only the last exchange (user + assistant)
     _save_messages(st.session_state.messages[-2:])
 
+# ---------------------------
+# -- Render Model Selector --
+# ---------------------------
+def _render_model_selector() -> str:
+    """
+    Rende il selettore del modello da interrogare e lo salva in session_state.
+
+    Ritorna:
+        str: il modello selezionato (chiave in MODEL_LABELS)
+    """
+    if "selected_model" not in st.session_state:
+        st.session_state.selected_model = DEFAULT_MODEL
+
+    # Piccolo titolo sopra il selettore
+    st.markdown("### Seleziona il motore da interrogare")
+
+    # UI del selettore (radio orizzontale)
+    selected = st.radio(
+        "Motore",
+        options=list(MODEL_LABELS.keys()),
+        format_func=lambda k: MODEL_LABELS[k],
+        index=list(MODEL_LABELS.keys()).index(st.session_state.selected_model),
+        horizontal=True,
+    )
+
+    st.session_state.selected_model = selected
+    return selected
+
 # -------------------------------
 # --- Threading & Log Helpers ---
 # -------------------------------
 
-def _call_assistant_thread(prompt: str, assistant, stop_event: threading.Event, result_queue: queue.Queue) -> None:
+def _call_assistant_thread(prompt: str, selected_model: str, assistant, stop_event: threading.Event, result_queue: queue.Queue) -> None:
     """
     Wrapper to run the heavy assistant logic in a thread.
     """
     try:
-        response = assistant.chat(prompt)
+        response = _call_model(prompt, selected_model, assistant)
         result_queue.put(response)
     except Exception as e:
         result_queue.put({"result": f"Error: {str(e)}"})
     finally:
         stop_event.set()
+
+def _load_case_documents() -> List[Dict[str, str]]:
+    """
+    Legge tutti i documenti di caso (file JSON che iniziano con 'AN - ')
+    nella cartella documents e restituisce una lista di dict:
+    [
+      {"label": <nome leggibile>, "filename": <nome file>, "text": <contenuto>},
+      ...
+    ]
+    """
+    docs: List[Dict[str, str]] = []
+
+    docs_dir = ROOT_DIR / "documents"
+    if not docs_dir.exists():
+        return docs
+
+    for path in docs_dir.glob("AN - *.json"):
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except Exception:
+            continue
+
+        # Etichetta "umana"
+        type_doc = (data.get("type_doc") or data.get("tipo_documento") or "").strip()
+        name = (data.get("name") or data.get("titolo") or "").strip()
+
+        if type_doc and name:
+            label = f"{type_doc} ({name})"
+        elif type_doc:
+            label = type_doc
+        elif name:
+            label = name
+        else:
+            label = path.stem.replace("_", " ").replace("-", " ").strip()
+
+        # Testo del documento
+        text = (
+            data.get("text")
+            or data.get("content")
+            or data.get("body")
+            or data.get("full_text")
+            or data.get("doc_text")
+        )
+
+        if isinstance(text, list):
+            text = "\n".join(str(t) for t in text)
+
+        if not isinstance(text, str) or not text.strip():
+            # Fallback: tutto il JSON formattato
+            text = json.dumps(data, indent=2, ensure_ascii=False)
+
+        text = text.strip()
+        if not text:
+            continue
+
+        docs.append(
+            {
+                "label": label,
+                "filename": path.name,
+                "text": text,
+            }
+        )
+
+    return docs
+
+
+def _ask_gpt(prompt: str) -> Dict:
+    """
+    Chiama il modello GPT tramite API OpenAI.
+
+    - Carica i documenti di caso dai JSON in /documents
+    - Costruisce un unico messaggio utente che contiene:
+        * elenco dei documenti
+        * contenuto integrale di ciascun documento
+        * la domanda dell'utente
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return {
+            "result": (
+                "⚠️ OPENAI_API_KEY non impostata.\n"
+                "Imposta la variabile d'ambiente OPENAI_API_KEY per usare GPT."
+            )
+        }
+
+    try:
+        client = OpenAI(api_key=api_key)
+
+        # 1) Carichiamo i documenti di caso
+        case_docs = _load_case_documents()
+
+        # 2) Se non ci sono documenti, lo diciamo chiaramente
+        if not case_docs:
+            docs_block = "Nessun documento di caso è stato trovato nella cartella 'documents'."
+        else:
+            # Elenco documenti
+            header_lines = ["Documenti disponibili nel progetto:"]
+            for doc in case_docs:
+                header_lines.append(f'- "{doc["label"]}" (file: {doc["filename"]})')
+            header = "\n".join(header_lines)
+
+            # Contenuto integrale
+            body_chunks = []
+            for doc in case_docs:
+                body_chunks.append(
+                    f'\n\n# Documento: {doc["label"]} (file: {doc["filename"]})\n{doc["text"]}'
+                )
+
+            docs_block = header + "".join(body_chunks)
+
+        base_system = (
+            "Sei un assistente legale integrato nell'interfaccia DQL.\n"
+            "Ti verranno forniti dei documenti giuridici relativi a una causa (atti, memorie, sentenza).\n"
+            "Devi rispondere alle domande dell'utente basandoti esclusivamente su quei documenti.\n"
+            "Se una certa informazione non è ricavabile dai documenti, devi dirlo esplicitamente.\n"
+            "Non inventare articoli, commi o decisioni che non sono contenute nei testi."
+        )
+
+        # 👇 Qui mettiamo TUTTO (documenti + domanda) in UN SOLO messaggio utente
+        user_content = (
+            f"{docs_block}\n\n"
+            "Ora rispondi alla seguente domanda dell'utente, basandoti solo sui documenti sopra:\n"
+            f"DOMANDA: {prompt}"
+        )
+
+        messages = [
+            {"role": "system", "content": base_system},
+            {"role": "user", "content": user_content},
+        ]
+
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+        )
+
+        text = completion.choices[0].message.content
+        return {"result": text}
+
+    except Exception as e:
+        return {"result": f"❌ Errore chiamando GPT: {e}"}
+
+
+def _call_model(prompt: str, selected_model: str, assistant):
+    """
+    Dispatcher per decidere quale motore usare in base al modello selezionato.
+    """
+    if selected_model == "DQL":
+        # Comportamento attuale: usa l'assistant esistente
+        return assistant.chat(prompt)
+
+    elif selected_model == "GPT":
+        return _ask_gpt(prompt)
+
+    elif selected_model == "NotebookLM":
+        # TODO: integrazione futura
+        return {"result": "⚠️ NotebookLM non è ancora stato integrato. Seleziona DQL per ora."}
+
+    elif selected_model == "Copilot":
+        # TODO: integrazione futura
+        return {"result": "⚠️ Copilot non è ancora stato integrato. Seleziona DQL per ora."}
+
+    else:
+        # fallback di sicurezza
+        return {"result": f"⚠️ Modello '{selected_model}' non riconosciuto."}
+
 
 def _stream_logs_to_ui(placeholder, stop_event: threading.Event) -> List[str]:
     """
