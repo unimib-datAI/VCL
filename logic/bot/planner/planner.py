@@ -1,4 +1,4 @@
-import itertools
+from copy import deepcopy
 
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
@@ -28,12 +28,13 @@ class Planner:
         self._logger = cfg.get_logger("Planner")
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.language
+        self._sources_name = [src.get("name", "") for src in self._dql_language.get_sources()]
 
     # -------------------------------------------------------------------------
     # Public Methods
     # -------------------------------------------------------------------------
     
-    def decompose(self, query: dict) -> list[dict]:
+    def decompose(self, operations: list[dict]) -> list[dict]:
         """
         Decompose a structured query into a list of operations.
 
@@ -54,66 +55,42 @@ class Planner:
         Returns:
             list[dict]: List of operation dictionaries ready for execution.
         """
-        command_key = query.get("command", "")
-
-        # Find the appropriate intermediate command(s) based on 'what' is being requested
-        middle_commands = self._find_middle_commands(query.get("what", ""))
         
-        # Case 1: The query's command is already an intermediate command
-        if command_key in middle_commands:
-            # If it applies to more than one source, we must split it
-            if len(query.get("from", [])) > 1:
-                self._logger.info("Decomposition required: Splitting one command across multiple sources.")
-                # 'integra' is the domain-specific command for merging results
-                return self._create_operations(query, command_key, "integra")
-            else:
-                # Only one source, no decomposition needed
-                self._logger.info("No decomposition required: Single operation.")
-                return [query]
-        elif command_key == "riassumi" and len(query.get("from", [])) > 1:
-            middle_step = [
-                {
-                    "id": f"{query.get('id', '')}_{i}",
-                    "command": command_key,
-                    "from": [source],
-                    "what": query.get("what", "")
-                }
-                for i, source in enumerate(query.get("from", []))
-            ]
+        for op in operations:
+            id = op.get("id", "")
+            structured_prompt = op.get("structured_prompt", {})
             
-            last_ids = [op.get("id", "") for op in middle_step]
+            command_key = structured_prompt.get("command", "altro")
+            from_key = structured_prompt.get("from", [])
+            what_key = structured_prompt.get("what", "altro")
+
+            if command_key != "altro":
+                # Find the appropriate intermediate command(s) based on 'what' is being requested
+                middle_commands = self._find_middle_commands(what_key)
             
-            final_op = {
-                "id": f"{query.get('id', '')}",
-                "command": "integra",
-                "from": last_ids,
-                "what": query.get("what", ""),
-                "how": query.get("how", {})
-            }
-            
-            ops = []
-            
-            for op in middle_step:
-                ops.append(self._create_operations(op, middle_commands[0], command_key))
-                
-            ops = list(itertools.chain.from_iterable(
-                x if isinstance(x, list) else [x] for x in ops
-            ))
-            ops.append(final_op)
-            
-            return ops
-                
-        # Case 3: The query's command is a final command (e.g., 'summarize')
-        # We must first run the appropriate middle command (e.g., 'search')
-        # on all sources, and then run the final command.
-        self._logger.info("Decomposition required: Creating intermediate and final operations.")
-        return self._create_operations(query, middle_commands[0], command_key)
+                # Case 1: The query's command is already an intermediate command
+                if command_key in middle_commands:
+                    # If it applies to more than one source, we must split it
+                    if len(from_key) > 1:
+                        # 'integra' is the domain-specific command for merging results
+                        op['operations'] = self._create_operations(structured_prompt, command_key, "integra", id)
+                else:
+                    # Case 3: The query's command is a final command (e.g., 'summarize')
+                    # We must first run the appropriate middle command (e.g., 'search')
+                    # on all sources, and then run the final command.
+                    if not self._decomposition_in_previous_op(structured_prompt):
+                        if command_key == "riassumi":
+                            op["operations"] = self._decompose_summarize(structured_prompt, middle_commands[0], id)
+                        else:
+                            op['operations'] = self._create_operations(structured_prompt, middle_commands[0], command_key, id)
+        
+        return operations
 
     # -------------------------------------------------------------------------
     # Private Methods
     # -------------------------------------------------------------------------
     
-    def _create_operations(self, query: dict, middle_command: str, final_command: str) -> list[dict]:
+    def _create_operations(self, query: dict, middle_command: str, final_command: str, id) -> list[dict]:
         """
         Generate the list of operations including intermediate and final commands.
 
@@ -129,43 +106,34 @@ class Planner:
                         aggregation operation.
         """
         # Create atomic operations for each source using the middle_command
-        atomic_ops = [
-            {
-                "id": f"{query.get('id', '')}_{i}",
-                "command": middle_command,
-                "from": [source],
-                "what": query.get("what", "")
-                # 'how' is usually applied only to the final operation
-            }
-            for i, source in enumerate(query.get("from", []))
-        ]
-        
-        self._logger.info(f"Found {len(atomic_ops)} sub-operations:")
-        for i, op in enumerate(atomic_ops):
-            str_command = op.get("command", "")
-            str_from = str(op.get("from", []))
-            str_what = op.get("what", "")
-            str_how = "None"
-            self._logger.info(f"\t- {str(i)}: {str_command}({str_from}, {str_what}, {str_how})")
+        atomic_ops = []
+        not_used_sources = []
+        for i, source in enumerate(query.get("from", [])):
+            if source in self._sources_name:
+                atomic_ops.append(
+                    {
+                        "id": f"{id}_{i}",
+                        "structured_prompt": {
+                            "command": middle_command,
+                            "from": [source],
+                            "what": query.get("what", "")
+                            # 'how' is usually applied only to the final operation
+                        }
+                    }
+                )
+            else:
+                not_used_sources.append(source)
 
         # Create the final aggregation operation
         final_op = {
-            "id": query.get("id", ""),
-            "command": final_command,
-            # The 'from' for the final op is the list of IDs from the atomic ops
-            "from": [op["id"] for op in atomic_ops],
-            "what": query.get("what", ""), # Pass 'what' along
-            "how": query.get("how", {}) # Apply conditions here
+            "id": id,
+            "structured_prompt": {
+                "command": final_command,
+                "from": [op["id"] for op in atomic_ops] + not_used_sources,
+                "what": query.get("what", ""), # Pass 'what' along
+                "how": query.get("how", {}) # Apply conditions here
+            }
         }
-
-        i = len(atomic_ops)
-        
-        self._logger.info("Final aggregation operation:")
-        str_command = final_op.get("command", "")
-        str_from = str(final_op.get("from", []))
-        str_what = final_op.get("what", "")
-        str_how = str(final_op.get("how", ""))
-        self._logger.info(f"\t- {str(i+1)}: {str_command}({str_from}, {str_what}, {str_how})")
             
         atomic_ops.append(final_op)
         return atomic_ops
@@ -185,9 +153,8 @@ class Planner:
             list[str]: A list of possible middle command keys. Defaults to
                        the default command if no specific one is found.
         """
-        # 'intero documento' is a special case mapping to 'cerca'
-        if what == "intero documento":
-            self._logger.info("Possible Middle Commands: ['cerca'] (for 'intero documento')")
+        # 'intero documento' and 'altro' are special cases
+        if what in ["intero documento", "altro"]:
             return ["cerca"]
         
         # Look up the 'what' in the DQL configuration
@@ -200,5 +167,43 @@ class Planner:
                 break
                 
         # Fallback to the system's default command
-        self._logger.info("Possible Middle Commands: Not found. Using default command.")
-        return [self._dql_language.default_command.get("command", "")]
+        return [self._dql_language.default_command.get("command", "altro")]
+    
+    def _decomposition_in_previous_op(self, structured_prompt):
+        for from_key in structured_prompt.get("from", []):
+            if from_key in self._sources_name:
+                return False
+            
+        return True
+    
+    def _decompose_summarize(self, query, middle_command, id):
+        ops = self._create_operations(query, middle_command, "integra", id)
+        
+        length = str(len(ops) - 1)
+        
+        old_id = deepcopy(ops[-1]["id"])
+        new_id = f"{old_id}_{length}"
+        old_how = deepcopy(ops[-1]["structured_prompt"].get("how", {}))
+        
+        ops[-1]["id"] = new_id
+        
+        if "how" in ops[-1]["structured_prompt"]:
+            del ops[-1]["structured_prompt"]["how"]
+            
+        if len(ops) == 2:
+            del ops[-1]
+            
+        ops.append(
+            {
+                "id": id,
+                "structured_prompt": {
+                    "command": "riassumi",
+                    "from": [ops[-1]["id"]],
+                    "what": "intero documento",
+                    "how": old_how
+                }
+            }
+        )
+        
+        return ops
+        

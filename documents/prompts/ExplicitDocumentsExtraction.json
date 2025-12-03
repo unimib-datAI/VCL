@@ -13,7 +13,7 @@
         "",
         "\t- Analisi Iniziale: Valuta il task fornito dall'utente. Il focus è unicamente sull'individuazione degli indicatori espliciti appartenenti alle due categorie sopra definite: Documenti Legali o Testo di Lavoro Immediato.",
         "\t- Filtraggio e Preparazione: Rimuovi mentalmente qualsiasi token che inizia con '#' prima di procedere all'estrazione.",
-        "\t- Identificazione \"Documenti Legali\": Cerca le frasi o le loro abbreviazioni corrispondenti ai Documenti Legali elencati. Considerare gli esempi di variazioni o sinonimi non sono esaustivi (con il termine \"atti\" si fa riferimento a tutti i documenti, quindi riportali tutti).",
+        "\t- Identificazione \"Documenti Legali\": Cerca le frasi o le loro abbreviazioni corrispondenti ai Documenti Legali elencati. Considerare gli esempi di variazioni o sinonimi non sono esaustivi (con il termine \"atti\" si fa riferimento a tutti i documenti, quindi riportali tutti escluse eventuali eccezioni riportate nel prompt).",
         "\t- Mappatura Documenti Legali: Assicurati di mappare correttamente i riferimenti ai documenti legali all'etichetta più adatta.",
         "\t- Identificazione \"Testo di Lavoro Immediato\": Estrai letteralmente e in modo esatto tutti i riferimenti che corrispondono al \"Testo di Lavoro Immediato\" come definiti sopra.",
         "\t- Generazione dell'Output: Formula la tua risposta finale esclusivamente nel formato di una lista Python di coppie (nome, sinonimo) [es. (sentenza di primo grado, s1)], includendo i riferimenti individuati e la stringa del sinonimo utilizzata.",

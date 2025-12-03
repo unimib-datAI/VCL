@@ -64,7 +64,7 @@ class Executor:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config, or_query: str):
+    def __init__(self, cfg: Config):
         """
         Initialize the Executor.
 
@@ -76,13 +76,12 @@ class Executor:
         self._llm = cfg.llm
         self._logger = cfg.get_logger("Executor")
         self._language: DQLLanguage = cfg.language
-        self._or_query = or_query
 
     # ----------------------
     # --- Public Methods ---
     # ----------------------
     
-    def generate(self, operation: dict, chat_id, operations: list[dict]) -> tuple[str, dict]:
+    def generate(self, operations: list[dict], chat_id) -> tuple[str, dict]:
         """
         Generate a response for a single operation.
 
@@ -98,24 +97,36 @@ class Executor:
             tuple[str, dict]: Generated text and the (potentially modified)
                               operation dict.
         """
-        command = operation.get("command", "altro")
+        self._retrieval = Retrieval(self._cfg, chat_id, operations)
+        
+        for op in operations:
+            if "operations" in op:
+                for o in op["operations"]:
+                    o["result"] = self._execute(o)
+                op["result"] = op["operations"][-1]["result"]
+            else:
+                op["result"] = self._execute(op)
+            
+        return operations
+    
+    def _execute(self, op):
+        structured_prompt = op.get("structured_prompt", {})
+        command = structured_prompt.get("command", "altro")
         
         # Step 1: Retrieve relevant documents for this operation
-        docs = Retrieval(self._cfg, chat_id, operations).execute(operation)
+        docs = self._retrieval.execute(structured_prompt)
         
         context = self._build_context(docs)
-        what = operation.get("what", "")
-        how = self._format_conditions(operation.get("how", {}))
+        what = structured_prompt.get("what", "")
+        how = self._format_conditions(structured_prompt.get("how", {}))
         
         if command == "altro":
-            result = altro(self._or_query, context)
+            result = altro("", context)
         else:
             result = self.FUNCTION_MAP.get(command)(context, what, how)
 
         # Format headings in the result (e.g., # -> **)
-        result = re.sub(self._pattern, self._format_heading, result)
-
-        return result, operation
+        return re.sub(self._pattern, self._format_heading, result)
 
     # ----------------------
     # --- Input Context  ---

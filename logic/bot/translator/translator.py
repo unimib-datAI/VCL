@@ -137,7 +137,9 @@ class Translator:
         how = result_conditions.get()
         
         for i in range(len(how)):
-            prompts[i]["structured_prompt"]["how"] = how[i]
+            if how[i]:
+                prompts[i]["structured_prompt"]["how"] = how[i]
+                
             del prompts[i]["from"]
 
         return prompts

@@ -19,9 +19,10 @@ Dependencies:
 - logic.bot.executor.Executor: Execute operations and generate results.
 """
 
-import itertools
 import os
+
 from copy import deepcopy
+from datetime import datetime
 
 from utils.config import Config
 from utils.file_manager import FileHandler
@@ -43,6 +44,8 @@ class Orchestrator:
     # ----------------------
     # --- Initialization ---
     # ----------------------
+    
+    error_msg = "Si è verificato un errore. Riprova."
     
     def __init__(self, username: str = None, role: str = "Altro"):
         """
@@ -93,14 +96,15 @@ class Orchestrator:
         self._preprocessor = Preprocessor(self._CFG)
         self._translator = Translator(self._CFG)
         self._planner = Planner(self._CFG)
-        self._executor = Executor(self._CFG, prompt)
+        self._executor = Executor(self._CFG)
         
         # Log the incoming request
         self._logger.info(f"Request Received: \"{prompt}\"")
         
         response = {
+            "role": "assistant",
+            "time": datetime.now().isoformat(),
             "id": self._CFG.get_request_id(),
-            "prompt": prompt
         }
 
         try:
@@ -108,7 +112,7 @@ class Orchestrator:
             
             tasks = self._preprocess(prompt)
             structured_tasks = self._translate(tasks, user_id, chat_id)
-            # operations = self._plan(structured_tasks)
+            structured_tasks = self._plan(structured_tasks)
             result, last_result = self._execute(structured_tasks, chat_id)
             
             # --------------------------
@@ -117,11 +121,14 @@ class Orchestrator:
             self._logger.error(f"Request processing failed: {e}")
             
             # Define a safe fallback response
-            structured_tasks = []
-            last_result = f"Si è verificato un errore. Riprova."
+            result = []
+            last_result = self.error_msg
 
-        response["tasks"] = result
-        response["result"] = last_result
+        response["details"] = {}
+        response["details"]["prompt"] = prompt
+        response["details"]["tasks"] = result
+        
+        response["content"] = last_result
         
         self._logger.info("Request Completed")
 
@@ -178,18 +185,14 @@ class Orchestrator:
 
     def _execute(self, operations: list[dict], chat_id) -> str:
         """Execute all planned operations and generate final result."""
-        for index, operation in enumerate(operations):
-            operation_input = operation.get("structured_prompt", {})
-            self._logger.info("Step 4 (Executor): Starting")
-            # The executor generates the result for the current operation
-            operation["order"] = index
-            operation["result"], _ = self._executor.generate(operation_input, chat_id, operations)
-            self._logger.info("Step 4 (Executor): Done")
-        
         if len(operations) < 1:
             raise Exception("Tasks not found")
+        
+        self._logger.info("Step 4 (Executor): Starting")
+        results = self._executor.generate(deepcopy(operations), chat_id)
+        self._logger.info("Step 4 (Executor): Done")
             
-        return operations, operations[-1].get("result", "")
+        return results, results[-1].get("result", self.error_msg)
 
     def store_response(self, response: dict):
         """

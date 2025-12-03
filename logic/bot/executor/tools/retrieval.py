@@ -135,10 +135,17 @@ class Retrieval:
     def _get_from_operations_list(self, doc_name: str) -> dict | None:
         """Retrieve document from previously computed operations."""
         for op in self._operations:
-            # Check if an operation ID matches and has a result
-            if op.get("id") == doc_name and "result" in op and op.get("structured_prompt", {}).get("from"):
-                # The 'type' is inferred from the source of the previous operation
-                return {"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]}
+            if "operations" in op:
+                for o in op["operations"]:
+                    # Check if an operation ID matches and has a result
+                    if o.get("id") == doc_name and "result" in o and o.get("structured_prompt", {}).get("from"):
+                        # The 'type' is inferred from the source of the previous operation
+                        return {"name": doc_name, "text": o["result"], "type": o["structured_prompt"]["from"][0]}
+            else:
+                # Check if an operation ID matches and has a result
+                if op.get("id") == doc_name and "result" in op and op.get("structured_prompt", {}).get("from"):
+                    # The 'type' is inferred from the source of the previous operation
+                    return {"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]}
         return None
 
     def _get_doc_from_mongo(self, doc_name: str) -> dict | None:

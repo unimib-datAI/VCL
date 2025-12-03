@@ -1,6 +1,7 @@
+from copy import deepcopy
+
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
-
 
 class ConditionsExtractor:
     """
@@ -84,6 +85,10 @@ class ConditionsExtractor:
                     query_dict,
                     True  # Assuming this flag enables JSON/dict mode
                 )
+                
+                for c in deepcopy(conditions):
+                    if not conditions[c]:
+                        del conditions[c]
 
                 status = "Done"
             else:

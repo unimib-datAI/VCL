@@ -56,7 +56,7 @@ def _display_chat_history() -> None:
     for message in st.session_state.messages:
         with st.chat_message(message["role"]):
             st.markdown(message["content"])
-            _show_expander(message.get("full_details", None), message.get("logs", []))
+            _show_expander(message)
 
 # ---------------------------
 # --- Chat Input Handling ---
@@ -173,21 +173,21 @@ def _submit_prompt(prompt: str) -> None:
         
         # Retrieve result
         result = result_queue.get()
-        text = result.get("result", "")
+        
+        if "details" not in result.keys():
+            result["details"] = {}
+            
+        # Add Logs to session state
+        result["logs"] = log_list[1:]
         
         # Render final output
-        _typewriter_effect(text, placeholder)
-        _show_expander(result, log_list[1:]) # Skip the "LOGS:" header
+        _typewriter_effect(
+            result.get("content", ""), 
+            placeholder
+        )
+        _show_expander(result)
         
-        # Append to session state
-        assistant_msg = {
-            "role": "assistant", 
-            "content": text,
-            "time": datetime.now().isoformat(),
-            "full_details": result, 
-            "logs": log_list[1:]
-        }
-        st.session_state.messages.append(assistant_msg)
+        st.session_state.messages.append(result)
     
     # --- 3. Persist messages ---
     # Save only the last exchange (user + assistant)
@@ -277,38 +277,41 @@ def _typewriter_effect(text: str, placeholder) -> None:
 # --- UI Details (Expanders) ---
 # ------------------------------
 
-def _show_expander(full_details: Dict, logs: List[str] = []) -> None:
+def _show_expander(message: Dict) -> None:
     """
     Renders the details expander containing input structure, operations, and logs.
     """
-    if not (full_details and full_details.get("structured_input", {})):
+    details = message.get("details", {}) if message else {}
+    
+    prompt = details.get("prompt", "")
+    tasks = details.get("tasks", [])
+    logs = details.get("logs", [])
+    
+    if not (message and details and tasks):
         return
 
     with st.expander("Visualizza i dettagli"):
-        operations = full_details.get("operations", [])
-        op_count_str = (f"Il comando è stato scomposto in {len(operations)} operazioni." 
-                        if len(operations) > 1 else "Il comando non è stato necessario scomporlo.")
+        if len(tasks) > 1:
+            op_count_str = f"La richiesta è stata scomposta in {len(tasks)} tasks."
+        else:
+            op_count_str = "La richiesta non è stata scomposta."
 
         # 1. Structured Input
-        command_json = json.dumps(full_details.get("structured_input", {}), indent=4)
+        # command_json = json.dumps(full_details.get("structured_input", {}), indent=4)
+        # Il comando identificato per la richiesta è stato:
+        # <pre><code class="language-json">{command_json}</code></pre>
+        
         st.markdown(
             f"""
-            <details style="margin-left:20px; margin-top:10px;">
-                <summary>Introduzione</summary>
-                Il comando identificato per la richiesta è stato:
-                <p></p>
-                <pre><code class="language-json">{command_json}</code></pre>
-                {op_count_str}
-            </details>
+            L'utente ha richiesto \"{prompt}\".
+            <p></p>
+            {op_count_str}
             """,
             unsafe_allow_html=True,
         )
 
         # 2. Operations
-        if len(operations) > 1:
-            for index, operation in enumerate(operations, start=1):
-                _display_operation(index, operation)
-            st.markdown("</details>", unsafe_allow_html=True)
+        _display_task(tasks)
         
         # 3. Logs
         if logs:
@@ -327,39 +330,86 @@ def _show_expander(full_details: Dict, logs: List[str] = []) -> None:
             )
             
         st.markdown("\n", unsafe_allow_html=True)
+        
+def _display_task(tasks: list) -> None:
+    """Renders a single operation detail block."""
+    for index, task in enumerate(tasks, start=1):
+        structured_prompt = task.get("structured_prompt", {})
+        
+        # Create a clean subset for display
+        display_dict = {
+            "command": structured_prompt.get("command", ""),
+            "from": structured_prompt.get("from", []),
+        }
+        
+        for key in ["what", "how"]:
+            if structured_prompt.get(key, None):
+                display_dict[key] = structured_prompt[key]
+
+        task_json = json.dumps(display_dict, indent=4)
+        task_result = markdown.markdown(task.get("result", ""))
+        
+        operation = [_display_operation(i, t) for i, t in enumerate(task.get("operations", []))]
+        
+        html_code = [
+            '<details style="margin-left:20px; margin-top:10px;">',
+            '\t' + f'<summary>Task {index}: {task.get('prompt', '')}</summary>' if len(tasks) == 1 else '\t <summary>Comando DQL</summary>',
+            '\t<p></p>',
+            '\t' + f'<pre><code class="language-json">{task_json}</code></pre>'
+        ]
+        
+        for o in operation:
+            for r in o:
+                html_code.append("\t" + r)
+        
+        html_code.append('</details>')
+        
+        if len(tasks) != 1:
+            html_code.append('\t<details style="margin-left:20px; margin-top:10px;">')
+            html_code.append('\t\t<summary>Risultato Parziale</summary>')
+            html_code.append('\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">')
+            html_code.append('\t\t\t' + task_result)
+            html_code.append('\t\t</div>')
+            html_code.append('\t</details>')
+        
+        html_code.append('</details>')
+            
+        st.markdown(
+            "\n".join([h for h in html_code if h.strip()]),
+            unsafe_allow_html=True,
+        )
 
 def _display_operation(index: int, operation: Dict) -> None:
     """Renders a single operation detail block."""
     
+    structured_prompt = operation.get("structured_prompt", {})
+    
     # Create a clean subset for display
     display_dict = {
-        "command": operation.get("command", ""),
-        "from": operation.get("from", []),
+        "command": structured_prompt.get("command", ""),
+        "from": structured_prompt.get("from", []),
     }
     for key in ["what", "how"]:
-        if operation.get(key):
-            display_dict[key] = operation.get(key)
+        if structured_prompt.get(key):
+            display_dict[key] = structured_prompt.get(key)
 
     operation_json = json.dumps(display_dict, indent=4)
     operation_result = markdown.markdown(operation.get("result", ""))
 
-    st.markdown(
-        f"""
-        <details style="margin-left:20px; margin-top:10px;">
-            <summary>Operazione {index}: {operation.get('command', '')} - {operation.get('id', '')}</summary>
-            <p></p>
-            <pre><code class="language-json">{operation_json}</code></pre>
-            <b>Risultato Parziale:</b>
-            <details style="margin-left:20px; margin-top:10px;">
-                <summary>Visualizza il testo</summary>
-                <div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">
-                    {operation_result}
-                </div>
-            </details>
-        </details>
-        """,
-        unsafe_allow_html=True,
-    )
+    return [
+        '<details style="margin-left:20px; margin-top:10px;">',
+        '\t' + f'<summary>Operazione {index}: {operation.get('command', '')}</summary>',
+        '\t<p></p>',
+        '\t' + f'<pre><code class="language-json">{operation_json}</code></pre>',
+        '\t<b>Risultato Parziale:</b>',
+        '\t<details style="margin-left:20px; margin-top:10px;">',
+        '\t\t<summary>Visualizza il testo</summary>',
+        '\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">',
+        '\t\t\t' + operation_result,
+        '\t\t</div>',
+        '\t</details>',
+        '</details>'
+    ]
 
 def _save_messages(messages: List[Dict]) -> None:
     """Helper to persist messages to storage."""
