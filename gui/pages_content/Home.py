@@ -189,9 +189,12 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         st.session_state.assistant.get_cfg().generate_request_id()
         
         # Start Assistant in background thread
+        assistant = st.session_state.assistant
+        username = st.session_state.username
+
         thread = threading.Thread(
             target=_call_assistant_thread, 
-            args=(prompt, selected_model, st.session_state.assistant, stop_event, result_queue)
+            args=(prompt, selected_model, assistant, username, stop_event, result_queue),
         )
         thread.start()
 
@@ -256,94 +259,55 @@ def _render_model_selector() -> str:
 # --- Threading & Log Helpers ---
 # -------------------------------
 
-def _call_assistant_thread(prompt: str, selected_model: str, assistant, stop_event: threading.Event, result_queue: queue.Queue) -> None:
+def _call_assistant_thread(prompt: str, selected_model: str, assistant, username: str, stop_event: threading.Event, result_queue: queue.Queue) -> None:
     """
     Wrapper to run the heavy assistant logic in a thread.
     """
     try:
-        response = _call_model(prompt, selected_model, assistant)
+        response = _call_model(prompt, selected_model, assistant, username)
         result_queue.put(response)
     except Exception as e:
         result_queue.put({"result": f"Error: {str(e)}"})
     finally:
         stop_event.set()
 
-def _load_case_documents() -> List[Dict[str, str]]:
+def _load_case_documents(assistant, username: str) -> List[Dict[str, str]]:
     """
-    Legge tutti i documenti di caso (file JSON che iniziano con 'AN - ')
-    nella cartella documents e restituisce una lista di dict:
-    [
-      {"label": <nome leggibile>, "filename": <nome file>, "text": <contenuto>},
-      ...
-    ]
+    Recupera i documenti utente da Mongo tramite assistant.storage
+    SENZA usare st.session_state (che non è thread-safe).
     """
-    docs: List[Dict[str, str]] = []
+    docs = []
 
-    docs_dir = ROOT_DIR / "documents"
-    if not docs_dir.exists():
-        return docs
+    storage = assistant.get_storage()
+    raw_docs = storage.get_all_documents(username) or []
 
-    for path in docs_dir.glob("AN - *.json"):
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-        except Exception:
-            continue
+    TEXT_KEYS = ["text", "contenuto", "content", "body"]
+    NAME_KEYS = ["name", "titolo", "filename"]
+    TYPE_KEYS = ["type_doc", "tipo_documento", "tipo"]
 
-        # Etichetta "umana"
-        type_doc = (data.get("type_doc") or data.get("tipo_documento") or "").strip()
-        name = (data.get("name") or data.get("titolo") or "").strip()
+    for doc in raw_docs:
+        type_doc = next((doc.get(k, "").strip() for k in TYPE_KEYS if doc.get(k)), "")
+        name = next((doc.get(k, "").strip() for k in NAME_KEYS if doc.get(k)), "")
+        text = next((doc.get(k, "").strip() for k in TEXT_KEYS if doc.get(k)), "")
 
-        if type_doc and name:
-            label = f"{type_doc} ({name})"
-        elif type_doc:
-            label = type_doc
-        elif name:
-            label = name
-        else:
-            label = path.stem.replace("_", " ").replace("-", " ").strip()
-
-        # Testo del documento
-        text = (
-            data.get("text")
-            or data.get("content")
-            or data.get("body")
-            or data.get("full_text")
-            or data.get("doc_text")
-        )
-
-        if isinstance(text, list):
-            text = "\n".join(str(t) for t in text)
-
-        if not isinstance(text, str) or not text.strip():
-            # Fallback: tutto il JSON formattato
-            text = json.dumps(data, indent=2, ensure_ascii=False)
-
-        text = text.strip()
         if not text:
-            continue
+            continue  # documento vuoto → skip
 
-        docs.append(
-            {
-                "label": label,
-                "filename": path.name,
-                "text": text,
-            }
+        label = (
+            f"{type_doc} ({name})" if type_doc and name
+            else type_doc or name or "Documento senza nome"
         )
+
+        docs.append({
+            "label": label,
+            "filename": name or label,
+            "text": text
+        })
 
     return docs
 
 
-def _ask_gpt(prompt: str) -> Dict:
-    """
-    Chiama il modello GPT tramite API OpenAI.
-
-    - Carica i documenti di caso dai JSON in /documents
-    - Costruisce un unico messaggio utente che contiene:
-        * elenco dei documenti
-        * contenuto integrale di ciascun documento
-        * la domanda dell'utente
-    """
+def _ask_gpt(prompt: str, assistant, username: str) -> Dict:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return {
@@ -356,24 +320,22 @@ def _ask_gpt(prompt: str) -> Dict:
     try:
         client = OpenAI(api_key=api_key)
 
-        # 1) Carichiamo i documenti di caso
-        case_docs = _load_case_documents()
+        # 1) Documenti dal Mongo via Storage
+        case_docs = _load_case_documents(assistant, username)
 
-        # 2) Se non ci sono documenti, lo diciamo chiaramente
         if not case_docs:
-            docs_block = "Nessun documento di caso è stato trovato nella cartella 'documents'."
+            docs_block = "Nessun documento giudiziario disponibile per l'utente corrente."
         else:
-            # Elenco documenti
             header_lines = ["Documenti disponibili nel progetto:"]
             for doc in case_docs:
-                header_lines.append(f'- "{doc["label"]}" (file: {doc["filename"]})')
+                header_lines.append(f'- "{doc["label"]}"')
+
             header = "\n".join(header_lines)
 
-            # Contenuto integrale
             body_chunks = []
             for doc in case_docs:
                 body_chunks.append(
-                    f'\n\n# Documento: {doc["label"]} (file: {doc["filename"]})\n{doc["text"]}'
+                    f'\n\n# Documento: {doc["label"]}\n{doc["text"]}'
                 )
 
             docs_block = header + "".join(body_chunks)
@@ -386,7 +348,6 @@ def _ask_gpt(prompt: str) -> Dict:
             "Non inventare articoli, commi o decisioni che non sono contenute nei testi."
         )
 
-        # 👇 Qui mettiamo TUTTO (documenti + domanda) in UN SOLO messaggio utente
         user_content = (
             f"{docs_block}\n\n"
             "Ora rispondi alla seguente domanda dell'utente, basandoti solo sui documenti sopra:\n"
@@ -410,7 +371,7 @@ def _ask_gpt(prompt: str) -> Dict:
         return {"result": f"❌ Errore chiamando GPT: {e}"}
 
 
-def _call_model(prompt: str, selected_model: str, assistant):
+def _call_model(prompt: str, selected_model: str, assistant, username:str):
     """
     Dispatcher per decidere quale motore usare in base al modello selezionato.
     """
@@ -419,7 +380,7 @@ def _call_model(prompt: str, selected_model: str, assistant):
         return assistant.chat(prompt)
 
     elif selected_model == "GPT":
-        return _ask_gpt(prompt)
+        return _ask_gpt(prompt, assistant, username)
 
     elif selected_model == "NotebookLM":
         # TODO: integrazione futura
