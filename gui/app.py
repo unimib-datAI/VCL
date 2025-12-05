@@ -11,6 +11,15 @@ from gui.pages_content.QuestionsTracking import show_questions_tracking
 
 from utils.storage import Storage
 
+MODEL_LABELS = {
+    "DQL": "DQL",
+    "GPT": "GPT",
+    "NotebookLM": "NotebookLM",
+}
+
+DEFAULT_MODEL = "DQL"
+
+
 # --- Configuration ---
 st.set_page_config(page_title="DQL", layout="wide")
 
@@ -47,6 +56,10 @@ def _init_session_state() -> None:
         if key not in st.session_state:
             st.session_state[key] = value
 
+    # Mappa chat_id -> modello
+    if "chat_models" not in st.session_state:
+        st.session_state.chat_models = {}
+
     # Clean query params if not authenticated
     if not st.session_state.auth_status and "chat" in st.query_params:
         del st.query_params.chat
@@ -74,6 +87,23 @@ def _handle_logout() -> None:
     st.query_params["page"] = "Login"
     st.rerun()
 
+def _infer_chat_model(messages) -> str:
+    """
+    Prova a determinare il modello usato in una chat
+    guardando l'ultimo messaggio dell'assistente che contiene 'model'.
+    Se non trova nulla, torna DEFAULT_MODEL.
+    """
+    if not messages:
+        return DEFAULT_MODEL
+
+    for msg in reversed(messages):
+        if msg.get("role") == "assistant" and msg.get("model"):
+            return msg["model"]
+
+    return DEFAULT_MODEL
+
+
+
 def _render_sidebar() -> None:
     """
     Renders the sidebar navigation for authenticated users.
@@ -93,19 +123,41 @@ def _render_sidebar() -> None:
         st.divider()
         
         # Chat History List
-        chats = st.session_state.authenticator.get_all_chats(st.session_state.username)
+        chats = st.session_state.authenticator.get_all_chats(st.session_state.username) or {}
         # Sort keys in reverse order (assuming timestamps or incremental IDs)
         sorted_keys = sorted(chats.keys(), reverse=True)
 
         for index, chat_id in enumerate(sorted_keys):
             # Display logic: Chat 1, Chat 2 based on chronological order reversed
             display_index = str(len(sorted_keys) - index)
-            
-            if st.button(f"💬 Chat {display_index}", key=f"nav_{chat_id}", use_container_width=True):
+
+            messages = chats.get(chat_id, [])
+
+            # 1) Se abbiamo già un modello salvato per questa chat, usiamo quello
+            model_key = st.session_state.chat_models.get(chat_id)
+
+            # 2) Altrimenti lo inferiamo dai messaggi e lo cache-iamo
+            if not model_key:
+                model_key = _infer_chat_model(messages)
+                st.session_state.chat_models[chat_id] = model_key
+
+            model_label = MODEL_LABELS.get(model_key, model_key)
+            label = f"💬 Chat {display_index} ({model_label})"
+
+            if st.button(label, key=f"nav_{chat_id}", use_container_width=True):
+                # Cambiamo chat
                 st.query_params["chat"] = chat_id
+
+                # Allineiamo il modello nello stato di Home
+                st.session_state.selected_model = model_key
+                st.session_state.model_selector = model_key
+                st.session_state.last_model_for_chat = model_key
+
                 if st.query_params.get("page") != "Home":
                     st.query_params["page"] = "Home"
+
                 st.rerun()
+
         
         st.divider()
         

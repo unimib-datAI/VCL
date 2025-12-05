@@ -27,8 +27,7 @@ APP_TITLE = "DQL"
 MODEL_LABELS = {
     "DQL": "DQL",
     "GPT": "GPT",
-    "NotebookLM": "NotebookLM (coming soon)",
-    "Copilot": "Copilot (coming soon)",
+    "NotebookLM": "NotebookLM",
 }
 
 DEFAULT_MODEL = "DQL"
@@ -41,20 +40,29 @@ def _initialize_chat() -> None:
     """
     Initialize the chat session state by retrieving history from storage.
     Sets a default greeting message if the history is empty.
-    """ 
-    st.session_state.messages = st.session_state.assistant.get_storage().get_chat_messages(
+    """
+    # Assicuriamoci di avere un modello selezionato
+    if "selected_model" not in st.session_state:
+        st.session_state.selected_model = DEFAULT_MODEL
+
+    storage = st.session_state.assistant.get_storage()
+
+    st.session_state.messages = storage.get_chat_messages(
         st.session_state.username,
         st.query_params.chat
     )
-    
+
+    current_model = st.session_state.selected_model
+
     first_message = [
         {
             "role": "assistant",
             "content": "Ciao! Come posso aiutarti oggi?",
-            "time": datetime.now().isoformat()
+            "time": datetime.now().isoformat(),
+            "model": current_model,  # 👈 modello usato per questa chat
         }
     ]
-    
+
     if "messages" not in st.session_state or not st.session_state.messages:
         st.session_state.messages = first_message
         _save_messages(st.session_state.messages)
@@ -68,8 +76,20 @@ def _display_chat_history() -> None:
     Iterates through session messages and renders them in the UI.
     """
     for message in st.session_state.messages:
+        model = message.get("model")  # DQL / GPT / NotebookLM / ...
+        label = MODEL_LABELS.get(model, model) if model else None
+
         with st.chat_message(message["role"]):
+            # Contenuto principale
             st.markdown(message["content"])
+
+            # Mini badge modello (solo per l'assistente, volendo)
+            if message["role"] == "assistant" and label:
+                st.markdown(
+                    f"<span style='font-size:0.75rem; opacity:0.7;'>🔌 Risposta generata con: <b>{label}</b></span>",
+                    unsafe_allow_html=True,
+                )
+
             _show_expander(message.get("full_details", None), message.get("logs", []))
 
 # ---------------------------
@@ -106,8 +126,18 @@ def _handle_suggestions_and_controls() -> Optional[str]:
     # Col 2: New Chat
     with col2:
         if st.button("📝 Nuova conversazione"):
-            st.query_params.chat = st.session_state.authenticator.create_new_chat(st.session_state.username)
-            st.rerun()
+            authenticator = st.session_state.authenticator
+            username = st.session_state.username
+            new_chat_id = authenticator.create_new_chat(username)
+
+            if new_chat_id:
+                # modello corrente per la nuova chat
+                current_model = st.session_state.get("selected_model", DEFAULT_MODEL)
+                # salviamo subito l'associazione nella mappa
+                st.session_state.chat_models[new_chat_id] = current_model
+
+                st.query_params.chat = new_chat_id
+                st.rerun()
         
     # Col 3: Delete Chat
     with col3:
@@ -132,6 +162,25 @@ def _display_gui_components() -> None:
     """
     # 0. Selettore modello
     selected_model = _render_model_selector()
+
+    label = MODEL_LABELS.get(selected_model, selected_model)
+    st.markdown(
+        f"""
+           <div style="
+               margin-top: 0.5rem;
+               margin-bottom: 0.3rem;
+               display: inline-block;
+               padding: 0.2rem 0.6rem;
+               border-radius: 999px;
+               font-size: 0.85rem;
+               background-color: rgba(255, 255, 255, 0.08);
+               border: 1px solid rgba(255, 255, 255, 0.25);
+           ">
+               🔌 Modello corrente: <b>{label}</b>
+           </div>
+           """,
+        unsafe_allow_html=True,
+    )
 
     # 1. Controls & Suggestions
     suggestion_prompt = _handle_suggestions_and_controls()
@@ -230,29 +279,67 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 # ---------------------------
 # -- Render Model Selector --
 # ---------------------------
+
 def _render_model_selector() -> str:
     """
-    Rende il selettore del modello da interrogare e lo salva in session_state.
+    Rende il selettore del modello da interrogare.
 
-    Ritorna:
-        str: il modello selezionato (chiave in MODEL_LABELS)
+    Comportamento:
+    - Il widget radio controlla st.session_state["model_selector"].
+    - last_model_for_chat tiene traccia del modello associato alla chat corrente.
+    - Se l'utente cambia modello rispetto a last_model_for_chat,
+      viene creata una nuova chat e associata a quel modello.
     """
+
+    # Modello "logico" selezionato (usato anche da _initialize_chat)
     if "selected_model" not in st.session_state:
         st.session_state.selected_model = DEFAULT_MODEL
 
-    # Piccolo titolo sopra il selettore
+    # Valore iniziale del widget radio
+    if "model_selector" not in st.session_state:
+        st.session_state.model_selector = st.session_state.selected_model
+
+    # Modello associato alla chat corrente
+    if "last_model_for_chat" not in st.session_state:
+        st.session_state.last_model_for_chat = st.session_state.model_selector
+
     st.markdown("### Seleziona il motore da interrogare")
 
-    # UI del selettore (radio orizzontale)
-    selected = st.radio(
+    # Il widget radio aggiorna automaticamente st.session_state.model_selector
+    st.radio(
         "Motore",
         options=list(MODEL_LABELS.keys()),
         format_func=lambda k: MODEL_LABELS[k],
-        index=list(MODEL_LABELS.keys()).index(st.session_state.selected_model),
         horizontal=True,
+        key="model_selector",
     )
 
+    selected = st.session_state.model_selector
+
+    # Se il modello selezionato è diverso da quello associato alla chat corrente,
+    # creiamo una NUOVA chat con quel modello.
+    if selected != st.session_state.last_model_for_chat:
+        authenticator = st.session_state.get("authenticator")
+        username = st.session_state.get("username")
+
+        if authenticator and username:
+            new_chat_id = authenticator.create_new_chat(username)
+            if new_chat_id:
+                # aggiorniamo il modello logico per la nuova chat
+                st.session_state.selected_model = selected
+                st.session_state.last_model_for_chat = selected
+
+                # 👉 IMPORTANTISSIMO: registriamo subito il modello per la sidebar
+                st.session_state.chat_models[new_chat_id] = selected
+
+                st.query_params.chat = new_chat_id
+                st.session_state.messages = []
+                st.rerun()
+
+
+    # Se non è cambiato, manteniamo selected_model allineato
     st.session_state.selected_model = selected
+
     return selected
 
 # -------------------------------
@@ -306,6 +393,32 @@ def _load_case_documents(assistant, username: str) -> List[Dict[str, str]]:
 
     return docs
 
+def _build_docs_block(assistant, username: str) -> str:
+    """
+    Costruisce il blocco di testo con elenco e contenuto completo
+    dei documenti di caso dell'utente.
+    Riutilizzato da GPT e NotebookLM.
+    """
+    case_docs = _load_case_documents(assistant, username)
+
+    if not case_docs:
+        return "Nessun documento giudiziario disponibile per l'utente corrente."
+
+    header_lines = ["Documenti disponibili nel progetto:"]
+    for doc in case_docs:
+        header_lines.append(f'- "{doc["label"]}"')
+
+    header = "\n".join(header_lines)
+
+    body_chunks = []
+    for doc in case_docs:
+        body_chunks.append(
+            f'\n\n# Documento: {doc["label"]}\n{doc["text"]}'
+        )
+
+    return header + "".join(body_chunks)
+
+
 
 def _ask_gpt(prompt: str, assistant, username: str) -> Dict:
     api_key = os.getenv("OPENAI_API_KEY")
@@ -320,25 +433,7 @@ def _ask_gpt(prompt: str, assistant, username: str) -> Dict:
     try:
         client = OpenAI(api_key=api_key)
 
-        # 1) Documenti dal Mongo via Storage
-        case_docs = _load_case_documents(assistant, username)
-
-        if not case_docs:
-            docs_block = "Nessun documento giudiziario disponibile per l'utente corrente."
-        else:
-            header_lines = ["Documenti disponibili nel progetto:"]
-            for doc in case_docs:
-                header_lines.append(f'- "{doc["label"]}"')
-
-            header = "\n".join(header_lines)
-
-            body_chunks = []
-            for doc in case_docs:
-                body_chunks.append(
-                    f'\n\n# Documento: {doc["label"]}\n{doc["text"]}'
-                )
-
-            docs_block = header + "".join(body_chunks)
+        docs_block = _build_docs_block(assistant, username)
 
         base_system = (
             "Sei un assistente legale integrato nell'interfaccia DQL.\n"
@@ -371,6 +466,66 @@ def _ask_gpt(prompt: str, assistant, username: str) -> Dict:
         return {"result": f"❌ Errore chiamando GPT: {e}"}
 
 
+def _ask_notebooklm(prompt: str, assistant, username: str) -> Dict:
+    """
+    Implementazione attuale di NotebookLM nel tuo sistema:
+    - legge i documenti da Mongo
+    - usa OpenAI come backend
+    - ma con uno stile/istruzioni simili a NotebookLM.
+
+    In futuro, qui potrai sostituire la chiamata con:
+    - API ufficiale NotebookLM Enterprise
+    - oppure Gemini API con RAG personalizzato.
+    """
+    api_key = os.getenv("OPENAI_API_KEY")
+    if not api_key:
+        return {
+            "result": (
+                "⚠️ OPENAI_API_KEY non impostata.\n"
+                "NotebookLM non può essere usato senza chiave OpenAI (implementazione attuale)."
+            )
+        }
+
+    try:
+        client = OpenAI(api_key=api_key)
+
+        docs_block = _build_docs_block(assistant, username)
+
+        system_msg = (
+            "Sei una versione 'NotebookLM-like' dell'assistente.\n"
+            "Lavori SOLO sui documenti forniti dall'utente (atti, memorie, sentenza, ecc.).\n"
+            "Il tuo obiettivo è:\n"
+            "- sintetizzare, spiegare e mettere in relazione i documenti,\n"
+            "- proporre schemi, riassunti, mappe concettuali,\n"
+            "- fare esplicito riferimento alle parti dei documenti da cui trai le informazioni.\n"
+            "Non introdurre conoscenze esterne: resta sempre ancorato alle fonti fornite."
+        )
+
+        user_content = (
+            f"{docs_block}\n\n"
+            "Ora comportati come un taccuino di ricerca (NotebookLM):\n"
+            "- se la domanda è generica, proponi una panoramica strutturata dei documenti;\n"
+            "- se la domanda è specifica, cita i punti rilevanti delle fonti.\n\n"
+            f"DOMANDA DELL'UTENTE: {prompt}"
+        )
+
+        messages = [
+            {"role": "system", "content": system_msg},
+            {"role": "user", "content": user_content},
+        ]
+
+        completion = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=messages,
+        )
+
+        text = completion.choices[0].message.content
+        return {"result": text}
+
+    except Exception as e:
+        return {"result": f"❌ Errore chiamando NotebookLM (implementazione attuale): {e}"}
+
+
 def _call_model(prompt: str, selected_model: str, assistant, username:str):
     """
     Dispatcher per decidere quale motore usare in base al modello selezionato.
@@ -383,12 +538,7 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str):
         return _ask_gpt(prompt, assistant, username)
 
     elif selected_model == "NotebookLM":
-        # TODO: integrazione futura
-        return {"result": "⚠️ NotebookLM non è ancora stato integrato. Seleziona DQL per ora."}
-
-    elif selected_model == "Copilot":
-        # TODO: integrazione futura
-        return {"result": "⚠️ Copilot non è ancora stato integrato. Seleziona DQL per ora."}
+        return _ask_notebooklm(prompt, assistant, username)
 
     else:
         # fallback di sicurezza
