@@ -15,8 +15,9 @@ MODEL_LABELS = {
     "DQL": "DQL",
     "GPT": "GPT",
     "NotebookLM": "NotebookLM",
+    "BattleAnon": "Battle (anonimo)",
+    "BattleLabeled": "Battle (etichettato)",
 }
-
 DEFAULT_MODEL = "DQL"
 
 

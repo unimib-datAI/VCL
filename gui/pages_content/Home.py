@@ -10,6 +10,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Generator
 import streamlit as st
+import random
 
 from openai import OpenAI
 import docx
@@ -28,9 +29,12 @@ MODEL_LABELS = {
     "DQL": "DQL",
     "GPT": "GPT",
     "NotebookLM": "NotebookLM",
+    "BattleAnon": "Battle (anonimo)",
+    "BattleLabeled": "Battle (etichettato)",
 }
-
 DEFAULT_MODEL = "DQL"
+
+BATTLE_MODELS = ["GPT", "NotebookLM"]
 
 # ---------------------------
 # --- Chat Initialization ---
@@ -75,15 +79,25 @@ def _display_chat_history() -> None:
     """
     Iterates through session messages and renders them in the UI.
     """
+    current_chat_id = st.query_params.get("chat", "default")
+
     for message in st.session_state.messages:
-        model = message.get("model")  # DQL / GPT / NotebookLM / ...
+        model = message.get("model")  # DQL / GPT / NotebookLM / BattleAnon / BattleLabeled ...
         label = MODEL_LABELS.get(model, model) if model else None
 
         with st.chat_message(message["role"]):
-            # Contenuto principale
-            st.markdown(message["content"])
+            # Contenuto principale (per Battle, content può essere solo un riassunto)
+            if message.get("battle"):
+                # per i messaggi Battle mostriamo il layout speciale
+                _render_battle_answers(
+                    message["battle"],
+                    model or "",
+                    current_chat_id,
+                )
+            else:
+                st.markdown(message["content"])
 
-            # Mini badge modello (solo per l'assistente, volendo)
+            # Mini badge modello (solo per l'assistente)
             if message["role"] == "assistant" and label:
                 st.markdown(
                     f"<span style='font-size:0.75rem; opacity:0.7;'>🔌 Risposta generata con: <b>{label}</b></span>",
@@ -204,11 +218,11 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
     Args:
         prompt (str): The user's prompt.
-        selected_model (str): Selected engine key (e.g. 'DQL', 'GPT', ...)
+        selected_model (str): Selected engine key (e.g. 'DQL', 'GPT', 'NotebookLM', 'BattleAnon', 'BattleLabeled')
     """
     # --- 1. Display user's message ---
     user_msg = {
-        "role": "user", 
+        "role": "user",
         "content": prompt,
         "time": datetime.now().isoformat(),
         "model": selected_model,
@@ -225,7 +239,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         )
     except Exception as e:
         print(f"[WARN] Impossibile tracciare domanda utente: {e}")
-    
+
     with st.chat_message("user"):
         st.markdown(prompt)
 
@@ -234,15 +248,15 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         placeholder = st.empty()
         stop_event = threading.Event()
         result_queue = queue.Queue()
-        
+
         st.session_state.assistant.get_cfg().generate_request_id()
-        
+
         # Start Assistant in background thread
         assistant = st.session_state.assistant
         username = st.session_state.username
 
         thread = threading.Thread(
-            target=_call_assistant_thread, 
+            target=_call_assistant_thread,
             args=(prompt, selected_model, assistant, username, stop_event, result_queue),
         )
         thread.start()
@@ -252,26 +266,71 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
         # Ensure thread completion
         thread.join()
-        
+
         # Retrieve result
         result = result_queue.get()
-        text = result.get("result", "")
-        
-        # Render final output
-        _typewriter_effect(text, placeholder)
-        _show_expander(result, log_list[1:]) # Skip the "LOGS:" header
-        
-        # Append to session state
-        assistant_msg = {
-            "role": "assistant", 
-            "content": text,
-            "time": datetime.now().isoformat(),
-            "full_details": result, 
-            "logs": log_list[1:],
-            "model": selected_model,
-        }
-        st.session_state.messages.append(assistant_msg)
-    
+        raw_result = result.get("result", "")
+
+        # -------------------------
+        # --- Modalità BATTLE -----
+        # -------------------------
+        if selected_model in ("BattleAnon", "BattleLabeled"):
+            # Generiamo un id per questa "sfida" per mantenere stabile lo stato della scelta
+            battle_id = datetime.now().isoformat()
+
+            if isinstance(raw_result, dict):
+                battle_payload = raw_result
+            else:
+                # fallback in caso di errore inatteso
+                battle_payload = {
+                    "mode": "anon" if selected_model == "BattleAnon" else "labeled",
+                    "answers": [],
+                }
+
+            battle_payload["battle_id"] = battle_id
+
+            # Render layout a due colonne con Risposta A / Risposta B
+            _render_battle_answers(
+                battle_payload,
+                selected_model,
+                st.query_params.get("chat", "default"),
+            )
+
+            # Eventuali dettagli tecnici nell'expander
+            _show_expander(result, log_list[1:])  # Skip "LOGS:" header
+
+            # Messaggio assistente salvato in cronologia
+            assistant_msg = {
+                "role": "assistant",
+                "content": "(modalità Battle: due risposte generate)",
+                "time": datetime.now().isoformat(),
+                "full_details": result,
+                "logs": log_list[1:],
+                "model": selected_model,
+                "battle": battle_payload,   # 👈 payload usato da _display_chat_history
+            }
+            st.session_state.messages.append(assistant_msg)
+
+        # ------------------------------
+        # --- Modalità normale (non Battle)
+        # ------------------------------
+        else:
+            text = raw_result if isinstance(raw_result, str) else str(raw_result)
+
+            # Render final output con effetto "macchina da scrivere"
+            _typewriter_effect(text, placeholder)
+            _show_expander(result, log_list[1:])  # Skip the "LOGS:" header
+
+            assistant_msg = {
+                "role": "assistant",
+                "content": text,
+                "time": datetime.now().isoformat(),
+                "full_details": result,
+                "logs": log_list[1:],
+                "model": selected_model,
+            }
+            st.session_state.messages.append(assistant_msg)
+
     # --- 3. Persist messages ---
     # Save only the last exchange (user + assistant)
     _save_messages(st.session_state.messages[-2:])
@@ -526,12 +585,83 @@ def _ask_notebooklm(prompt: str, assistant, username: str) -> Dict:
         return {"result": f"❌ Errore chiamando NotebookLM (implementazione attuale): {e}"}
 
 
+def _ask_battle(prompt: str, assistant, username: str, anonymized: bool) -> Dict:
+    """
+    Modalità Battle:
+    - sceglie 2 modelli diversi a caso tra DQL, GPT, NotebookLM
+    - genera due risposte
+    - se anonymized=True: l'utente vede solo Risposta A / Risposta B
+    - se anonymized=False: l'utente vede anche il modello (GPT / NotebookLM / DQL)
+    """
+    # Scegliamo 2 modelli diversi dalla pool
+    if len(BATTLE_MODELS) < 2:
+        return {"result": "⚠️ Non ci sono abbastanza modelli per la modalità Battle."}
+
+    model_a, model_b = random.sample(BATTLE_MODELS, 2)
+
+    ans_a = _run_single_model_for_battle(model_a, prompt, assistant, username)
+    ans_b = _run_single_model_for_battle(model_b, prompt, assistant, username)
+
+    mode = "anon" if anonymized else "labeled"
+
+    battle_payload = {
+        "mode": mode,
+        "answers": [
+            {
+                "id": "A",
+                "text": ans_a["text"],
+                "model_key": ans_a["model_key"],
+                "model_label": ans_a["model_label"],
+            },
+            {
+                "id": "B",
+                "text": ans_b["text"],
+                "model_key": ans_b["model_key"],
+                "model_label": ans_b["model_label"],
+            },
+        ],
+    }
+
+    return {"result": battle_payload}
+
+
+def _run_single_model_for_battle( model_key: str, prompt: str, assistant, username: str) -> Dict[str, str]:
+    """
+    Esegue un singolo modello (DQL / GPT / NotebookLM) e restituisce
+    un dict con:
+      - text: testo della risposta
+      - model_key: chiave interna (es. 'GPT')
+      - model_label: etichetta per l'UI (es. 'GPT' o 'NotebookLM')
+    """
+
+    if model_key == "DQL":
+        resp = assistant.chat(prompt)
+        text = resp.get("result", "")
+
+    elif model_key == "GPT":
+        resp = _ask_gpt(prompt, assistant, username)
+        text = resp.get("result", "")
+
+    elif model_key == "NotebookLM":
+        resp = _ask_notebooklm(prompt, assistant, username)
+        text = resp.get("result", "")
+
+    else:
+        text = f"⚠️ Modello '{model_key}' non supportato in modalità Battle."
+        model_key = "UNKNOWN"
+
+    return {
+        "text": text,
+        "model_key": model_key,
+        "model_label": MODEL_LABELS.get(model_key, model_key),
+    }
+
+
 def _call_model(prompt: str, selected_model: str, assistant, username:str):
     """
     Dispatcher per decidere quale motore usare in base al modello selezionato.
     """
     if selected_model == "DQL":
-        # Comportamento attuale: usa l'assistant esistente
         return assistant.chat(prompt)
 
     elif selected_model == "GPT":
@@ -540,8 +670,13 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str):
     elif selected_model == "NotebookLM":
         return _ask_notebooklm(prompt, assistant, username)
 
+    elif selected_model == "BattleAnon":
+        return _ask_battle(prompt, assistant, username, anonymized=True)
+
+    elif selected_model == "BattleLabeled":
+        return _ask_battle(prompt, assistant, username, anonymized=False)
+
     else:
-        # fallback di sicurezza
         return {"result": f"⚠️ Modello '{selected_model}' non riconosciuto."}
 
 
@@ -608,6 +743,111 @@ def _typewriter_effect(text: str, placeholder) -> None:
         typed_text += char
         placeholder.markdown(typed_text)
         time.sleep(0.01)
+
+def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: str) -> None:
+    """
+    Mostra due risposte in modalità 'Battle':
+
+    - Prima fase: due riquadri affiancati con bottone "Preferisco questa risposta".
+    - Dopo la scelta: una risposta va in "schermo intero".
+      Ci sono frecce per passare da una risposta all'altra.
+    """
+    if not battle_payload:
+        st.markdown("⚠️ Nessuna risposta ricevuta in modalità Battle.")
+        return
+
+    mode = battle_payload.get("mode", "anon")
+    answers = battle_payload.get("answers", [])
+    if len(answers) < 2:
+        st.markdown("⚠️ Modalità Battle richiede almeno due risposte.")
+        return
+
+    battle_id = battle_payload.get("battle_id", "default")
+
+    # Chiave base per lo stato di questa specifica "sfida"
+    base_key = f"battle_{chat_id}_{battle_id}"
+    focus_key = f"{base_key}_focus"  # "A", "B" oppure None
+
+    focus = st.session_state.get(focus_key)  # risposta attualmente "in primo piano"
+
+    # Helper per rendere un riquadro risposta
+    def _render_answer_card(answer: dict, title_prefix: str, mode: str):
+        title = title_prefix
+        if mode == "labeled":
+            label = answer.get("model_label") or answer.get("model_key", "")
+            if label:
+                title += f"  \n<sub style='opacity:0.7;'>Modello: <b>{label}</b></sub>"
+        st.markdown(f"**{title}**", unsafe_allow_html=True)
+
+        st.markdown(
+            """
+            <div style="
+                border: 1px solid rgba(255,255,255,0.25);
+                border-radius: 0.75rem;
+                padding: 0.75rem;
+                margin-top: 0.25rem;
+                margin-bottom: 0.5rem;
+            ">
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown(answer.get("text", ""))
+        st.markdown("</div>", unsafe_allow_html=True)
+
+    st.markdown("### ⚔️ Modalità Battle")
+
+    # -----------------------------
+    # FASE 2: una risposta scelta
+    # -----------------------------
+    if focus in ("A", "B"):
+        # Indice 0 -> A, 1 -> B
+        current_idx = 0 if focus == "A" else 1
+        current_answer = answers[current_idx]
+
+        # Barra di navigazione per passare da una risposta all'altra
+        nav_col1, nav_col2, nav_col3 = st.columns([0.25, 0.5, 0.25])
+
+        with nav_col1:
+            if st.button("⬅️ Risposta A", key=f"{base_key}_goto_A"):
+                st.session_state[focus_key] = "A"
+                st.rerun()
+
+        with nav_col2:
+            st.markdown(
+                f"<div style='text-align:center; opacity:0.8;'>Stai visualizzando: <b>Risposta {focus}</b></div>",
+                unsafe_allow_html=True,
+            )
+
+        with nav_col3:
+            if st.button("Risposta B ➡️", key=f"{base_key}_goto_B"):
+                st.session_state[focus_key] = "B"
+                st.rerun()
+
+        st.markdown("---")
+
+        # Risposta scelta in "schermo intero"
+        _render_answer_card(current_answer, f"Risposta {focus}", mode)
+        return
+
+    # -----------------------------
+    # FASE 1: nessuna scelta ancora
+    # -----------------------------
+
+    colA, colB = st.columns(2)
+
+    # Risposta A
+    with colA:
+        _render_answer_card(answers[0], "Risposta A", mode)
+        if st.button("✅ Preferisco questa risposta", key=f"{base_key}_pick_A"):
+            st.session_state[focus_key] = "A"
+            st.rerun()
+
+    # Risposta B
+    with colB:
+        _render_answer_card(answers[1], "Risposta B", mode)
+        if st.button("✅ Preferisco questa risposta", key=f"{base_key}_pick_B"):
+            st.session_state[focus_key] = "B"
+            st.rerun()
 
 # ------------------------------
 # --- UI Details (Expanders) ---
