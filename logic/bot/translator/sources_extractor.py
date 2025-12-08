@@ -35,10 +35,49 @@ class SourcesExtractor:
     # --- Main Extraction Method ---
     # ------------------------------
     
+    def get_chat_history(self, user_id, chat_id) -> list:
+        return [
+            {
+                "id": chat.get("id", ""), 
+                "prompt": chat.get("details", {}).get("prompt", ""), 
+                "used_documents": chat.get("details", {}).get("used_documents", []),
+                "content": chat.get("content", "")
+            }
+            for chat in self._storage.get_chat_messages(user_id, chat_id)
+            if "details" in chat
+        ]
+    
     def extract(self, query: str, user_id, chat_id, tasks_id: list) -> list:
-        documents = self._explicit_documents_extraction(query) + self._implicit_documents_extraction(query, user_id, chat_id) + self._task_id_extraction(query, tasks_id)
-        documents = [d for d in documents if not str(d[0]).startswith("#")]
-        self._logger.info(str(documents))
+        status = "Error"
+        try:
+            chat = self.get_chat_history(user_id, chat_id)
+            
+            documents = self._explicit_documents_extraction(query) 
+            
+            self._logger.info(len(chat))
+            if chat:
+                documents += self._implicit_documents_extraction(query, chat) 
+            
+            if "#" in query:
+                documents += self._task_id_extraction(query, tasks_id)
+            
+            if "\"" in query:
+                documents += self._text_extraction(query)
+            
+            documents = [d for d in documents if not str(d[0]).startswith("#")]
+            
+            if chat and (not documents):
+                documents = [[chat[-1]["id"], "risposta precedente"]]
+            
+            status = "Done"
+        except Exception as e:
+            # Fallback: return all available sources
+            self._logger.error(e)
+            documents = [[src["name"], src["name"]] for src in self._dql_language.get_sources()]
+            
+        # Log the extraction result
+        self._logger.info(f"{documents} - {status}")
+        
         return documents
     
     def _explicit_documents_extraction(self, query: str) -> list:
@@ -57,93 +96,68 @@ class SourcesExtractor:
         Returns:
             list: List of document/source names deemed relevant.
         """
-
-        query_dict = {
-            "query": query,
-            "feedback": ""
-        }
-
-        documents = []
-        status = "Error"
+        # Retrieve the specific prompt for 'sources' extraction
+        prompt = self._dql_language.prompts.get("ExplicitDocumentsExtraction.json", None)
         
-        try:
-            # Retrieve the specific prompt for 'sources' extraction
-            prompt = self._dql_language.prompts.get("ExplicitDocumentsExtraction.json", None)
+        if not prompt:
+            raise ValueError("ExplicitDocumentsExtraction.json prompt not found.")
+        
+        if query.strip():
+            # Invoke LLM to extract from query
+            documents = self._llm.invoke(
+                prompt,
+                { "query": query },
+                True
+            )
             
-            if not prompt:
-                raise ValueError("ExplicitDocumentsExtraction.json prompt not found.")
+            # Log the extraction result
+            self._logger.info(f"Explicit Documents: {documents}")
             
-            if query_dict.get("query", "").strip():
-                # Invoke LLM to extract from query
-                documents = self._llm.invoke(
-                    prompt,
-                    query_dict,
-                    True
-                )
-                
-                status = "Done"
-            else:
-                raise ValueError("Empty query provided to ExplicitDocumentsExtraction.")
-        except Exception as e:
-            # Fallback: return all available sources
-            documents = [[src["name"], src["name"]] for src in self._dql_language.get_sources()]
-
-        # Log the extraction result
-        self._logger.info(f"Sources Extractor: {documents} - {status}")
-
-        return documents
+            return documents
+        else:
+            raise ValueError("Empty query provided to ExplicitDocumentsExtraction.")
     
-    def _implicit_documents_extraction(self, query, user_id, chat_id) -> list:
-        chat = self._storage.get_chat_messages(user_id, chat_id)
-        
-        chat_str = str(
-            [
-                {
-                    "id": c.get("full_details", {}).get("id", ""), 
-                    "prompt": c.get("full_details", {}).get("prompt", ""), 
-                    "used_documents": c.get("full_details", {}).get("used_documents", [])
-                } 
-                for c in chat if c.get("role", "user") != "user"
-            ]
-        )
-        
+    def _implicit_documents_extraction(self, query, chat) -> list:
         query_dict = {
             "query": query,
-            "feedback": "",
-            "chat": chat_str
+            "chat": str(chat)
         }
 
-        documents = []
-        status = "Error"
+        # Retrieve the specific prompt for 'sources' extraction
+        prompt = self._dql_language.prompts.get("ImplicitDocumentsExtraction.json", None)
         
-        try:
-            # Retrieve the specific prompt for 'sources' extraction
-            prompt = self._dql_language.prompts.get("ImplicitDocumentsExtraction.json", None)
+        if not prompt:
+            raise ValueError("ImplicitDocumentsExtraction.json prompt not found.")
+        
+        if query_dict.get("query", "").strip():
+            # Invoke LLM to extract from query
+            documents = self._llm.invoke(
+                prompt,
+                query_dict,
+                True
+            )
             
-            if not prompt:
-                raise ValueError("ImplicitDocumentsExtraction.json prompt not found.")
+            # Log the extraction result
+            self._logger.info(f"Implicit Documents: {documents}")
             
-            if query_dict.get("query", "").strip():
-                # Invoke LLM to extract from query
-                documents = self._llm.invoke(
-                    prompt,
-                    query_dict,
-                    True
-                )
-                
-                status = "Done"
-            else:
-                raise ValueError("Empty query provided to ImplicitDocumentsExtraction.")
-        except Exception as e:
-            # Fallback: return all available sources
-            documents = []
-
-        # Log the extraction result
-        self._logger.info(f"Sources Extractor: {documents} - {status}")
-
-        return documents
+            return documents
+        else:
+            raise ValueError("Empty query provided to ImplicitDocumentsExtraction.")
     
     
     def _task_id_extraction(self, query: str, ids) -> list:
         found_ids = [int(x) for x in re.findall(r"#(\d+)", query)]
-        return [[ids[i - 1], f"#{i}"] for i in found_ids if i <= len(ids)]
+        documents = [[ids[i - 1], f"#{i}"] for i in found_ids if i <= len(ids)]
+        
+        # Log the extraction result
+        self._logger.info(f"Previous Tasks: {documents}")
+        
+        return documents
+    
+    def _text_extraction(self, query: str) -> list:
+        documents = [[x, x] for x in re.findall(r"\"([^\"]*)\"", query) if x]
+        
+        # Log the extraction result
+        self._logger.info(f"Texts: {documents}")
+        
+        return documents

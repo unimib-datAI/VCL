@@ -46,10 +46,6 @@ class Decomposer():
         
     def decompose(self, query: str) -> list:
         status = "Error"
-        
-        query_dict = {
-            "query": query
-        }
 
         try:
             # Retrieve the specific prompt for query decomposition
@@ -59,11 +55,11 @@ class Decomposer():
                 self._logger.error("Decomposition.json prompt not found.")
                 raise ValueError("Error during prompt retrieval")
             
-            if query_dict.get("query", "").strip():
+            if query.strip():
                 # Invoke LLM to rewrite the query based on the prompt
                 result = self._llm.invoke(
                     prompt,
-                    query_dict,
+                    { "query": query },
                     True
                 )
                 
@@ -71,26 +67,28 @@ class Decomposer():
                 
                 status = "Done"
             else:
-                self._logger.warning("Query is empty after stripping.")
                 raise ValueError("Empty query provided")
 
-        except Exception:
+        except Exception as e:
+            self._logger.error(e)
             result = [
                 {
-                    "id": 1,
+                    "id": "1",
                     "prompt": query
                 }
             ] # Return original text on failure
         
         final_result = [
             {
-                "id": f"{self._cfg.get_request_id()}_{str(q.get("id", i+1))}",
-                "prompt": q.get("prompt", "")
+                "id": f"{self._cfg.get_request_id()}_{str(q.get("id", str(i)))}",
+                "prompt": q.get("prompt", "").replace(" '", ' "').replace("' ", '" ').replace("'.", '".')
             }
-            for i, q in enumerate(result)
+            for i, q in enumerate(result, start=1)
         ]
             
         self._logger.info(f"Decomposer: obtained {len(final_result)} task - {status}")
+        
+        self._logger.info(str(final_result))
 
         return final_result
         
@@ -103,7 +101,7 @@ class Decomposer():
             DG.add_node(
                 task.get('id', ''), 
                 data={
-                    "id": task.get('id', ''), 
+                    "id": str(task.get('id', '')), 
                     "prompt": task.get('prompt', '')
                 }
             )
@@ -123,7 +121,7 @@ class Decomposer():
             new_id = len(tasks) + 1
             
             new_task = {
-                "id": new_id, 
+                "id": str(new_id), 
                 "prompt": f"Integra in un'unica risposta i testi delle risposte {sink_nodes_str}"
             }
             

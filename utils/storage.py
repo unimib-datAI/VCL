@@ -424,8 +424,7 @@ class Storage:
         chat_history = self.get_chat_messages(user_id, chat_id)
         
         for chat in chat_history:
-            if str(chat.get("full_details", {}).get("id", "")).lower() == message_id.lower():
-                print(chat)
+            if chat.get("id", "").lower() == message_id.lower():
                 return deepcopy(chat)
         
         return None 

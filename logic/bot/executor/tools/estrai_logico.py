@@ -6,7 +6,6 @@ def estrai_logico(context, what, how) -> tuple[str, dict]:
     language = DQLLanguage.get_instance()
     
     state = {
-        "feedback": "",
         "how": how,
         "context": context,
         "guidelines": language.get_guidelines_from_command("estrai logico"),

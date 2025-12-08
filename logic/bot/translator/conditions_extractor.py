@@ -36,7 +36,7 @@ class ConditionsExtractor:
     # --- Main Extraction Method ---
     # ------------------------------
     
-    def extract(self, query: str, query_str: dict, docs: list) -> dict:
+    def extract(self, query: str, structured_query: dict, docs: list) -> dict:
         """
         Extract additional conditions ('how') from a user query.
 
@@ -49,7 +49,7 @@ class ConditionsExtractor:
 
         Args:
             query (str): The raw user input query.
-            query_str (dict): Structured representation of the query
+            structured_query (dict): Structured representation of the query
                               (containing 'command', 'what', 'from').
             docs (list): A list of document tuples (name, reference)
                          extracted in a previous step.
@@ -61,10 +61,8 @@ class ConditionsExtractor:
         # Prepare the input dictionary for the LLM prompt
         query_dict = {
             "query": query,
-            "query_str": str(query_str),
-            "documents": self.docs_in_string(docs),
-            "feedback": "",
-            "what": query_str.get("what", "")
+            "structured_query": str(structured_query),
+            "documents": self.docs_in_string(docs)
         }
 
         conditions = {}
@@ -96,9 +94,8 @@ class ConditionsExtractor:
 
         except Exception as e:
             # Fallback to an empty dictionary in case of any error
-            self._logger.error(f"Error extracting conditions: {e}")
+            self._logger.error(e)
             conditions = {}
-            status = "Error"
 
         # Log the extraction result
         self._logger.info(f"Conditions Extractor: {conditions} - {status}")

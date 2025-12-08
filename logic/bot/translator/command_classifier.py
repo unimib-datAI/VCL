@@ -55,11 +55,10 @@ class CommandClassifier:
 
         # Prepare the input dictionary for the LLM prompt
         query_dict = {
-            "query": query,
-            "feedback": ""  # Placeholder
+            "query": query
         }
 
-        command_info = {}
+        command = {}
         status = "Error"  # Initial status for logging
 
         try:
@@ -79,20 +78,20 @@ class CommandClassifier:
                 )
 
                 # Retrieve full command information
-                command_info = self._dql_language.get_command_from_key(llm_result)
+                command = self._dql_language.get_command_from_key(llm_result)
 
                 status = "Done"
             else:
                 raise ValueError("Empty query provided to CommandClassification.")
 
         except Exception as e:
-            self._logger.error(f"Command classification failed: {e}. Falling back to default.")
             # Fallback to the default 'altro' (other) command in case of any error
-            command_info = "altro"
+            self._logger.error(e)
+            command = "altro"
 
         # Log the classification result
         self._logger.info(
-            f"Intent Classification: {command_info} - {status}"
+            f"{command} - {status}"
         )
 
-        return command_info
+        return command

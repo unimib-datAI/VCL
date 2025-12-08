@@ -9,7 +9,6 @@ def cerca(context, what, how) -> tuple[str, dict]:
         return context
     
     state = {
-        "feedback": "",
         "how": how,
         "context": context,
         "guidelines": language.get_guidelines_from_command("cerca"),

@@ -147,4 +147,8 @@ class Config:
         timestamp = datetime.now(timezone.utc).isoformat()
         # Sanitize timestamp for use in filenames
         sanitized = timestamp.replace(":", "").replace(".", "")
-        self._request_id = f"{self._user_id}_{sanitized}"
+        
+        if "+" in sanitized:
+            sanitized = sanitized[:sanitized.rindex("+")]
+            
+        self._request_id = f"{self._user_id}_{sanitized}".lower()

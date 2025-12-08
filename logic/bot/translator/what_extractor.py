@@ -62,8 +62,7 @@ class WhatExtractor:
         # Prepare the input dictionary for the LLM prompt
         query_dict = {
             "query": query,
-            "what": language_what_str,
-            "feedback": ""
+            "what": language_what_str
         }
 
         what = ""
@@ -93,9 +92,8 @@ class WhatExtractor:
                 raise ValueError("Empty query provided to WhatExtractor.")
 
         except Exception as e:
-            # Fallback to default value (e.g., "intero documento") if extraction fails
-            # Note: "intero documento" is Italian, maintained from original logic.
-            what = "intero documento"
+            # Fallback to default value (e.g., "altro") if extraction fails
+            what = "altro"
             self._logger.error(f"Error extracting 'what': {e}")
 
         # Log the extraction result

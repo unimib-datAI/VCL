@@ -163,7 +163,7 @@ class Retrieval:
         doc = self._storage.get_message(self._user_id, self._chat_id, doc_name)
         
         if doc and "content" in doc:
-            return {"name": doc["full_details"]["id"], "text": doc["content"], "type": doc_name}
+            return {"name": doc["id"], "text": doc["content"], "type": doc_name}
         return None
 
     def _get_from_local_system(self, doc_name: str) -> dict | None:

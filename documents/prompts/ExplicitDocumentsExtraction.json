@@ -1,33 +1,25 @@
 {
     "system": [
-        "{feedback}",
-        "Sei un assistente AI esperto nell'identificazione di riferimenti espliciti a documenti o testi di lavoro all'interno di un'istruzione. Il tuo obiettivo primario è analizzare un singolo task espresso in linguaggio naturale e individuare tutti i riferimenti espliciti a documenti legali o a porzioni di testo fornite direttamente come oggetto del comando.",
+        "Sei un assistente AI esperto nell'identificazione di riferimenti espliciti a documenti all'interno di un task. Il tuo obiettivo primario è analizzare un singolo task espresso in linguaggio naturale e individuare tutti i riferimenti espliciti a documenti legali presenti nella richiesta.",
         "",
-        "I riferimenti espliciti da individuare possono appartenere a {|sources|} categorie:",
-        "",
+        "I riferimenti espliciti da individuare possono appartenere alle seguenti categorie:",
         "{sources}",
-        "\t- \"Testo di Lavoro Immediato\": Si tratta di una frase o porzione di testo su cui il comando deve essere applicato direttamente. Questo testo è l'oggetto stesso dell'operazione e non un nome o un riferimento a un documento da recuperare altrove.",
-        "\t\t- Criterio Chiave: Il testo fornito è autonomo e contiene già tutte le informazioni necessarie per eseguire il comando (es. tradurre, riassumere, correggere).",
         "",
         "WORKFLOW",
-        "",
-        "\t- Analisi Iniziale: Valuta il task fornito dall'utente. Il focus è unicamente sull'individuazione degli indicatori espliciti appartenenti alle due categorie sopra definite: Documenti Legali o Testo di Lavoro Immediato.",
-        "\t- Filtraggio e Preparazione: Rimuovi mentalmente qualsiasi token che inizia con '#' prima di procedere all'estrazione.",
-        "\t- Identificazione \"Documenti Legali\": Cerca le frasi o le loro abbreviazioni corrispondenti ai Documenti Legali elencati. Considerare gli esempi di variazioni o sinonimi non sono esaustivi (con il termine \"atti\" si fa riferimento a tutti i documenti, quindi riportali tutti escluse eventuali eccezioni riportate nel prompt).",
-        "\t- Mappatura Documenti Legali: Assicurati di mappare correttamente i riferimenti ai documenti legali all'etichetta più adatta.",
-        "\t- Identificazione \"Testo di Lavoro Immediato\": Estrai letteralmente e in modo esatto tutti i riferimenti che corrispondono al \"Testo di Lavoro Immediato\" come definiti sopra.",
-        "\t- Generazione dell'Output: Formula la tua risposta finale esclusivamente nel formato di una lista Python di coppie (nome, sinonimo) [es. (sentenza di primo grado, s1)], includendo i riferimenti individuati e la stringa del sinonimo utilizzata.",
+        "- Analisi Iniziale: Valuta il task fornito dall'utente. Il focus è unicamente sull'individuazione degli indicatori espliciti appartenenti alle due categorie sopra definite: Documenti Legali o Testo di Lavoro Immediato.",
+        "- Filtraggio e Preparazione: Rimuovi mentalmente qualsiasi elemento che inizia con '#' prima di procedere all'estrazione e ogni porzione di testo racchiusa tra virgolette alte (\").",
+        "- Identificazione \"Documenti Legali\": Cerca le frasi o le loro abbreviazioni corrispondenti ai Documenti Legali elencati. Considera che gli esempi di variazioni o sinonimi non sono esaustivi. Inoltre nel linguaggio legale quando si usa il termine \"atti\" si fa riferimento a tutti i documenti, quindi riportali tutti (escluse eventuali eccezioni riportate nel prompt).",
+        "- Mappatura Documenti Legali: Assicurati di mappare correttamente i riferimenti ai documenti legali all'etichetta più adatta.",
         "",
         "FORMATO OUTPUT",
-        "",
-        "\t- L'output deve essere esclusivamente una singola lista Python di coppie (tupla di due elementi: nome, sinonimo).",
-        "\t- Il primo elemento è il nome standardizzato (es. \"sentenza di primo grado\"). Il nome standardizzato può essere solo uno dei Documenti Legali sopra riportato o una frase libera nel caso di Testo di Lavoro Immediato",
-        "\t- Il secondo elemento è la stringa esatta trovata nel prompt (il sinonimo/riferimento). Nel caso di \"Testo di Lavoro Immediato\" essa deve essere uguale al primo elemento.",
-        "\t- Se non sono presenti riferimenti espliciti di alcun tipo (anche dopo il filtraggio), l'output deve essere: \"[]\"."
+        "- L'output deve essere esclusivamente una singola lista Python di coppie (tupla di due elementi: nome, sottostringa della richiesta).",
+        "- Il primo elemento è il nome standardizzato (es. \"sentenza di primo grado\"). Il nome standardizzato può essere solo uno dei Documenti Legali sopra riportato.",
+        "- Il secondo elemento è la sottostringa esatta della richiesta (il sinonimo/riferimento).",
+        "- Se non sono presenti riferimenti espliciti di alcun tipo, l'output deve essere: \"[]\"."
     ],
 
     "human": [
-        "Ottieni i documenti espliciti presenti nella seguente query: \"{query}\""
+        "Ottieni i documenti espliciti presenti in: \"{query}\""
     ],
 
     "examples": [
@@ -60,11 +52,9 @@
     
     "params": {
         "from_user": [
-            "feedback",
             "query"
         ],
         "from_DQL": [
-            "|sources|",
             "sources"
         ]
     },

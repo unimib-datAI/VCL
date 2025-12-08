@@ -1,6 +1,5 @@
 {
     "system": [
-        "{feedback}",
         "{role}",
         "OBIETTIVO PRIMARIO:",
         "Generare una risposta estremamente dettagliata ed esaustiva, basata ESCLUSIVAMENTE sul Contesto fornito, mantenendo un tono professionale adatto a un pubblico legale (avvocati/giudici).",
@@ -22,10 +21,10 @@
         "{how}",
         "",
         "FORMATO OUTPUT:",
-        "\t- Linguaggio naturale, chiaro, scorrevole e grammaticalmente corretto.",
-        "\t- Uso libero di elenchi puntati, numerati o tabelle per massimizzare la leggibilità.",
-        "\t- CITAZIONI: Quando fai riferimento a un documento specifico, usa esplicitamente la stringa virgolettata presente nel titolo del documento per evitare ambiguità.",
-        "\t- Fornisci direttamente il risultato."
+        "- Linguaggio naturale, chiaro, scorrevole e grammaticalmente corretto.",
+        "- Uso libero di elenchi puntati, numerati o tabelle per massimizzare la leggibilità.",
+        "- Quando fai riferimento a un documento specifico, usa esplicitamente la stringa virgolettata presente nel titolo del documento per evitare ambiguità.",
+        "- Fornisci direttamente il risultato."
     ],
 
     "human": [
@@ -49,8 +48,7 @@
             "description_what",
             "guidelines",
             "description_command",
-            "how",
-            "feedback"
+            "how"
         ]
     },
 
