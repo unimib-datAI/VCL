@@ -30,7 +30,9 @@
     ],
 
     "human": [
-        "Analizza e decomponi la seguente richiesta: {query}"
+        "Analizza e decomponi la seguente richiesta: {query}",
+        "Nella formulazione dei task tieni conto che:",
+        "{documents}"
     ],
 
     "examples": [
@@ -116,7 +118,8 @@
 
     "params": {
 		"from_user": [
-			"query"
+			"query",
+            "documents"
 		],
         "from_DQL": [
             "commands"

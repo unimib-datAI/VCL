@@ -44,7 +44,7 @@ class Decomposer():
                     cls._instance = cls(cfg)
         return cls._instance
         
-    def decompose(self, query: str) -> list:
+    def decompose(self, query: str, docs) -> list:
         status = "Error"
 
         try:
@@ -59,7 +59,7 @@ class Decomposer():
                 # Invoke LLM to rewrite the query based on the prompt
                 result = self._llm.invoke(
                     prompt,
-                    { "query": query },
+                    { "query": query, "documents": self.docs_in_string(docs) },
                     True
                 )
                 
@@ -81,7 +81,8 @@ class Decomposer():
         final_result = [
             {
                 "id": f"{self._cfg.get_request_id()}_{str(q.get("id", str(i)))}",
-                "prompt": q.get("prompt", "").replace(" '", ' "').replace("' ", '" ').replace("'.", '".')
+                "prompt": q.get("prompt", ""),
+                "structured_prompt": {}
             }
             for i, q in enumerate(result, start=1)
         ]
@@ -134,3 +135,13 @@ class Decomposer():
         ordered_prompts = [DG.nodes[n]["data"] for n in ordered_ids]
         
         return ordered_prompts
+    
+    @staticmethod
+    def docs_in_string(docs):
+        info = [
+            f"- con la stringa \"{doc[1]}\" l'utente fa riferimento al documento \"{doc[0]}\""
+            for doc in docs
+            if len(doc) == 2 and doc[0] != doc[1]
+        ]
+        
+        return "\n\t\t".join(info).strip()

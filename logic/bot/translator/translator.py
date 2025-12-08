@@ -3,8 +3,9 @@ import threading
 
 from copy import deepcopy
 
-from logic.bot.translator.command_classifier import CommandClassifier
 from logic.bot.translator.sources_extractor import SourcesExtractor
+from logic.bot.translator.decomposer import Decomposer
+from logic.bot.translator.command_classifier import CommandClassifier
 from logic.bot.translator.what_extractor import WhatExtractor
 from logic.bot.translator.conditions_extractor import ConditionsExtractor
 
@@ -45,8 +46,9 @@ class Translator:
         self._user_id = cfg.get_user_id()
 
         # Initialize all sub-components
-        self._command_classifier_class = CommandClassifier(cfg)
         self._sources_extractor_class = SourcesExtractor(cfg)
+        self._decomposer_class = Decomposer(cfg)
+        self._command_classifier_class = CommandClassifier(cfg)
         self._what_extractor_class = WhatExtractor(cfg)
         self._conditions_extractor_class = ConditionsExtractor(cfg)
 
@@ -54,7 +56,7 @@ class Translator:
     # --- Main Rewriting Method ---
     # -----------------------------
     
-    def rewrite(self, prompts: list, user_id, chat_id: str) -> dict:
+    def rewrite(self, prompt: str, user_id, chat_id: str) -> dict:
         """
         Rewrite a raw user query into a structured query dictionary.
 
@@ -82,42 +84,58 @@ class Translator:
         
         # Create queues to receive results from threads
         result_command = queue.Queue()
-        result_sources = queue.Queue()
         result_what = queue.Queue()
         result_conditions = queue.Queue()
-
-        # Step 1: (Thread 1) Classify command
-        thread1 = threading.Thread(
-            target=self._command_classification, args=(deepcopy(prompts), result_command)
-        )
         
-        # Step 2: (Thread 2) Extract sources
-        thread2 = threading.Thread(
-            target=self._sources_extractor, args=(deepcopy(prompts), user_id, chat_id, result_sources)
-        )
+        # Step 1: Extract sources
+        try:
+            sources = self._sources_extractor_class.extract(prompt, user_id, chat_id)
+        except Exception as e:
+            sources = []
+            self._logger.error(e)
         
-        # Start parallel execution
-        thread1.start()
-        thread2.start()
+        # Step 2: Decompose prompt in tasks
+        try:
+            prompts = self._decomposer_class.decompose(prompt, sources)
+        except Exception as e:
+            prompts = []
+            self._logger.error(e)
         
-        thread2.join()
-        
+        '''prompts = []
         sources = result_sources.get()
         for i, source in enumerate(sources):
             prompts[i]["from"] = source
             prompts[i]["structured_prompt"] = {}
             prompts[i]["structured_prompt"]["from"] = [s[0] for s in source]
+        '''
+        
+        # Step 3: (Thread 1) Classify command
+        thread1 = threading.Thread(
+            target=self._command_classification, args=(deepcopy(prompts), result_command)
+        )
+        thread1.start()
+        
+        # Step 4a: Retrieve Task Sources
+        ids = sorted([t.get('id', '') for t in prompts], key=lambda k: (len(k), k))
+        for tasks in prompts:
+            from_task = self._sources_extractor_class.parsing(tasks.get("prompt", ""), sources, ids)
             
-        # Step 3: (Thread 3) Extract What
-        thread3 = threading.Thread(
+            if not from_task:
+                from_task = self._sources_extractor_class.extract(tasks.get("prompt", ""), user_id, chat_id, ids)
+                
+            tasks["from"] = from_task
+            tasks["structured_prompt"]["from"] = [s[0] for s in from_task]
+        
+        # Step 4b: (Thread 2) Extract What
+        thread2 = threading.Thread(
             target=self._what_extractor, args=(deepcopy(prompts), result_what)
         )
         
-        thread3.start()
+        thread2.start()
         
         # Wait for others threads to finish
         thread1.join()
-        thread3.join()
+        thread2.join()
         
         # Retrieve results from queues
         command = result_command.get()
@@ -127,20 +145,21 @@ class Translator:
             prompts[i]["structured_prompt"]["command"] = command[i]
             prompts[i]["structured_prompt"]["what"] = what[i]
 
-        thread4 = threading.Thread(
-            target=self._conditions_extractor, args=(prompts, result_conditions)
-        )
-        
-        thread4.start()
-        thread4.join()
-        
-        how = result_conditions.get()
-        
-        for i in range(len(how)):
-            if how[i]:
-                prompts[i]["structured_prompt"]["how"] = how[i]
+        # Step 5: Extract conditions
+        for task in prompts:
+            try:
+                how = self._conditions_extractor_class.extract(
+                    task.get("prompt", ''),
+                    task.get("structured_prompt", {}),
+                    task.get("from", [])
+                )
+            except Exception as e:
+                how = None
+            
+            if how:
+                task["structured_prompt"]["how"] = how
                 
-            del prompts[i]["from"]
+            del task["from"]
 
         return prompts
     
@@ -167,28 +186,28 @@ class Translator:
         
         result_queue.put(result)
         
-    def _sources_extractor(self, prompts: list, user_id, chat_id, result_queue: queue.Queue):
-        """
-        Thread target function to run sources extraction.
-        Places a tuple of (sources, from_sources, what) into the queue.
-
-        Args:
-            prompt (str): The user query.
-            result_queue (queue.Queue): The queue to store the results tuple.
-        """
-        result_sources = []
-        
-        try:
-            ids = sorted([t.get('id', '') for t in prompts])
-            
-            for t in prompts:
-                sources = self._sources_extractor_class.extract(t.get("prompt", ''), user_id, chat_id, ids)
-                result_sources.append(sources)
-        except Exception as e:
-            result_sources = [["", ""]] * len(prompts)
-            self._logger.error(f"{e}")
-            
-        result_queue.put(result_sources)
+#    def _sources_extractor(self, prompts: list, user_id, chat_id, result_queue: queue.Queue):
+#        """
+#        Thread target function to run sources extraction.
+#        Places a tuple of (sources, from_sources, what) into the queue.
+#
+#        Args:
+#            prompt (str): The user query.
+#            result_queue (queue.Queue): The queue to store the results tuple.
+#        """
+#        result_sources = []
+#        
+#        try:
+#            ids = sorted([t.get('id', '') for t in prompts])
+#            
+#            for t in prompts:
+#                sources = self._sources_extractor_class.extract(t.get("prompt", ''), user_id, chat_id, ids)
+#                result_sources.append(sources)
+#        except Exception as e:
+#            result_sources = [["", ""]] * len(prompts)
+#            self._logger.error(f"{e}")
+#            
+#        result_queue.put(result_sources)
 
     def _what_extractor(self, prompts: list, result_queue: queue.Queue):
         """
@@ -212,21 +231,21 @@ class Translator:
             
         result_queue.put(result_what)
         
-    def _conditions_extractor(self, prompts: list, result_queue: queue.Queue):
-        result_how = []
-        
-        try:
-            
-            for t in prompts:
-                sources = self._conditions_extractor_class.extract(
-                    t.get("prompt", ''),
-                    t.get("structured_prompt", {}),
-                    t.get("from", [])
-                )
-                
-                result_how.append(sources)
-                
-        except Exception:
-            result_how = [{}] * len(prompts)
-            
-        result_queue.put(result_how)
+#    def _conditions_extractor(self, prompts: list, result_queue: queue.Queue):
+#        result_how = []
+#        
+#        try:
+#            
+#            for t in prompts:
+#                sources = self._conditions_extractor_class.extract(
+#                    t.get("prompt", ''),
+#                    t.get("structured_prompt", {}),
+#                    t.get("from", [])
+#                )
+#                
+#                result_how.append(sources)
+#                
+#        except Exception:
+#            result_how = [{}] * len(prompts)
+#            
+#        result_queue.put(result_how)

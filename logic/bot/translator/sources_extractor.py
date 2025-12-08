@@ -47,27 +47,26 @@ class SourcesExtractor:
             if "details" in chat
         ]
     
-    def extract(self, query: str, user_id, chat_id, tasks_id: list) -> list:
+    def extract(self, query: str, user_id, chat_id, tasks_id: list = None) -> list:
         status = "Error"
         try:
             chat = self.get_chat_history(user_id, chat_id)
             
             documents = self._explicit_documents_extraction(query) 
             
-            self._logger.info(len(chat))
             if chat:
                 documents += self._implicit_documents_extraction(query, chat) 
             
-            if "#" in query:
+            if "#" in query and tasks_id:
                 documents += self._task_id_extraction(query, tasks_id)
-            
-            if "\"" in query:
-                documents += self._text_extraction(query)
             
             documents = [d for d in documents if not str(d[0]).startswith("#")]
             
-            if chat and (not documents):
-                documents = [[chat[-1]["id"], "risposta precedente"]]
+            if not documents:
+                if chat:
+                    documents = [[chat[-1]["id"], "risposta precedente"]]
+                else:
+                    raise ValueError("No Reference Found")
             
             status = "Done"
         except Exception as e:
@@ -79,6 +78,24 @@ class SourcesExtractor:
         self._logger.info(f"{documents} - {status}")
         
         return documents
+    
+    def parsing(self, query, base_list, tasks_id: list = None):
+        sources_list = []
+        
+        if not query:
+            return None
+        
+        if "#" in query:
+            sources_list += self._task_id_extraction(query, tasks_id)
+            
+        for b in base_list:
+            if b[0] in query:
+                sources_list.append([b[0], b[0]])
+            
+            if b[1] in query:
+                sources_list.append(b)
+        
+        return sources_list
     
     def _explicit_documents_extraction(self, query: str) -> list:
         """
@@ -151,13 +168,5 @@ class SourcesExtractor:
         
         # Log the extraction result
         self._logger.info(f"Previous Tasks: {documents}")
-        
-        return documents
-    
-    def _text_extraction(self, query: str) -> list:
-        documents = [[x, x] for x in re.findall(r"\"([^\"]*)\"", query) if x]
-        
-        # Log the extraction result
-        self._logger.info(f"Texts: {documents}")
         
         return documents

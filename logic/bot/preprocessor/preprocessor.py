@@ -1,5 +1,4 @@
 from logic.bot.preprocessor.spelling_checker import SpellingChecker
-from logic.bot.preprocessor.decomposer import Decomposer
 from utils.config import Config
 
 
@@ -27,7 +26,6 @@ class Preprocessor:
         """
         self._logger = cfg.get_logger("Preprocessor")
         self._spelling_checker = SpellingChecker(cfg)
-        self._decomposer = Decomposer(cfg)
 
     # -----------------------------------
     # --- Main Preprocessing Pipeline ---
@@ -60,8 +58,5 @@ class Preprocessor:
 
         # Log the preprocessed query for traceability
         self._logger.info(f"Normalized query: {normalized_query}")
-        
-        # Step 3: Division in step
-        task_list = self._decomposer.decompose(normalized_query)
 
-        return task_list
+        return normalized_query

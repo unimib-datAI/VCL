@@ -110,8 +110,8 @@ class Orchestrator:
         try:
             # --- Pipeline Execution ---
             
-            tasks = self._preprocess(prompt)
-            structured_tasks = self._translate(tasks, user_id, chat_id)
+            prompt_process = self._preprocess(prompt)
+            structured_tasks = self._translate(prompt_process, user_id, chat_id)
             structured_tasks = self._plan(structured_tasks)
             result, last_result = self._execute(structured_tasks, chat_id)
             
@@ -167,10 +167,10 @@ class Orchestrator:
         self._logger.info("Step 1 (Preprocessing): Done")
         return prompt_clean
 
-    def _translate(self, tasks: list, user_id, chat_id: str) -> list:
+    def _translate(self, prompt: str, user_id, chat_id: str) -> list:
         """Translate the prompts into structured queries."""
         self._logger.info("Step 2 (Translator): Starting")
-        structured_queries = self._translator.rewrite(tasks, user_id, chat_id)    
+        structured_queries = self._translator.rewrite(prompt, user_id, chat_id)    
         self._logger.info("Step 2 (Translator): Done")
         return structured_queries
 
