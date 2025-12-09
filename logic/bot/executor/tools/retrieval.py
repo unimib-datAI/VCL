@@ -93,7 +93,8 @@ class Retrieval:
 
         for doc_name in operation.get("from", []):
             doc = self._retrieve_document(doc_name)
-            retrieved_docs.append(doc)
+            if doc:
+                retrieved_docs.append(doc)
 
         return retrieved_docs
 
@@ -129,8 +130,9 @@ class Retrieval:
 
         # Fallback: If no document is found, treat the input
         # string 'doc_name' as raw text content.
-        self._logger.warning(f"'{doc_name}' not found in any source. Treating as raw text input.")
-        return {"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}
+        # self._logger.warning(f"'{doc_name}' not found in any source. Treating as raw text input.")
+        # return {"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}
+        return None
 
     def _get_from_operations_list(self, doc_name: str) -> dict | None:
         """Retrieve document from previously computed operations."""

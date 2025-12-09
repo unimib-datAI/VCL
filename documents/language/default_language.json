@@ -405,17 +405,9 @@
         },
 
         {
-            "name": "decisioni",
-            "definition": "Estrazione del dispositivo della sentenza, ovvero la parte finale che contiene la statuizione decisoria del giudice (es. 'accoglie', 'respinge', 'condanna').",
+            "name": "dispositivo",
+            "definition": "Estrazione della parte finale che contiene la statuizione decisoria del giudice (es. 'accoglie', 'respinge', 'condanna').",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
                 "sentenza di primo grado"
             ],
             "relative_command": [

@@ -130,7 +130,7 @@ class Planner:
             "structured_prompt": {
                 "command": final_command,
                 "from": [op["id"] for op in atomic_ops] + not_used_sources,
-                "what": query.get("what", ""), # Pass 'what' along
+                # "what": query.get("what", ""), # Pass 'what' along
                 "how": query.get("how", {}) # Apply conditions here
             }
         }
@@ -199,7 +199,7 @@ class Planner:
                 "structured_prompt": {
                     "command": "riassumi",
                     "from": [ops[-1]["id"]],
-                    "what": "intero documento",
+                    # "what": "intero documento",
                     "how": old_how
                 }
             }

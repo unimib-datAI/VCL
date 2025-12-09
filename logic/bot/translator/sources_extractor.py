@@ -91,8 +91,7 @@ class SourcesExtractor:
         for b in base_list:
             if b[0] in query:
                 sources_list.append([b[0], b[0]])
-            
-            if b[1] in query:
+            elif b[1] in query:
                 sources_list.append(b)
         
         return sources_list
