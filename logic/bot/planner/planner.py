@@ -62,35 +62,67 @@ class Planner:
             
             command_key = structured_prompt.get("command", "altro")
             from_key = structured_prompt.get("from", [])
-            what_key = structured_prompt.get("what", "altro")
+            what_key = structured_prompt.get("what", ["altro"])
+            how_key = structured_prompt.get("how", {})
 
             if command_key != "altro":
-                # Find the appropriate intermediate command(s) based on 'what' is being requested
-                middle_commands = self._find_middle_commands(what_key)
-            
-                # Case 1: The query's command is already an intermediate command
-                if command_key in middle_commands:
-                    # If it applies to more than one source, we must split it
-                    if len(from_key) > 1:
-                        # 'integra' is the domain-specific command for merging results
-                        op['operations'] = self._create_operations(structured_prompt, command_key, "integra", id)
-                else:
-                    # Case 3: The query's command is a final command (e.g., 'summarize')
-                    # We must first run the appropriate middle command (e.g., 'search')
-                    # on all sources, and then run the final command.
-                    if not self._decomposition_in_previous_op(structured_prompt):
-                        if command_key == "riassumi":
-                            op["operations"] = self._decompose_summarize(structured_prompt, middle_commands[0], id)
+                op['operations'] = []
+                last_ids = []
+                
+                for what in what_key:
+                    start_index = len(op["operations"])
+                    
+                    # Find the appropriate intermediate command(s) based on 'what' is being requested
+                    middle_commands = self._find_middle_commands(what)
+                
+                    # Case 1: The query's command is already an intermediate command
+                    if command_key in middle_commands:
+                        # If it applies to more than one source, we must split it
+                        if len(from_key) > 1:
+                            # 'integra' is the domain-specific command for merging results
+                            op['operations'] += self._create_operations(command_key, "integra", from_key, what, how_key, id, start_index)
                         else:
-                            op['operations'] = self._create_operations(structured_prompt, middle_commands[0], command_key, id)
-        
+                            op['operations'].append(
+                                {
+                                    "id": f"{id}_{start_index}",
+                                    "structured_prompt": {
+                                        "command": command_key,
+                                        "from": from_key,
+                                        "what": [what],
+                                        "how": how_key
+                                    }
+                                }
+                            )
+                    else:
+                        # Case 3: The query's command is a final command (e.g., 'summarize')
+                        # We must first run the appropriate middle command (e.g., 'search')
+                        # on all sources, and then run the final command.
+                        if not self._decomposition_in_previous_op(structured_prompt):
+                            if command_key == "riassumi":
+                                op["operations"] += self._decompose_summarize(middle_commands[0], from_key, what, how_key, id, start_index)
+                            else:
+                                op['operations'] += self._create_operations(middle_commands[0], command_key, from_key, what, how_key, id, start_index)
+                             
+                    last_ids.append(op['operations'][-1].get("id"))
+                
+                if len(last_ids) > 1:
+                    op['operations'].append(
+                        {
+                            "id": f"{id}_{len(op['operations'])}",
+                            "structured_prompt": {
+                                "command": "integra",
+                                "from": last_ids,
+                            }
+                        }
+                    )
+                    
         return operations
 
     # -------------------------------------------------------------------------
     # Private Methods
     # -------------------------------------------------------------------------
     
-    def _create_operations(self, query: dict, middle_command: str, final_command: str, id) -> list[dict]:
+    def _create_operations(self, middle_command: str, final_command: str, documents, what, how, id, start_index) -> list[dict]:
         """
         Generate the list of operations including intermediate and final commands.
 
@@ -107,31 +139,35 @@ class Planner:
         """
         # Create atomic operations for each source using the middle_command
         atomic_ops = []
-        not_used_sources = []
-        for i, source in enumerate(query.get("from", [])):
-            if source in self._sources_name:
-                atomic_ops.append(
-                    {
-                        "id": f"{id}_{i}",
-                        "structured_prompt": {
-                            "command": middle_command,
-                            "from": [source],
-                            "what": query.get("what", "")
-                            # 'how' is usually applied only to the final operation
+        
+        if what != "intero documento":
+            not_used_sources = []
+            
+            for i, source in enumerate(documents, start=start_index):
+                if source in self._sources_name:
+                    atomic_ops.append(
+                        {
+                            "id": f"{id}_{i}",
+                            "structured_prompt": {
+                                "command": middle_command,
+                                "from": [source],
+                                "what": [what]
+                            }
                         }
-                    }
-                )
-            else:
-                not_used_sources.append(source)
+                    )
+                else:
+                    not_used_sources.append(source)
+        else:
+            not_used_sources = documents
 
         # Create the final aggregation operation
         final_op = {
-            "id": id,
+            "id": f"{id}_{len(atomic_ops)}",
             "structured_prompt": {
                 "command": final_command,
                 "from": [op["id"] for op in atomic_ops] + not_used_sources,
-                # "what": query.get("what", ""), # Pass 'what' along
-                "how": query.get("how", {}) # Apply conditions here
+                "how": [how]
+                # 'how' is usually applied only to the final operation
             }
         }
             
@@ -176,16 +212,10 @@ class Planner:
             
         return True
     
-    def _decompose_summarize(self, query, middle_command, id):
-        ops = self._create_operations(query, middle_command, "integra", id)
+    def _decompose_summarize(self, middle_command, from_key, what, how_key, id, start_index):
+        ops = self._create_operations(middle_command, "integra", from_key, what, how_key, id, start_index)
         
-        length = str(len(ops) - 1)
-        
-        old_id = deepcopy(ops[-1]["id"])
-        new_id = f"{old_id}_{length}"
         old_how = deepcopy(ops[-1]["structured_prompt"].get("how", {}))
-        
-        ops[-1]["id"] = new_id
         
         if "how" in ops[-1]["structured_prompt"]:
             del ops[-1]["structured_prompt"]["how"]
@@ -195,7 +225,7 @@ class Planner:
             
         ops.append(
             {
-                "id": id,
+                "id": f"{id}_{start_index + len(ops)}",
                 "structured_prompt": {
                     "command": "riassumi",
                     "from": [ops[-1]["id"]],

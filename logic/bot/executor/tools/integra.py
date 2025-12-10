@@ -11,8 +11,8 @@ def integra(context, what, how) -> tuple[str, dict]:
         "guidelines": language.get_guidelines_from_command("integra"),
         "command": "integra", 
         "description_command": language.get_description_from_command("integra"),
-        "what": what,
-        "description_what": language.get_description_from_what(what)
+        "what": what[0],
+        "description_what": language.get_description_from_what(what[0])
     }
     prompt = language.prompts.get("Generator.json")
 

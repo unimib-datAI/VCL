@@ -85,29 +85,20 @@ class Translator:
         # Create queues to receive results from threads
         result_command = queue.Queue()
         result_what = queue.Queue()
-        result_conditions = queue.Queue()
         
-        # Step 1: Extract sources
+        '''# Step 1: Extract sources
         try:
             sources = self._sources_extractor_class.extract(prompt, user_id, chat_id)
         except Exception as e:
             sources = []
-            self._logger.error(e)
+            self._logger.error(e)'''
         
         # Step 2: Decompose prompt in tasks
         try:
-            prompts = self._decomposer_class.decompose(prompt, sources)
+            prompts = self._decomposer_class.decompose(prompt)
         except Exception as e:
             prompts = []
             self._logger.error(e)
-        
-        '''prompts = []
-        sources = result_sources.get()
-        for i, source in enumerate(sources):
-            prompts[i]["from"] = source
-            prompts[i]["structured_prompt"] = {}
-            prompts[i]["structured_prompt"]["from"] = [s[0] for s in source]
-        '''
         
         # Step 3: (Thread 1) Classify command
         thread1 = threading.Thread(
@@ -118,10 +109,10 @@ class Translator:
         # Step 4a: Retrieve Task Sources
         ids = sorted([t.get('id', '') for t in prompts], key=lambda k: (len(k), k))
         for tasks in prompts:
-            from_task = self._sources_extractor_class.parsing(tasks.get("prompt", ""), sources, ids)
+            #from_task = self._sources_extractor_class.parsing(tasks.get("prompt", ""), sources, ids)
             
-            if not from_task:
-                from_task = self._sources_extractor_class.extract(tasks.get("prompt", ""), user_id, chat_id, ids)
+            #if not from_task:
+            from_task = self._sources_extractor_class.extract(tasks.get("prompt", ""), user_id, chat_id, ids)
                 
             tasks["from"] = from_task
             tasks["structured_prompt"]["from"] = [s[0] for s in from_task]
@@ -227,7 +218,7 @@ class Translator:
             ]
                 
         except Exception:
-            result_what = ["altro"] * len(prompts)
+            result_what = [["altro"]] * len(prompts)
             
         result_queue.put(result_what)
         

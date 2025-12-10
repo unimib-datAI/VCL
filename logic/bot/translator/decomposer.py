@@ -44,7 +44,7 @@ class Decomposer():
                     cls._instance = cls(cfg)
         return cls._instance
         
-    def decompose(self, query: str, docs) -> list:
+    def decompose(self, query: str) -> list:
         status = "Error"
 
         try:
@@ -59,7 +59,7 @@ class Decomposer():
                 # Invoke LLM to rewrite the query based on the prompt
                 result = self._llm.invoke(
                     prompt,
-                    { "query": query, "documents": self.docs_in_string(docs) },
+                    { "query": query },
                     True
                 )
                 

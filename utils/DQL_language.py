@@ -360,7 +360,7 @@ class DQLLanguage:
         self._what_description_map: dict[str, str] = {}
 
         for what in self._what:
-            self._what_description_map[what.get("name", "")] = what.get("description")
+            self._what_description_map[what.get("name", "")] = what.get("definition")
             
     def get_description_from_what(self, key: str) -> str:
         """

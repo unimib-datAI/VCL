@@ -8,7 +8,6 @@
                 "- Pertinenza Rigorosa: Seleziona solo i passaggi che rispondono inequivocabilmente alla richiesta.",
                 "- Esaustività: Non limitarti a un singolo risultato; estrai TUTTE le occorrenze pertinenti presenti nel documento.",
                 "- Fedeltà Testuale: Riporta il testo esattamente come appare. Non parafrasare e non correggere.",
-                "- Gestione del Vuoto: Se il concetto cercato non esiste nel testo, scrivi: 'Nessuna corrispondenza trovata nel documento'. Non forzare collegamenti inesistenti.",
                 "- No Rumore: Escludi testo circostante se non strettamente necessario alla comprensione del frammento estratto."
             ]
         },

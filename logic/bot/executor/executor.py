@@ -116,10 +116,8 @@ class Executor:
         # Step 1: Retrieve relevant documents for this operation
         docs = self._retrieval.execute(structured_prompt)
         
-        self._logger.info(docs)
-        
         context = self._build_context(docs)
-        what = structured_prompt.get("what", "")
+        what = structured_prompt.get("what", [])
         how = self._format_conditions(structured_prompt.get("how", {}))
         
         if command == "altro":
