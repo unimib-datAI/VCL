@@ -227,6 +227,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         "time": datetime.now().isoformat(),
         "model": selected_model,
     }
+    
     st.session_state.messages.append(user_msg)
 
     # --- USER QUESTION TRACKING ---
@@ -274,9 +275,6 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         # Retrieve result
         result = result_queue.get()
         raw_result = result.get("result", "")
-        
-        if not raw_result:
-            raw_result = result.get("content", "")
 
         # -------------------------
         # --- Modalità BATTLE -----
@@ -326,16 +324,22 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
             # Render final output con effetto "macchina da scrivere"
             _typewriter_effect(text, placeholder)
-            _show_expander(result)  # Skip the "LOGS:" header
-
-            assistant_msg = {
-                "role": "assistant",
-                "content": text,
-                "time": datetime.now().isoformat(),
-                "full_details": result,
-                "logs": log_list[1:],
-                "model": selected_model,
-            }
+        
+            if selected_model == "DQL":
+                _show_expander(result)
+                assistant_msg = result
+                
+                if "logs" not in assistant_msg:
+                    assistant_msg["logs"] = log_list[1:]
+            else:        
+                assistant_msg = {
+                    "role": "assistant",
+                    "content": text,
+                    "time": datetime.now().isoformat(),
+                    "full_details": result,
+                    "logs": log_list[1:],
+                    "model": selected_model,
+                }
             st.session_state.messages.append(assistant_msg)
 
     # --- 3. Persist messages ---
@@ -880,9 +884,6 @@ def _show_expander(message: Dict) -> None:
             op_count_str = "La richiesta non è stata scomposta."
 
         # 1. Structured Input
-        # command_json = json.dumps(full_details.get("structured_input", {}), indent=4)
-        # Il comando identificato per la richiesta è stato:
-        # <pre><code class="language-json">{command_json}</code></pre>
         
         st.markdown(
             f"""

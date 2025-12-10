@@ -102,6 +102,7 @@ class Executor:
         for op in operations:
             if "operations" in op:
                 for o in op["operations"]:
+                    self._logger.info(o)
                     o["result"] = self._execute(o)
                 op["result"] = op["operations"][-1]["result"]
             else:
@@ -117,7 +118,7 @@ class Executor:
         docs = self._retrieval.execute(structured_prompt)
         
         context = self._build_context(docs)
-        what = structured_prompt.get("what", [])
+        what = structured_prompt.get("what", [""])
         how = self._format_conditions(structured_prompt.get("how", {}))
         
         if command == "altro":

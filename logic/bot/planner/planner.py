@@ -166,7 +166,7 @@ class Planner:
             "structured_prompt": {
                 "command": final_command,
                 "from": [op["id"] for op in atomic_ops] + not_used_sources,
-                "how": [how]
+                "how": how
                 # 'how' is usually applied only to the final operation
             }
         }

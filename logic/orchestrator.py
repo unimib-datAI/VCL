@@ -105,6 +105,7 @@ class Orchestrator:
             "role": "assistant",
             "time": datetime.now().isoformat(),
             "id": self._CFG.get_request_id(),
+            "model": "DQL"
         }
 
         try:
@@ -129,6 +130,7 @@ class Orchestrator:
         response["details"]["tasks"] = result
         
         response["content"] = last_result
+        response["result"] = last_result
         
         self._logger.info("Request Completed")
 
