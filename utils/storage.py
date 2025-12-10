@@ -65,6 +65,9 @@ class Storage:
         
         # Ensure usernames are unique
         self._users.create_index("username", unique=True)
+
+        # Collection for tracking user queries
+        self._questions = db["user_questions"]
         
         # --- Initialize caches and their locks ---
         self._chat_cache: Dict[str, Dict[str, List[dict]]] = {} 
@@ -539,6 +542,41 @@ class Storage:
             self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
             
         return result.modified_count > 0
+
+    # ------------------------------
+    # --- User Questions Logging ---
+    # ------------------------------
+
+    def log_user_question(
+        self,
+        user_id: str,
+        question: str,
+        model: str,
+        timestamp: Optional[datetime] = None,
+    ) -> None:
+        """
+        Track a user question.
+
+        Saved fields:
+          - user
+          - timestamp
+          - question
+          - model (es. 'DQL', 'GPT')
+        """
+        ts = timestamp or datetime.utcnow()
+
+        doc = {
+            "user": user_id,
+            "timestamp": ts,
+            "question": question,
+            "model": model,
+        }
+
+        try:
+            self._questions.insert_one(doc)
+        except Exception as e:
+            # Non blocchiamo il flusso se il logging fallisce
+            print(f"[WARN] log_user_question failed: {e}")
 
     # ---------------------------
     # --- Language Operations ---

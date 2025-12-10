@@ -126,7 +126,8 @@
             "documents"
 		],
         "from_DQL": [
-            "commands"
+            "commands",
+            "sources"
         ]
 	},
 
