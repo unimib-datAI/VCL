@@ -3,6 +3,7 @@ import os
 import re
 import threading
 
+from pathlib import Path
 from copy import deepcopy
 from dotenv import load_dotenv
 from pymongo import MongoClient
@@ -34,7 +35,10 @@ class Storage:
     _instance = None
     _lock = threading.Lock()
     
-    def __init__(self, uri_db: str, project_root):
+    EMAIL_PATTERN = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,7}\b'
+    PASSWORD_PATTERN = r'^(?=(.*[a-z]){1,})(?=(.*[A-Z]){1,})(?=(.*[0-9]){1,})(?=(.*[!@#$%^&*()\-__+.]){1,}).{8,}$'
+    
+    def __init__(self, uri_db: str, project_root = None):
         """
         Initialize the Mongo client and collections.
         (Private constructor, use get_instance())
@@ -50,7 +54,7 @@ class Storage:
         if getattr(self, "_initialized", False):
             return
 
-        self._project_root = project_root
+        self._project_root = project_root if project_root else Path(__file__).resolve().parent.parent
         self._file_handler = FileHandler()
 
         # Load Mongo URI from args, env, or file
@@ -152,7 +156,14 @@ class Storage:
         """
         # Check for existing user or email
         if self._users.find_one({"username": username}) or self._users.find_one({"email": email}):
-            return False, "ae"
+            return False, "Username/Email non disponibili"
+        
+        if not re.fullmatch(self.EMAIL_PATTERN, email):
+            return False, "Formato Email non valido"
+        elif not re.match(self.PASSWORD_PATTERN, password):
+            return False, "La password deve avere almeno 8 caratteri, con 1 minuscola, 1 maiuscola, 1 numero e 1 simbolo speciale (!@#$%^&*()-_+.)"
+        elif role not in ["Giudice", "Avvocato", "Admin", "Altro"]:
+            return self.register_user(username, email, password, "Altro")
         
         # Hash the password
         hashed_pw = bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt())
@@ -200,6 +211,40 @@ class Storage:
             return True, user
         
         return False, None
+
+    def get_all_users(self) -> List[dict]:
+        """
+        Retrieves a list of all users, excluding the password hash.
+
+        Returns:
+            List[dict]: A list of user documents (without the password).
+        """
+        # La proiezione esclude il campo 'password' per motivi di sicurezza
+        projection = {"password": 0} 
+        
+        # Il cursore viene convertito in una lista di dizionari Python
+        return list(self._users.find({}, projection))
+    
+    def delete_user(self, user_id: str) -> bool:
+        """
+        Removes a user from the database and invalidates its caches.
+
+        Args:
+            user_id (str): The username of the user to delete.
+
+        Returns:
+            bool: True if the user was successfully deleted, False otherwise.
+        """
+        # 1. Deletes the user from the database
+        result = self._users.delete_one({"username": user_id})
+
+        # 2. Invalidate all caches associated with this user
+        if result.deleted_count > 0:
+            self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
+            self._invalidate_cache(user_id, self._docs_cache, self._docs_cache_lock)
+            self._invalidate_cache(user_id, self._lang_cache, self._lang_cache_lock)
+            
+        return result.deleted_count > 0
 
     # ---------------------------
     # --- Document Operations ---
@@ -558,10 +603,10 @@ class Storage:
         Track a user question.
 
         Saved fields:
-          - user
-          - timestamp
-          - question
-          - model (es. 'DQL', 'GPT')
+            - user
+            - timestamp
+            - question
+            - model (es. 'DQL', 'GPT')
         """
         ts = timestamp or datetime.utcnow()
 

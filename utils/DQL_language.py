@@ -613,7 +613,7 @@ class DQLLanguage:
                         "documents", 
                         "prompts", 
                         "header", 
-                        f"{self._role}.txt"
+                        f"{self._role}.txt" if self._role in ["Giudice", "Avvocato"] else "Altro.txt"
                     )
                 )
             elif "commands" in param:

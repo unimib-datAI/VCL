@@ -1,8 +1,9 @@
 import streamlit as st
 from typing import Dict, Callable
 
+from gui.pages_content.AdminPage import show_admin
 from gui.pages_content.Login import show_login
-from gui.pages_content.Registration import show_registration
+# from gui.pages_content.Registration import show_registration
 from gui.pages_content.Home import show_home
 from gui.pages_content.Settings import show_settings
 from gui.pages_content.Documents import show_documents
@@ -26,7 +27,8 @@ st.set_page_config(page_title="DQL", layout="wide")
 
 PAGE_MAP: Dict[str, Callable] = {
     "Login": show_login,
-    "Registration": show_registration,
+    "Admin": show_admin,
+    # "Registration": show_registration,
     "Home": show_home,
     "Settings": show_settings,
     "Documents": show_documents,
@@ -71,6 +73,7 @@ def _handle_logout() -> None:
     """
     st.session_state.auth_status = False
     st.session_state.username = None
+    st.session_state.role = None
     st.session_state.assistant = None
     
     if "chat" in st.query_params:
@@ -185,6 +188,13 @@ def _render_sidebar() -> None:
             if st.query_params.get("page") != "Settings":
                 st.query_params["page"] = "Settings"
                 st.rerun()
+                
+        # Admin Page (only for admins)
+        if st.session_state.role == "Admin":
+            if st.button("🛠️ Admin Dashboard", use_container_width=True):
+                if st.query_params.get("page") != "Admin":
+                    st.query_params["page"] = "Admin"
+                    st.rerun()
 
         # Logout
         if st.button("🟥 Logout", use_container_width=True):
@@ -196,7 +206,7 @@ _init_session_state()
 
 # Security Check: Redirect unauthenticated users to Login/Registration
 current_page = st.query_params["page"]
-is_auth_page = current_page in ["Login", "Registration"]
+is_auth_page = current_page in ["Login"] #, "Registration"]
 
 if st.session_state.auth_status:
     _render_sidebar()

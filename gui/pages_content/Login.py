@@ -8,11 +8,13 @@ def _initialize_user_session(user: dict):
     Sets up the session state after a successful login or registration.
     """
     st.session_state.username = user["username"]
+    st.session_state.role = user["role"]
     st.session_state.auth_status = True
-    st.session_state.assistant = Orchestrator(user["username"], user["role"])
+    st.session_state.assistant = Orchestrator(st.session_state.username,
+                                              st.session_state.role)
     
     # Create a new chat and redirect
-    st.query_params.chat = st.session_state.authenticator.create_new_chat(user["username"])
+    st.query_params.chat = st.session_state.authenticator.create_new_chat(st.session_state.username)
     st.query_params["page"] = "Home"
     st.rerun()
 
@@ -32,8 +34,8 @@ def show_login():
             else:
                 st.error("Username/Password errati")
 
-    st.markdown("---")
+    # st.markdown("---")
 
-    if st.button("Non hai ancora un account? Registrati!", use_container_width=True):
-        st.query_params["page"] = "Registration"
-        st.rerun()
+    # if st.button("Non hai ancora un account? Registrati!", use_container_width=True):
+    #     st.query_params["page"] = "Registration"
+    #    st.rerun()
