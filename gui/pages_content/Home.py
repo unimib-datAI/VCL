@@ -933,11 +933,11 @@ def _display_task(tasks: list) -> None:
         task_json = json.dumps(display_dict, indent=4)
         task_result = markdown.markdown(task.get("result", ""))
         
-        operation = [_display_operation(i, t) for i, t in enumerate(task.get("operations", []))]
+        operation = [_display_operation(i, t) for i, t in enumerate(task.get("operations", []))] if len(task.get("operations", [])) > 1 else []
         
         html_code = [
             '<details style="margin-left:20px; margin-top:10px;">',
-            '\t' + f'<summary>Task {index}: {task.get('prompt', '')}</summary>' if len(tasks) == 1 else '\t <summary>Comando DQL</summary>',
+            '\t' + f'<summary>Task {index}: {task.get('prompt', '')}</summary>' if len(tasks) != 1 else '\t <summary>Comando DQL</summary>',
             '\t<p></p>',
             '\t' + f'<pre><code class="language-json">{task_json}</code></pre>'
         ]
@@ -945,8 +945,6 @@ def _display_task(tasks: list) -> None:
         for o in operation:
             for r in o:
                 html_code.append("\t" + r)
-        
-        html_code.append('</details>')
         
         if len(tasks) != 1:
             html_code.append('\t<details style="margin-left:20px; margin-top:10px;">')
@@ -979,10 +977,11 @@ def _display_operation(index: int, operation: Dict) -> None:
 
     operation_json = json.dumps(display_dict, indent=4)
     operation_result = markdown.markdown(operation.get("result", ""))
+    operation_command = display_dict.get('command', '')
 
     return [
         '<details style="margin-left:20px; margin-top:10px;">',
-        '\t' + f'<summary>Operazione {index}: {operation.get('command', '')}</summary>',
+        '\t' + f'<summary>Operazione {index}: {operation_command}</summary>',
         '\t<p></p>',
         '\t' + f'<pre><code class="language-json">{operation_json}</code></pre>',
         '\t<b>Risultato Parziale:</b>',

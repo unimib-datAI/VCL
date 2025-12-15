@@ -30,22 +30,56 @@ class SourcesExtractor:
         self._logger = cfg.get_logger("Sources Extractor")
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.language
+        self._src_names = [src["name"] for src in self._dql_language.get_sources()]
 
     # ------------------------------
     # --- Main Extraction Method ---
     # ------------------------------
     
     def get_chat_history(self, user_id, chat_id) -> list:
-        return [
-            {
-                "id": chat.get("id", ""), 
-                "prompt": chat.get("details", {}).get("prompt", ""), 
-                "used_documents": chat.get("details", {}).get("used_documents", []),
-                "content": chat.get("content", "")
-            }
-            for chat in self._storage.get_chat_messages(user_id, chat_id)
-            if "details" in chat
-        ]
+        return sorted(
+            [
+                {
+                    "id": chat.get("id", ""), 
+                    "prompt": chat.get("details", {}).get("prompt", ""), 
+                    "used_documents": chat.get("details", {}).get("used_documents", []),
+                    "content": chat.get("content", "")
+                }
+                for chat in self._storage.get_chat_messages(user_id, chat_id)
+                if "details" in chat
+            ], 
+            key=lambda x: x["id"]
+        )
+        
+    def get_last_used_sources(self, chat_history) -> list[str]:
+        """
+        Scorre la chat dal messaggio più recente al più remoto e restituisce
+        la lista delle sorgenti (src names) usate nell'ultimo messaggio valido.
+        """
+
+        # Scorri dal più recente al più remoto
+        for message in reversed(chat_history):
+            used_documents = message.get("used_documents", [])
+
+            # Normalizza i nomi delle sorgenti usate
+            used_source_names = set()
+            for doc in used_documents:
+                self._logger.info(f"Used document: {doc}")
+                if isinstance(doc, str):
+                    used_source_names.add(doc)
+            
+            used_source_names = list(used_source_names)
+            
+            # Intersezione con le sorgenti valide del linguaggio
+            matching_sources = [
+                src for src in self._src_names if src in used_source_names
+            ]
+
+            if matching_sources:
+                return matching_sources
+
+        return []
+
     
     def extract(self, query: str, user_id, chat_id, tasks_id: list = None) -> list:
         status = "Error"
@@ -72,7 +106,7 @@ class SourcesExtractor:
         except Exception as e:
             # Fallback: return all available sources
             self._logger.error(e)
-            documents = [[src["name"], src["name"]] for src in self._dql_language.get_sources()]
+            documents = [[src, src] for src in self._src_names]
             
         # Log the extraction result
         self._logger.info(f"{documents} - {status}")
@@ -134,9 +168,17 @@ class SourcesExtractor:
             raise ValueError("Empty query provided to ExplicitDocumentsExtraction.")
     
     def _implicit_documents_extraction(self, query, chat) -> list:
+        current_doc = self.get_last_used_sources(chat)
+        
+        if not current_doc:
+            current_doc_info = ""
+        else:
+            current_doc_info = f"Tieni in considerazione che gli eventuali documenti correnti sono: {', '.join(current_doc)}"
+        
         query_dict = {
             "query": query,
-            "chat": str(chat)
+            "chat": "\n".join(chat),
+            "current_doc_info": current_doc_info
         }
 
         # Retrieve the specific prompt for 'sources' extraction

@@ -77,8 +77,8 @@ class Decomposer():
                     "prompt": query
                 }
             ] # Return original text on failure
-        
-        final_result = [
+            
+        return [
             {
                 "id": f"{self._cfg.get_request_id()}_{str(q.get("id", str(i)))}",
                 "prompt": q.get("prompt", ""),
@@ -86,12 +86,6 @@ class Decomposer():
             }
             for i, q in enumerate(result, start=1)
         ]
-            
-        self._logger.info(f"Decomposer: obtained {len(final_result)} task - {status}")
-        
-        self._logger.info(str(final_result))
-
-        return final_result
         
     @staticmethod
     def order_tasks(tasks: list) -> nx.DiGraph:

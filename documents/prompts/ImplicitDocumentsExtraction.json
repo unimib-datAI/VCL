@@ -23,7 +23,9 @@
     "human": [
         "Ottieni gli eventuali documenti impliciti richiesti nella query \"{query}\" e relativi alla seguente conversazione:",
         "",
-        "{chat}"
+        "{chat}",
+        "",
+        "{current_doc_info}"
     ],
 
     "examples": [
@@ -52,7 +54,8 @@
     "params": {
         "from_user": [
             "query",
-            "chat"
+            "chat",
+            "current_doc_info"
         ]
     },
 

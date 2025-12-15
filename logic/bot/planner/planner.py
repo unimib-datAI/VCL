@@ -97,11 +97,23 @@ class Planner:
                         # Case 3: The query's command is a final command (e.g., 'summarize')
                         # We must first run the appropriate middle command (e.g., 'search')
                         # on all sources, and then run the final command.
-                        if not self._decomposition_in_previous_op(structured_prompt):
+                        if self._need_decomposition(from_key, what):
                             if command_key == "riassumi":
                                 op["operations"] += self._decompose_summarize(middle_commands[0], from_key, what, how_key, id, start_index)
                             else:
                                 op['operations'] += self._create_operations(middle_commands[0], command_key, from_key, what, how_key, id, start_index)
+                        else:
+                            op['operations'].append(
+                                {
+                                    "id": f"{id}_{start_index}",
+                                    "structured_prompt": {
+                                        "command": command_key,
+                                        "from": from_key,
+                                        "what": [what],
+                                        "how": how_key
+                                    }
+                                }
+                            )
                              
                     last_ids.append(op['operations'][-1].get("id"))
                 
@@ -137,6 +149,23 @@ class Planner:
             list[dict]: List of operations, including the final
                         aggregation operation.
         """
+        # Ensure the middle command is not an 'estrai' if the final command is 'cerca', and viceversa
+        if ("cerca" == middle_command and "estrai" in final_command) or ("estrai" in middle_command and "cerca" in final_command):
+            if len(documents) == 1:
+                return [
+                    {
+                        "id": f"{id}_{start_index}",
+                        "structured_prompt": {
+                            "command": middle_command,
+                            "from": documents,
+                            "what": [what],
+                            "how": how
+                        }
+                    }
+                ]
+            else:
+                return self._create_operations(middle_command, "integra", documents, what, how, id, start_index)
+            
         # Create atomic operations for each source using the middle_command
         atomic_ops = []
         
@@ -152,6 +181,7 @@ class Planner:
                                 "command": middle_command,
                                 "from": [source],
                                 "what": [what]
+                                # 'how' is usually applied only to the final operation
                             }
                         }
                     )
@@ -167,7 +197,6 @@ class Planner:
                 "command": final_command,
                 "from": [op["id"] for op in atomic_ops] + not_used_sources,
                 "how": how
-                # 'how' is usually applied only to the final operation
             }
         }
             
@@ -191,6 +220,7 @@ class Planner:
         """
         # 'intero documento' and 'altro' are special cases
         if what in ["intero documento", "altro"]:
+            self._logger.info(f"Possible Middle Commands: ['cerca']")
             return ["cerca"]
         
         # Look up the 'what' in the DQL configuration
@@ -205,12 +235,12 @@ class Planner:
         # Fallback to the system's default command
         return [self._dql_language.default_command.get("command", "altro")]
     
-    def _decomposition_in_previous_op(self, structured_prompt):
-        for from_key in structured_prompt.get("from", []):
+    def _need_decomposition(self, from_key, what):
+        for from_key in from_key:
             if from_key in self._sources_name:
-                return False
-            
-        return True
+                return True
+                    
+        return what != "intero documento"
     
     def _decompose_summarize(self, middle_command, from_key, what, how_key, id, start_index):
         ops = self._create_operations(middle_command, "integra", from_key, what, how_key, id, start_index)

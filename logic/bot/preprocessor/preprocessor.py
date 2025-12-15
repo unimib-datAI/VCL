@@ -1,4 +1,5 @@
 from logic.bot.preprocessor.spelling_checker import SpellingChecker
+from logic.bot.preprocessor.decomposer import Decomposer
 from utils.config import Config
 
 
@@ -26,6 +27,7 @@ class Preprocessor:
         """
         self._logger = cfg.get_logger("Preprocessor")
         self._spelling_checker = SpellingChecker(cfg)
+        self._decomposer_class = Decomposer(cfg)
 
     # -----------------------------------
     # --- Main Preprocessing Pipeline ---
@@ -56,7 +58,9 @@ class Preprocessor:
         # Step 2: Normalize casing
         normalized_query = corrected_query.lower()
 
-        # Log the preprocessed query for traceability
         self._logger.info(f"Normalized query: {normalized_query}")
+        
+        # Step 3: Decompose prompt in tasks
+        prompts = self._decomposer_class.decompose(normalized_query)
 
-        return normalized_query
+        return prompts

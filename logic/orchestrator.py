@@ -132,6 +132,17 @@ class Orchestrator:
         response["content"] = last_result
         response["result"] = last_result
         
+        used_documents = set()
+        available_sources = [src["name"] for src in self._language.get_sources()]
+        for task in response["details"]["tasks"]:
+            for doc in task.get("structured_prompt", {}).get("from", []):
+                if doc in available_sources:
+                    used_documents.add(doc)
+        
+        response["details"]["used_documents"] = list(used_documents)
+        
+        self._logger.info(f"Used documents: {response['details']['used_documents']}")
+        
         self._logger.info("Request Completed")
 
         return response
@@ -169,10 +180,10 @@ class Orchestrator:
         self._logger.info("Step 1 (Preprocessing): Done")
         return prompt_clean
 
-    def _translate(self, prompt: str, user_id, chat_id: str) -> list:
+    def _translate(self, prompts: list, user_id, chat_id: str) -> list:
         """Translate the prompts into structured queries."""
         self._logger.info("Step 2 (Translator): Starting")
-        structured_queries = self._translator.rewrite(prompt, user_id, chat_id)    
+        structured_queries = self._translator.rewrite(prompts, user_id, chat_id)    
         self._logger.info("Step 2 (Translator): Done")
         return structured_queries
 
