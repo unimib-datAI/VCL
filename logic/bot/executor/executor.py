@@ -100,9 +100,10 @@ class Executor:
         self._retrieval = Retrieval(self._cfg, chat_id, operations)
         
         for op in operations:
+            self._logger.info(f"Executing operation: {op['id']}")
             if "operations" in op:
                 for o in op["operations"]:
-                    self._logger.info(o)
+                    self._logger.info(f"Executing sub-operation: {o}")
                     o["result"] = self._execute(o)
                 op["result"] = op["operations"][-1]["result"]
             else:
@@ -121,6 +122,7 @@ class Executor:
         what = structured_prompt.get("what", [""])
         how = self._format_conditions(structured_prompt.get("how", {}))
         
+        self._logger.info(f"Calling '{command}' prompt")
         if command == "altro":
             result = altro("", context)
         else:
@@ -146,7 +148,6 @@ class Executor:
                  conditions).
         """
         if not how:
-            self._logger.info("No additional conditions provided.")
             return ""
 
         # Start of the conditions block
@@ -156,13 +157,7 @@ class Executor:
                 # Add each valid condition
                 conditions.append(f"- Condizione \"{key}\": {value}")
 
-        if len(conditions) == 1:
-            # No valid conditions were added
-            self._logger.info("No additional conditions provided.")
-            return ""
-        else:
-            self._logger.info("Additional conditions added to state.")
-            return "\n".join(conditions)
+        return "\n".join(conditions) if len(conditions) > 1 else ""
 
     @staticmethod
     def _build_context(docs: list[dict]) -> str:

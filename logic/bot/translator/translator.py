@@ -77,6 +77,9 @@ class Translator:
                   - 'how': dict, additional conditions
         """
         
+        if not tasks or not isinstance(tasks, list):
+            raise ValueError("Input tasks must be a non-empty list.")
+        
         # Create queues to receive results from threads
         result_command = queue.Queue()
         result_from = queue.Queue()
@@ -87,8 +90,11 @@ class Translator:
         thread_from = threading.Thread(
             target=self._from, args=(deepcopy(tasks), user_id, chat_id, result_from)
         )
+        
+        self._logger.info("Starting sources extraction threading...")
         thread_from.start()
         thread_from.join()
+        self._logger.info("Sources extraction threading completed.")
         
         from_parameters = result_from.get()
         if not from_parameters or len(from_parameters) != len(tasks):
@@ -102,16 +108,22 @@ class Translator:
         thread_command = threading.Thread(
             target=self._command, args=(deepcopy(tasks), result_command)
         )
+        
+        self._logger.info("Starting command classification threading...")
         thread_command.start()
         
         # Step 3: (Thread 3) What Extraction
         thread_what = threading.Thread(
             target=self._what, args=(deepcopy(tasks), result_what)
         )
+        
+        self._logger.info("Starting 'what' extraction threading...")
         thread_what.start()
         
         thread_command.join()
+        self._logger.info("Command classification threading completed.")
         thread_what.join()
+        self._logger.info("'What' extraction threading completed.")
         
         command_parameters = result_command.get()
         if not command_parameters or len(command_parameters) != len(tasks):
@@ -129,8 +141,11 @@ class Translator:
         thread_how = threading.Thread(
             target=self._how, args=(deepcopy(tasks), result_how)
         )
+        
+        self._logger.info("Starting 'how' extraction threading...")
         thread_how.start()
         thread_how.join()
+        self._logger.info("'How' extraction threading completed.")
         
         how_parameters = result_how.get()
         if not how_parameters or len(how_parameters) != len(tasks):
@@ -139,6 +154,7 @@ class Translator:
         for i in range(len(command_parameters)):
             if how_parameters[i]:
                 tasks[i]["structured_prompt"]["how"] = how_parameters[i]
+                del tasks[i]["from"]  # Clean up to avoid redundancy
 
         return tasks
     
@@ -159,7 +175,8 @@ class Translator:
                 self._command_classifier_class.classify(t.get('prompt', ''))
                 for t in tasks
             ]
-        except Exception:
+        except Exception as e:
+            self._logger.error("Command classification failed: " + str(e))
             result = ["altro"] * len(tasks)
         
         result_queue.put(result)
@@ -184,8 +201,8 @@ class Translator:
                 for t in tasks
             ]
         except Exception as e:
+            self._logger.error("Sources extraction failed: " + str(e))
             result_sources = [[]] * len(tasks)
-            self._logger.error(f"{e}")
             
         result_queue.put(result_sources)
 
@@ -202,7 +219,8 @@ class Translator:
                 self._what_extractor_class.extract(t.get("prompt", ''), t.get("from", []))
                 for t in tasks
             ]
-        except Exception:
+        except Exception as e:
+            self._logger.error("What extraction failed: " + str(e))
             result_what = [["altro"]] * len(tasks)
             
         result_queue.put(result_what)
@@ -225,7 +243,8 @@ class Translator:
                 ) 
                 for t in tasks
             ]
-        except Exception:
+        except Exception as e:
+            self._logger.error("Conditions extraction failed: " + str(e))
             result_how = [{}] * len(tasks)
             
         result_queue.put(result_how)

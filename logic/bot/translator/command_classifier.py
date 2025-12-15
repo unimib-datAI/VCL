@@ -86,12 +86,12 @@ class CommandClassifier:
 
         except Exception as e:
             # Fallback to the default 'altro' (other) command in case of any error
-            self._logger.error(e)
+            self._logger.error("Command classification failed: " + str(e))
             command = "altro"
 
         # Log the classification result
         self._logger.info(
-            f"{command} - {status}"
+            f"\"{query}\" -> {command} ({status})"
         )
 
         return command

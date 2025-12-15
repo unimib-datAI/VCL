@@ -64,7 +64,6 @@ class SourcesExtractor:
             # Normalizza i nomi delle sorgenti usate
             used_source_names = set()
             for doc in used_documents:
-                self._logger.info(f"Used document: {doc}")
                 if isinstance(doc, str):
                     used_source_names.add(doc)
             
@@ -105,11 +104,13 @@ class SourcesExtractor:
             status = "Done"
         except Exception as e:
             # Fallback: return all available sources
-            self._logger.error(e)
+            self._logger.error("Sources extraction failed: " + str(e))
             documents = [[src, src] for src in self._src_names]
             
         # Log the extraction result
-        self._logger.info(f"{documents} - {status}")
+        self._logger.info(
+            f"\"{query}\" -> {documents} ({status})"
+        )
         
         return documents
     

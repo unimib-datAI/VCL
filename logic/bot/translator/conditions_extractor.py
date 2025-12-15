@@ -94,11 +94,13 @@ class ConditionsExtractor:
 
         except Exception as e:
             # Fallback to an empty dictionary in case of any error
-            self._logger.error(e)
+            self._logger.error("Conditions extraction failed: " + str(e))
             conditions = {}
 
         # Log the extraction result
-        self._logger.info(f"Conditions Extractor: {conditions} - {status}")
+        self._logger.info(
+            f"\"{query}\" -> {conditions} ({status})"
+        )
 
         return conditions
     

@@ -60,6 +60,8 @@ class Planner:
             id = op.get("id", "")
             structured_prompt = op.get("structured_prompt", {})
             
+            self._logger.info(f"Decomposing operation ID: {id} with structured prompt: {structured_prompt}")
+            
             command_key = structured_prompt.get("command", "altro")
             from_key = structured_prompt.get("from", [])
             what_key = structured_prompt.get("what", ["altro"])
@@ -69,7 +71,13 @@ class Planner:
                 op['operations'] = []
                 last_ids = []
                 
+                if len(what_key) > 1:
+                    self._logger.info(f"Decomposing command over multiple 'what' elements.")
+                else:
+                    self._logger.info(f"Processing single 'what' element.")
+                    
                 for what in what_key:
+                    
                     start_index = len(op["operations"])
                     
                     # Find the appropriate intermediate command(s) based on 'what' is being requested
@@ -80,8 +88,10 @@ class Planner:
                         # If it applies to more than one source, we must split it
                         if len(from_key) > 1:
                             # 'integra' is the domain-specific command for merging results
+                            self._logger.info(f"Decomposing command over multiple sources.")
                             op['operations'] += self._create_operations(command_key, "integra", from_key, what, how_key, id, start_index)
                         else:
+                            self._logger.info(f"No decomposition needed.")
                             op['operations'].append(
                                 {
                                     "id": f"{id}_{start_index}",
@@ -98,11 +108,13 @@ class Planner:
                         # We must first run the appropriate middle command (e.g., 'search')
                         # on all sources, and then run the final command.
                         if self._need_decomposition(from_key, what):
+                            self._logger.info(f"Decomposing {command_key} using middle command(s): {middle_commands}")
                             if command_key == "riassumi":
                                 op["operations"] += self._decompose_summarize(middle_commands[0], from_key, what, how_key, id, start_index)
                             else:
                                 op['operations'] += self._create_operations(middle_commands[0], command_key, from_key, what, how_key, id, start_index)
                         else:
+                            self._logger.info(f"No decomposition needed: already done by Decomposer module.")
                             op['operations'].append(
                                 {
                                     "id": f"{id}_{start_index}",
@@ -151,7 +163,9 @@ class Planner:
         """
         # Ensure the middle command is not an 'estrai' if the final command is 'cerca', and viceversa
         if ("cerca" == middle_command and "estrai" in final_command) or ("estrai" in middle_command and "cerca" in final_command):
+            self._logger.warning(f"Found conflits between \"cerca\" and \"estrai\"")
             if len(documents) == 1:
+                self._logger.info(f"One atomic operation for command \"{middle_command}\"")
                 return [
                     {
                         "id": f"{id}_{start_index}",
@@ -189,6 +203,8 @@ class Planner:
                     not_used_sources.append(source)
         else:
             not_used_sources = documents
+            
+        self._logger.info(f"Added {len(atomic_ops)} atomic operations for command \"{middle_command}\"")
 
         # Create the final aggregation operation
         final_op = {
@@ -201,6 +217,9 @@ class Planner:
         }
             
         atomic_ops.append(final_op)
+        
+        self._logger.info(f"Added final operation for command \"{final_command}\"")
+        
         return atomic_ops
 
     def _find_middle_commands(self, what: str) -> list[str]:
@@ -220,7 +239,7 @@ class Planner:
         """
         # 'intero documento' and 'altro' are special cases
         if what in ["intero documento", "altro"]:
-            self._logger.info(f"Possible Middle Commands: ['cerca']")
+            self._logger.info(f"Possible Middle Commands for {what}: ['cerca']")
             return ["cerca"]
         
         # Look up the 'what' in the DQL configuration
@@ -228,7 +247,7 @@ class Planner:
             if what == what_dict.get("name", ""):
                 # Check if it has a specific command associated with it
                 if len((w := what_dict.get("relative_command", []))) > 0:
-                    self._logger.info(f"Possible Middle Commands: {w}")
+                    self._logger.info(f"Possible Middle Commands for {what}: {w}")
                     return w
                 break
                 
@@ -246,11 +265,11 @@ class Planner:
         ops = self._create_operations(middle_command, "integra", from_key, what, how_key, id, start_index)
         
         old_how = deepcopy(ops[-1]["structured_prompt"].get("how", {}))
-        
         if "how" in ops[-1]["structured_prompt"]:
             del ops[-1]["structured_prompt"]["how"]
             
         if len(ops) == 2:
+            self._logger.info(f"Integration not needed for single source in summarize decomposition.")
             del ops[-1]
             
         ops.append(

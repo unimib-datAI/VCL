@@ -52,7 +52,6 @@ class Decomposer():
             prompt = self._dql_language.prompts.get("Decomposition.json", None)
             
             if not prompt:
-                self._logger.error("Decomposition.json prompt not found.")
                 raise ValueError("Error during prompt retrieval")
             
             if query.strip():
@@ -70,13 +69,17 @@ class Decomposer():
                 raise ValueError("Empty query provided")
 
         except Exception as e:
-            self._logger.error(e)
+            self._logger.error(f"Error during query decomposition: {e}")
             result = [
                 {
                     "id": "1",
                     "prompt": query
                 }
             ] # Return original text on failure
+            
+        self._logger.info(f"Decomposition in {len(result)} tasks- {status}")
+        for i, q in enumerate(result, start=1):
+            self._logger.info(f"  Task #{i}: \"{q.get('prompt', '')}\"")
             
         return [
             {

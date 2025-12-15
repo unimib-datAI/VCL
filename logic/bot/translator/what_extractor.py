@@ -85,7 +85,7 @@ class WhatExtractor:
                 
                 for w in what:
                     if w not in available_what and w != "altro" and w != "intero documento":
-                        self._logger.info(f"What Extractor: \"{w}\" not in available what")
+                        self._logger.warning(f"What Extractor: \"{w}\" not in available what")
                         w = "altro"
                 
                 status = "Done"
@@ -94,12 +94,13 @@ class WhatExtractor:
 
         except Exception as e:
             # Fallback to default value (e.g., "altro") if extraction fails
+            self._logger.error("What extraction failed: " + str(e))
             what = ["altro"]
-            self._logger.error(f"Error extracting 'what': {e}")
 
-        # Log the extraction result
-        self._logger.info(f"What Extractor: {what} - {status}")
-
+        self._logger.info(
+            f"\"{query}\" -> {what} ({status})"
+        )
+        
         return what
 
     # ----------------------

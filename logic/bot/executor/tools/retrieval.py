@@ -128,11 +128,9 @@ class Retrieval:
                 self._logger.info(f"Document '{doc_name}' successfully retrieved from {label}.")
                 return doc
 
-        # Fallback: If no document is found, treat the input
-        # string 'doc_name' as raw text content.
-        # self._logger.warning(f"'{doc_name}' not found in any source. Treating as raw text input.")
-        # return {"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}
-        return None
+        # Fallback: If no document is found, treat the input.
+        self._logger.warning(f"'{doc_name}' not found in any source. Treating as raw text input.")
+        return {"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}
 
     def _get_from_operations_list(self, doc_name: str) -> dict | None:
         """Retrieve document from previously computed operations."""
@@ -199,7 +197,7 @@ class Retrieval:
         except FileNotFoundError:
             self._logger.warning(f"Local documents directory not found at: {folder}")
         except Exception as e:
-            self._logger.error(f"Failed to scan local document directory: {e}")
+            self._logger.warning(f"Failed to scan local document directory: {e}")
             
         return None
 
@@ -231,6 +229,6 @@ class Retrieval:
             self._logger.warning(f"ElasticSearch retrieval failed for '{doc_name}': {e}")
         except Exception as e:
             # Catch-all for unexpected errors
-            self._logger.exception(f"Unexpected error retrieving '{doc_name}' from ElasticSearch: {e}")
+            self._logger.warning(f"Unexpected error retrieving '{doc_name}' from ElasticSearch: {e}")
 
         return None

@@ -57,22 +57,33 @@ class SpellingChecker:
         Returns:
             str: The corrected text.
         """
-        if self._spell_check_without_llm:
-            self._logger.info("Spelling Correction with pyspellchecker")
-            corrected_query, status = self._correct_text_basic(text)
-        else:
-            self._logger.info("Spelling Correction with LLM")
-            corrected_query, status = self._correct_text_llm(text)
+        
+        if not text or not isinstance(text, str):
+            raise Exception("Received empty or invalid query during spelling check.")
+        
+        status = "Error"
+        try:
+            if self._spell_check_without_llm:
+                self._logger.info("Spelling Correction with pyspellchecker")
+                corrected_query = self._correct_text_basic(text)
+            else:
+                self._logger.info("Spelling Correction with LLM")
+                corrected_query = self._correct_text_llm(text)
+                
+            status = "Done"
+        except Exception as e:
+            self._logger.error(f"Error during spelling correction: {e}")
+            corrected_query = text  # Fallback to original text on error
         
         # Log the final query for traceability
-        self._logger.info(f"Spelling Correction: {corrected_query} - {status}")
+        self._logger.info(f"{corrected_query} - {status}")
         return corrected_query
         
     # ----------------------------
     # --- Basic Spell Checking ---
     # ----------------------------
     
-    def _correct_text_basic(self, text: str) -> tuple[str, str]:
+    def _correct_text_basic(self, text: str) -> str:
         """
         Perform a basic spell correction on the provided text using pyspellchecker.
 
@@ -83,33 +94,21 @@ class SpellingChecker:
             tuple[str, str]: A tuple containing the corrected text and a
                              status string ("Done" or "Error").
         """
-        status = "Error"
-    
-        if not text or not isinstance(text, str):
-            self._logger.warning("Empty or invalid text received for basic correction.")
-            return "", status
+        words = text.lower().split()
+
+        # Correct each word individually
+        corrected_words = [self._spell.correction(word) for word in words]
         
-        try:
-            # Tokenize and lowercase words for consistency
-            words = text.lower().split()
+        # filter(None, ...) removes potential None results if correction fails
+        result = " ".join(filter(None, corrected_words))
 
-            # Correct each word individually
-            # filter(None, ...) removes potential None results if correction fails
-            corrected_words = [self._spell.correction(word) for word in words]
-            
-            result = " ".join(filter(None, corrected_words))
-            status = "Done"
-        except Exception as e:
-            self._logger.error(f"Basic spell check failed: {e}")
-            result = text # Return original text on failure
-
-        return result, status
+        return result
 
     # ----------------------------
     # --- LLM-Based Correction ---
     # ----------------------------
     
-    def _correct_text_llm(self, text: str) -> tuple[str, str]:
+    def _correct_text_llm(self, text: str) -> str:
         """
         Perform advanced text correction using the configured LLM model.
 
@@ -123,38 +122,17 @@ class SpellingChecker:
             tuple[str, str]: A tuple containing the corrected (rewritten)
                              text and a status string ("Done" or "Error").
         """
-        status = "Error"
-        
-        if not text or not isinstance(text, str):
-            self._logger.warning("Empty or invalid text received for LLM correction.")
-            return "", status
-        
-        query_dict = {
-            "query": text
-        }
-
-        try:
-            # Retrieve the specific prompt for query correction
-            prompt = self._dql_language.prompts.get("CorrectionQuery.json", None)
+        # Retrieve the specific prompt for query correction
+        prompt = self._dql_language.prompts.get("CorrectionQuery.json", None)
             
-            if not prompt:
-                self._logger.error("CorrectionQuery.json prompt not found.")
-                raise ValueError("Error during prompt retrieval")
-            
-            if query_dict.get("query", "").strip():
-                # Invoke LLM to rewrite the query based on the prompt
-                result = self._llm.invoke(
-                    prompt,
-                    query_dict,
-                    True
-                )
-                status = "Done"
-            else:
-                self._logger.warning("Query is empty after stripping.")
-                raise ValueError("Empty query provided")
+        if not prompt:
+            raise ValueError("Error during prompt retrieval")
+        
+        # Invoke LLM to rewrite the query based on the prompt
+        result = self._llm.invoke(
+            prompt,
+            { "query": text },
+            True
+        )
 
-        except Exception as e:
-            self._logger.error(f"LLM-based correction failed: {e}")
-            result = text # Return original text on failure
-
-        return result, status
+        return result

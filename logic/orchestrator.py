@@ -98,9 +98,6 @@ class Orchestrator:
         self._planner = Planner(self._CFG)
         self._executor = Executor(self._CFG)
         
-        # Log the incoming request
-        self._logger.info(f"Request Received: \"{prompt}\"")
-        
         response = {
             "role": "assistant",
             "time": datetime.now().isoformat(),
@@ -110,20 +107,21 @@ class Orchestrator:
 
         try:
             # --- Pipeline Execution ---
+            self._logger.info(f"Starting processing for request ID \"{response['id']}\".")
+            self._logger.info(f"Request received \"{prompt}\".")
             
             prompt_process = self._preprocess(prompt)
             structured_tasks = self._translate(prompt_process, user_id, chat_id)
             structured_tasks = self._plan(structured_tasks)
             result, last_result = self._execute(structured_tasks, chat_id)
             
-            # --------------------------
+            self._logger.info(f"Processing completed correctly.")
         except Exception as e:
-            # Handle any failure during the pipeline execution
-            self._logger.error(f"Request processing failed: {e}")
-            
             # Define a safe fallback response
             result = []
             last_result = self.error_msg
+            
+            self._logger.info(f"Processing failed with error: {e}")
 
         response["details"] = {}
         response["details"]["prompt"] = prompt
@@ -140,10 +138,6 @@ class Orchestrator:
                     used_documents.add(doc)
         
         response["details"]["used_documents"] = list(used_documents)
-        
-        self._logger.info(f"Used documents: {response['details']['used_documents']}")
-        
-        self._logger.info("Request Completed")
 
         return response
     
@@ -175,25 +169,23 @@ class Orchestrator:
     
     def _preprocess(self, prompt: str) -> list:
         """Run preprocessing pipeline on the user input."""
-        self._logger.info("Step 1 (Preprocessing): Starting")
+        self._logger.info("Starting Preprocessing step.")
         prompt_clean = self._preprocessor.process(prompt)
-        self._logger.info("Step 1 (Preprocessing): Done")
+        self._logger.info("Preprocessing step completed.")
         return prompt_clean
 
     def _translate(self, prompts: list, user_id, chat_id: str) -> list:
         """Translate the prompts into structured queries."""
-        self._logger.info("Step 2 (Translator): Starting")
-        structured_queries = self._translator.rewrite(prompts, user_id, chat_id)    
-        self._logger.info("Step 2 (Translator): Done")
+        self._logger.info("Starting Translation step.")
+        structured_queries = self._translator.rewrite(prompts, user_id, chat_id)
+        self._logger.info("Translation step completed.")
         return structured_queries
 
     def _plan(self, structured_query: dict) -> list[dict]:
         """Decompose structured query into operations."""
-        self._logger.info("Step 3 (Planner): Starting")
-        # Use deepcopy to ensure the original structured_query is not
-        # mutated by the planner (e.g., if it pops keys).
+        self._logger.info("Starting Planning step.")
         operations = self._planner.decompose(deepcopy(structured_query))
-        self._logger.info("Step 3 (Planner): Done")
+        self._logger.info("Planning step completed.")
         return operations
 
     def _execute(self, operations: list[dict], chat_id) -> str:
@@ -201,9 +193,9 @@ class Orchestrator:
         if len(operations) < 1:
             raise Exception("Tasks not found")
         
-        self._logger.info("Step 4 (Executor): Starting")
+        self._logger.info("Starting Execution step.")
         results = self._executor.generate(deepcopy(operations), chat_id)
-        self._logger.info("Step 4 (Executor): Done")
+        self._logger.info("Execution step completed.")
             
         return results, results[-1].get("result", self.error_msg)
 
@@ -218,7 +210,7 @@ class Orchestrator:
             # Cache the response in remote storage (e.g., Redis) for 1 hour
             self._storage.set_documents(response, ttl=3600)
         except Exception:
-            self._logger.warning("Document not saved in remote storage (e.g., Redis)")
+            raise Exception("Document not saved in remote storage.")
             
         # Also save a copy to the local filesystem
         id = response.get("id", "")

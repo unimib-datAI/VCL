@@ -49,18 +49,19 @@ class Preprocessor:
             list: Preprocessed query, corrected, normalized and divided in tasks.
         """
         if not query or not isinstance(query, str):
-            self._logger.warning("Received empty or invalid query during preprocessing.")
-            return ""
+            raise Exception("Received empty or invalid query during preprocessing.")
 
         # Step 1: Correct spelling and grammar using the LLM-based correction module
+        self._logger.info("Starting spelling and grammar correction.")
         corrected_query = self._spelling_checker.correct_spelling(query)
+        self._logger.info("Spelling and grammar correction completed.")
 
         # Step 2: Normalize casing
         normalized_query = corrected_query.lower()
-
-        self._logger.info(f"Normalized query: {normalized_query}")
         
         # Step 3: Decompose prompt in tasks
+        self._logger.info("Starting query decomposition into tasks.")
         prompts = self._decomposer_class.decompose(normalized_query)
+        self._logger.info("Query decomposition completed.")
 
         return prompts
