@@ -1,4 +1,5 @@
 from logic.bot.preprocessor.spelling_checker import SpellingChecker
+from logic.bot.preprocessor.rephraser import Rephraser
 from logic.bot.preprocessor.decomposer import Decomposer
 from utils.config import Config
 
@@ -26,14 +27,31 @@ class Preprocessor:
                           LLM instance, and project paths.
         """
         self._logger = cfg.get_logger("Preprocessor")
-        self._spelling_checker = SpellingChecker(cfg)
+        self._spelling_checker_class = SpellingChecker(cfg)
         self._decomposer_class = Decomposer(cfg)
+        self._rephraser_class = Rephraser(cfg)
+        self._storage = cfg.storage
 
     # -----------------------------------
     # --- Main Preprocessing Pipeline ---
     # -----------------------------------
     
-    def process(self, query: str) -> list:
+    def get_chat_history(self, user_id, chat_id) -> list:
+        return sorted(
+            [
+                {
+                    "id": chat.get("id", ""), 
+                    "prompt": chat.get("details", {}).get("prompt", ""), 
+                    "used_documents": chat.get("details", {}).get("used_documents", []),
+                    "content": chat.get("content", "")
+                }
+                for chat in self._storage.get_chat_messages(user_id, chat_id)
+                if "details" in chat
+            ], 
+            key=lambda x: x["id"]
+        )
+
+    def process(self, query: str, user_id: str, chat_id: str) -> list:
         """
         Execute the preprocessing pipeline on the given user query.
 
@@ -50,11 +68,21 @@ class Preprocessor:
         """
         if not query or not isinstance(query, str):
             raise Exception("Received empty or invalid query during preprocessing.")
-
-        # Step 1: Correct spelling and grammar using the LLM-based correction module
-        self._logger.info("Starting spelling and grammar correction.")
-        corrected_query = self._spelling_checker.correct_spelling(query)
-        self._logger.info("Spelling and grammar correction completed.")
+        
+        chat = self.get_chat_history(user_id, chat_id)
+        
+        if not chat:
+            self._logger.info("No chat history found for preprocessing.")
+            # Step 1: Correct spelling and grammar using the LLM-based correction module
+            self._logger.info("Starting spelling and grammar correction.")
+            corrected_query = self._spelling_checker_class.correct_spelling(query)
+            self._logger.info("Spelling and grammar correction completed.")
+        else:
+            self._logger.info("Chat history found for preprocessing.")
+            # Step 1: Rephrase the query to be self-contained using the LLM-based rephraser module
+            self._logger.info("Starting query rephrasing.")
+            corrected_query = self._rephraser_class.rephrase(query, chat)
+            self._logger.info("Query rephrasing completed.")
 
         # Step 2: Normalize casing
         normalized_query = corrected_query.lower()

@@ -120,6 +120,23 @@
         },
 
         {
+            "input": "Ora dimmi le date e integra le informazioni con le persone estratte nella risposta precedente",
+            "reasoning": "Secondo la struttura dei comandi, esiste un comando CERCA per le date e un comando INTEGRA. Nel primo caso, i documenti sono quelli correnti; nel secondo caso, invece, i documenti sono il risultato del primo task e la risposta precedente.",
+            "output": [
+                {
+                    "id": 1,
+                    "prompt": "Estrai le date presenti nel documento corrente",
+                    "dependences": []
+                },
+                {
+                    "id": 2,
+                    "prompt": "Integra in un unico testo il risultato di #1 e la risposta precedente",
+                    "dependences": [1]
+                }
+            ]
+        },
+
+        {
             "input": "Dimmi le persone presenti nella sentenza di primo grado in 200 parole",
             "reasoning": "Secondo la struttura dei comandi, c'è solo un comando CERCA, per le persone. Il comando ha anche una condizione sul numero di parole",
             "output": [
@@ -200,6 +217,34 @@
                     "prompt": "Estrai chi sono i testimoni dai documenti correnti",
                     "dependences": []
                 }
+            ]
+        },
+
+        {
+            "input": "Cerca gli articoli 120, 121, 222 del cpc dal documento corrente e riportali seguendo le seguenti condizioni: 1) la risposta deve avere un elenco puntato con gli elementi chiave; 2) deve avere una descrizione di massimo 100 parole.",
+            "reasoning": "Task complesso. Secondo la struttura dei comandi, ci sono 3 comandi CERCA, uno per articolo, e un comando INTEGRA. Il documento di riferimento è \"documento corrente\". In ogni task è importante inoltre ripetere le condizioni in quanto sono rilevanti per ciascun task.",
+            "output": [
+                {
+                    "id": 1,
+                    "prompt": "Cerca l'articolo 120 del cpc dal documento corrente e riportalo seguendo le seguenti condizioni: 1) la risposta deve avere un elenco puntato con gli elementi chiave; 2) deve avere una descrizione di massimo 100 parole.",
+                    "dependences": []
+                },
+                {
+                    "id": 2,
+                    "prompt": "Cerca l'articolo 121 del cpc dal documento corrente e riportalo seguendo le seguenti condizioni: 1) la risposta deve avere un elenco puntato con gli elementi chiave; 2) deve avere una descrizione di massimo 100 parole.",
+                    "dependences": []
+                },
+                {
+                    "id": 3,
+                    "prompt": "Cerca l'articolo 222 del cpc dal documento corrente e riportalo seguendo le seguenti condizioni: 1) la risposta deve avere un elenco puntato con gli elementi chiave; 2) deve avere una descrizione di massimo 100 parole.",
+                    "dependences": []
+                },
+                {
+                    "id": 4,
+                    "prompt": "Integra in un unico testo i risultati di #1, #2 e #3",
+                    "dependences": [1, 2, 3]
+                }
+
             ]
         },
 

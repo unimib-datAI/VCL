@@ -87,8 +87,8 @@ class SourcesExtractor:
             
             documents = self._explicit_documents_extraction(query) 
             
-            if chat:
-                documents += self._implicit_documents_extraction(query, chat) 
+            #if chat:
+            #    documents += self._implicit_documents_extraction(query, chat) 
             
             if "#" in query and tasks_id:
                 documents += self._task_id_extraction(query, tasks_id)

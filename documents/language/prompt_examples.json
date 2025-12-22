@@ -1,8 +1,8 @@
 {
     "examples": [
-        "[command_confronta] [what_dispositivo] dei documenti \"[source_sentenza di primo grado]\" e \"[source_sentenza di secondo grado]\"",
-        "[command_estrai] [what_dispositivo] dal documento \"[source_sentenza di primo grado]\"",
-        "[command_cerca] [what_persona] dal documento \"[source_sentenza di primo grado]\"",
-        "[command_riassumi] [what_dispositivo] contenute nel documento \"[source_sentenza di primo grado]\" in 200 parole"
+        "[command_confronta] [what_dispositivo] dei documenti [source_sentenza di primo grado] e [source_sentenza di secondo grado]",
+        "[command_estrai] [what_dispositivo] dal documento [source_sentenza di primo grado]",
+        "[command_cerca] [what_persona] dal documento [source_sentenza di primo grado]",
+        "[command_riassumi] [what_dispositivo] contenute nel documento [source_sentenza di primo grado] in 200 parole"
     ]
 }

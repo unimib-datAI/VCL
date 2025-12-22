@@ -110,7 +110,7 @@ class Orchestrator:
             self._logger.info(f"Starting processing for request ID \"{response['id']}\".")
             self._logger.info(f"Request received \"{prompt}\".")
             
-            prompt_process = self._preprocess(prompt)
+            prompt_process = self._preprocess(prompt, user_id, chat_id)
             structured_tasks = self._translate(prompt_process, user_id, chat_id)
             structured_tasks = self._plan(structured_tasks)
             result, last_result = self._execute(structured_tasks, chat_id)
@@ -167,10 +167,10 @@ class Orchestrator:
     # --- Private Helper Methods ---
     # ------------------------------
     
-    def _preprocess(self, prompt: str) -> list:
+    def _preprocess(self, prompt: str, user_id, chat_id) -> list:
         """Run preprocessing pipeline on the user input."""
         self._logger.info("Starting Preprocessing step.")
-        prompt_clean = self._preprocessor.process(prompt)
+        prompt_clean = self._preprocessor.process(prompt, user_id, chat_id)
         self._logger.info("Preprocessing step completed.")
         return prompt_clean
 
