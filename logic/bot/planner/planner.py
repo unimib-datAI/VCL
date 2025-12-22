@@ -27,7 +27,7 @@ class Planner:
         """
         self._logger = cfg.get_logger("Planner")
         self._project_root = cfg.project_root
-        self._dql_language: DQLLanguage = cfg.language
+        self._dql_language: DQLLanguage = cfg.get_DQL()
         self._sources_name = [src.get("name", "") for src in self._dql_language.get_sources()]
 
     # -------------------------------------------------------------------------

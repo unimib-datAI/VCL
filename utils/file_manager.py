@@ -1,7 +1,7 @@
-import os
 import json
-from typing import Union
+import os
 
+from typing import Union
 
 class FileHandler:
     """
@@ -83,45 +83,6 @@ class FileHandler:
                     "Unsupported file type. Supported extensions are: .txt, .css, .json"
                 )
 
-#import spacy
-#import subprocess
-#import sys
-#
-#def remove_empty_values(data):
-#    """
-#    Recursively remove all elements with empty string values ("")
-#    or empty containers (dicts/lists) from nested structures.
-#
-#    Args:
-#        data (any): The input data (can be dict, list, or other).
-#
-#    Returns:
-#        any: The cleaned data with empty elements removed.
-#    """
-#    if isinstance(data, dict):
-#        new_dict = {}
-#        for key, value in data.items():
-#            # Clean nested values recursively
-#            cleaned_value = remove_empty_values(value)
-#            # Keep only non-empty items
-#            if cleaned_value not in ("", {}, []):
-#                new_dict[key] = cleaned_value
-#        return new_dict
-#
-#    elif isinstance(data, list):
-#        new_list = []
-#        for item in data:
-#            cleaned_item = remove_empty_values(item)
-#            # Append only non-empty elements
-#            if cleaned_item not in ("", {}, []):
-#                new_list.append(cleaned_item)
-#        return new_list
-#
-#    else:
-#        # Base case: return the value as is
-#        return data
-#
-#
 #def text_analysis(text: str, key: str = "parole") -> int:
 #    """
 #    Perform a simple text analysis using spaCy (Italian model).

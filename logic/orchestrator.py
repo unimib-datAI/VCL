@@ -47,7 +47,7 @@ class Orchestrator:
     
     error_msg = "Si è verificato un errore. Riprova."
     
-    def __init__(self, username: str = None, role: str = "Altro"):
+    def __init__(self, cfg: Config):
         """
         Initialize the Orchestrator instance.
 
@@ -60,15 +60,10 @@ class Orchestrator:
         Raises:
             ValueError: If username is not provided.
         """
-        # Load global configuration
-        if not username:
-            raise ValueError("Username must be provided to initialize Orchestrator.")
+        self._CFG = cfg
         
-        self._username = username
-        self._CFG = Config(username, role)
-        
-        self._storage = self._CFG.storage
-        self._language = self._CFG.language
+        self._storage = self._CFG.get_storage()
+        self._language = self._CFG.get_DQL()
 
     # ----------------------
     # --- Public Methods ---
@@ -140,28 +135,6 @@ class Orchestrator:
         response["details"]["used_documents"] = list(used_documents)
 
         return response
-    
-    # ---------------
-    # --- Getters ---
-    # ---------------
-    
-    def get_storage(self):
-        if not self._storage:
-            raise ValueError("Empty Storage")
-        
-        return self._storage
-    
-    def get_language(self):
-        if not self._language:
-            raise ValueError("Empty Language")
-        
-        return self._language
-    
-    def get_cfg(self):
-        if not self._CFG:
-            raise ValueError("Empty Config")
-        
-        return self._CFG
 
     # ------------------------------
     # --- Private Helper Methods ---

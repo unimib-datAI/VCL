@@ -27,10 +27,10 @@ class CommandClassifier:
             cfg (Config): Global configuration object providing logger,
                           LLM instance, and DQL language data.
         """
-        self._llm = cfg.llm
+        self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Command Classifier")
         self._project_root = cfg.project_root
-        self._dql_language: DQLLanguage = cfg.language
+        self._dql_language: DQLLanguage = cfg.get_DQL()
 
     # ----------------------------------
     # --- Main Classification Method ---

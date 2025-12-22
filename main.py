@@ -2,7 +2,7 @@ import argparse
 import streamlit.web.cli as stcli
 import sys
 
-from utils.system_config import SystemConfig
+from utils.config import Config
 
 def parse_args() -> argparse.Namespace:
     """
@@ -49,11 +49,11 @@ def parse_args() -> argparse.Namespace:
     )
     
     parser.add_argument(
-        "-spell_check_without_llm",
+        "-parsers",
         action="store_true",
-        dest="spell_check_without_llm",
+        dest="parsers",
         help=(
-             "Enable to avoid llm in spell checking phase"
+             "Enable to avoid llm when possible"
         ),
     )
     
@@ -144,7 +144,7 @@ def main() -> None:
     and launches the Streamlit interface.
     """
     opts = parse_args()
-    SystemConfig.get_instance(opts)
+    Config.get_instance(opts)
     _launch_streamlit()
 
 

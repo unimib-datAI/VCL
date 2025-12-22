@@ -3,9 +3,9 @@ import streamlit as st
 PAGE_TITLE = "Specifica del Linguaggio"
 
 def _display_info():
-    commands = st.session_state.assistant.get_language().get_commands()
-    sources = st.session_state.assistant.get_language().get_sources()
-    what = st.session_state.assistant.get_language().get_what()
+    commands = st.session_state.language.get_commands()
+    sources = st.session_state.language.get_sources()
+    what = st.session_state.language.get_what()
     
     if commands and sources and what:
         st.markdown(
@@ -53,7 +53,7 @@ def show_info():
     Main page entry point.
     """
     # Guard clause for missing state
-    required_keys = ["assistant", "username", "authenticator"]
+    required_keys = ["config", "username", "storage"]
     
     if not all(hasattr(st.session_state, k) for k in required_keys) and not st.query_params.get("chat"):
         return 

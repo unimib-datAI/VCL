@@ -42,11 +42,9 @@ def _reload_data_from_class() -> None:
     Fetches current configuration from the Assistant's Language class 
     and populates session state dataframes.
     """
-    language_class = st.session_state.language_class
-
-    what_data = [item for item in language_class.get_what() if isinstance(item, dict)]
-    from_data = [item for item in language_class.get_sources() if isinstance(item, dict)]
-    commands_data = [item for item in language_class.get_commands() if isinstance(item, dict)]
+    what_data = [item for item in st.session_state.language.get_what() if isinstance(item, dict)]
+    from_data = [item for item in st.session_state.language.get_sources() if isinstance(item, dict)]
+    commands_data = [item for item in st.session_state.language.get_commands() if isinstance(item, dict)]
     
     # df_what/df_from contain the "saved" data (with lists)
     st.session_state.df_what = pd.DataFrame(what_data)
@@ -71,11 +69,10 @@ def _initialize_session_state() -> None:
     if "state_initialized" in st.session_state:
         return
 
-    if "assistant" not in st.session_state or not st.session_state.assistant:
+    if "language" not in st.session_state or not st.session_state.language:
         st.error("Errore: Configurazione utente non caricata.")
         st.stop()
         
-    st.session_state.language_class = st.session_state.assistant.get_language()
     _reload_data_from_class()
     st.session_state.state_initialized = True
 
@@ -113,9 +110,8 @@ def _save_changes() -> Union[bool, None]:
 
     df_from_processed = _convert_to_savable(df_from_editable)
     
-    language_class = st.session_state.language_class
-    result_what = language_class.set_what(df_what.to_dict(orient="records"))
-    result_sources = language_class.set_sources(df_from_processed.to_dict(orient="records"))
+    result_what = st.session_state.language.set_what(df_what.to_dict(orient="records"))
+    result_sources = st.session_state.language.set_sources(df_from_processed.to_dict(orient="records"))
     
     if result_what or result_sources:
         _reload_data_from_class()
@@ -134,8 +130,7 @@ def _reset_language() -> bool:
     """
     Resets configuration to the default hardcoded language definition.
     """
-    language_class = st.session_state.language_class
-    result = language_class.set_default_language()
+    result = st.session_state.language.set_default_language()
     
     if result:
         _reload_data_from_class()
@@ -166,7 +161,7 @@ def _display_confirmation_ui() -> None:
     message, function_to_run = action_map[action]
     st.warning(message)
     
-    if st.button("✅ Sì, confermo", use_container_width=True):
+    if st.button("✅ Sì, confermo", width='stretch'):
         success = function_to_run()
         
         if success is True:
@@ -181,7 +176,7 @@ def _display_confirmation_ui() -> None:
         del st.session_state.action_pending
         st.rerun()
             
-    if st.button("❌ No, annulla", use_container_width=True):
+    if st.button("❌ No, annulla", width='stretch'):
         del st.session_state.action_pending
         st.rerun()
 
@@ -253,11 +248,11 @@ def _display_form_ui() -> None:
         
         col1, col2, col3 = st.columns(3)
         with col1:
-            save_pressed = st.form_submit_button("💾 Salva", use_container_width=True)
+            save_pressed = st.form_submit_button("💾 Salva", width='stretch')
         with col2:
-            cancel_pressed = st.form_submit_button("↩️ Annulla", use_container_width=True)
+            cancel_pressed = st.form_submit_button("↩️ Annulla", width='stretch')
         with col3:
-            reset_pressed = st.form_submit_button("🔄 Ripristina", use_container_width=True)
+            reset_pressed = st.form_submit_button("🔄 Ripristina", width='stretch')
 
     # --- Handling logic *after* form submission ---
     if save_pressed:

@@ -27,10 +27,10 @@ class ConditionsExtractor:
             cfg (Config): Global configuration instance providing logger, LLM,
                           and DQL language data.
         """
-        self._llm = cfg.llm
+        self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Conditions Extractor")
         self._project_root = cfg.project_root
-        self._dql_language: DQLLanguage = cfg.language
+        self._dql_language: DQLLanguage = cfg.get_DQL()
 
     # ------------------------------
     # --- Main Extraction Method ---

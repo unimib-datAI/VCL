@@ -4,17 +4,9 @@ from datetime import datetime
 def show_questions_tracking():
     st.title("📊 Tracking delle Domande")
 
-    # Controlli iniziali
-    required_keys = ["assistant", "username"]
-    if not all(k in st.session_state for k in required_keys):
-        st.error("Sessione non inizializzata.")
-        return
-
-    storage = st.session_state.assistant.get_storage()
-
     # --- Leggi domande dal DB ---
     try:
-        db = storage._questions  # la collection
+        db = st.session_state.storage._questions  # la collection
         cursor = db.find({"user": st.session_state.username}).sort("timestamp", -1)
         rows = list(cursor)
     except Exception as e:
@@ -34,13 +26,18 @@ def show_questions_tracking():
             "Modello": r.get("model", "-"),
         })
 
-    st.dataframe(table, use_container_width=True)
-
+    st.dataframe(table, width='stretch')
 
 # Entry point della pagina
 def show_page():
+    
+    # Controlli iniziali
+    required_keys = ["config", "username", "storage"]
+    if not all(k in st.session_state for k in required_keys):
+        st.error("Sessione non inizializzata.")
+        return
+    
     show_questions_tracking()
-
 
 if __name__ == "__main__":
     show_page()

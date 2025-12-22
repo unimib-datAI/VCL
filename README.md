@@ -126,7 +126,7 @@ This section provides a compact but detailed description of each major component
 * **Implementation:** Two modes:
 
   * LLM-based spelling correction (default) — uses an LLM to correct typos and preserve intent.
-  * Rule-based or dictionary-based fallback when `-spell_check_without_llm` is set.
+  * Rule-based or dictionary-based fallback when `-parsers` is set.
 * **LLM-based:** **Optional** (default yes, configurable).
 
 ### Translator (NL → DQL)
@@ -250,7 +250,7 @@ The script accepts several optional flags (arguments) to customize its behavior.
     * **Description:** Sets the number of seconds to wait after each LLM call.
     * **Default:** `0`
 
-* `-spell_check_without_llm`
+* `-parsers`
 
     * **Description:** If present, this flag disables the use of the LLM for the spell-checking phase, using an alternative method instead.
     * **Usage:** Just add the flag; it does not require a value

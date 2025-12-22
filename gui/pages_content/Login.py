@@ -10,11 +10,10 @@ def _initialize_user_session(user: dict):
     st.session_state.username = user["username"]
     st.session_state.role = user["role"]
     st.session_state.auth_status = True
-    st.session_state.assistant = Orchestrator(st.session_state.username,
-                                              st.session_state.role)
+    st.session_state.config.handle_login(st.session_state.username, st.session_state.role)
     
     # Create a new chat and redirect
-    st.query_params.chat = st.session_state.authenticator.create_new_chat(st.session_state.username)
+    st.query_params.chat = st.session_state.storage.create_new_chat(st.session_state.username)
     st.query_params["page"] = "Home"
     st.rerun()
 
@@ -26,7 +25,7 @@ def show_login():
         password = st.text_input("Password", type="password")
         
         if st.form_submit_button("Login"):
-            result, user = st.session_state.authenticator.login_user(username.strip(), password.strip())
+            result, user = st.session_state.storage.login_user(username.strip(), password.strip())
             
             if result and user:
                 st.success("Login avvenuto con successo!")
@@ -36,6 +35,6 @@ def show_login():
 
     # st.markdown("---")
 
-    # if st.button("Non hai ancora un account? Registrati!", use_container_width=True):
+    # if st.button("Non hai ancora un account? Registrati!", width='stretch'):
     #     st.query_params["page"] = "Registration"
     #    st.rerun()

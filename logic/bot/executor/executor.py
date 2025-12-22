@@ -73,9 +73,9 @@ class Executor:
             or_query (str): The original, raw user query.
         """
         self._cfg = cfg
-        self._llm = cfg.llm
+        self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Executor")
-        self._language: DQLLanguage = cfg.language
+        self._language: DQLLanguage = cfg.get_DQL()
 
     # ----------------------
     # --- Public Methods ---
@@ -124,9 +124,9 @@ class Executor:
         
         self._logger.info(f"Calling '{command}' prompt")
         if command == "altro":
-            result = altro("", context)
+            result = altro("", context, self._cfg.get_LLM(), self._cfg.get_DQL())
         else:
-            result = self.FUNCTION_MAP.get(command)(context, what, how)
+            result = self.FUNCTION_MAP.get(command)(context, what, how, self._cfg.get_LLM(), self._cfg.get_DQL())
 
         # Format headings in the result (e.g., # -> **)
         return re.sub(self._pattern, self._format_heading, result)

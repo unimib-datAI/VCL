@@ -18,7 +18,7 @@ class SpellingChecker:
         _project_root (Path): Root path of the project.
         _spell (SpellChecker): Instance of the pyspellchecker library.
         _logger: Logger instance from Config.
-        _spell_check_without_llm (bool): Flag to select correction method.
+        _parsers (bool): Flag to select correction method.
         _dql_language: Language-specific settings (like prompts) from Config.
     """
     
@@ -34,14 +34,14 @@ class SpellingChecker:
             cfg (Config): The global configuration object providing access to
                           the LLM instance, paths, and language settings.
         """
-        self._llm = cfg.llm
+        self._llm = cfg.get_LLM()
         self._project_root = cfg.project_root
         # Initialize spell checker for Italian
         self._spell = SpellChecker(language="it")
-        self._dql_language = cfg.language
+        self._dql_language = cfg.get_DQL()
         
         self._logger = cfg.get_logger("Spelling Checker")
-        self._spell_check_without_llm = cfg.spell_check_without_llm
+        self._parsers = cfg.parsers
         
     # ------------------------
     # --- General Function ---
@@ -63,7 +63,7 @@ class SpellingChecker:
         
         status = "Error"
         try:
-            if self._spell_check_without_llm:
+            if self._parsers:
                 self._logger.info("Spelling Correction with pyspellchecker")
                 corrected_query = self._correct_text_basic(text)
             else:

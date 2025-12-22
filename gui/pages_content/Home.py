@@ -13,6 +13,8 @@ import streamlit as st
 import random
 
 from openai import OpenAI
+
+from logic.orchestrator import Orchestrator
 #import docx
 
 # Add Root Directory to sys.path
@@ -49,9 +51,7 @@ def _initialize_chat() -> None:
     if "selected_model" not in st.session_state:
         st.session_state.selected_model = DEFAULT_MODEL
 
-    storage = st.session_state.assistant.get_storage()
-
-    st.session_state.messages = storage.get_chat_messages(
+    st.session_state.messages = st.session_state.storage.get_chat_messages(
         st.session_state.username,
         st.query_params.chat
     )
@@ -129,8 +129,8 @@ def _handle_suggestions_and_controls() -> Optional[str]:
 
         with st.popover("💡 Suggerimenti"):
             st.markdown("Prova a chiedere:")
-            if st.session_state.assistant:
-                for i, suggestion in enumerate(st.session_state.assistant.get_language().gui_examples):
+            if st.session_state.language:
+                for i, suggestion in enumerate(st.session_state.language.gui_examples):
                     if st.button(suggestion, key=f"suggestion_{i}"):
                         st.session_state.prompt_from_button = suggestion
                         st.rerun()
@@ -140,9 +140,9 @@ def _handle_suggestions_and_controls() -> Optional[str]:
     # Col 2: New Chat
     with col2:
         if st.button("📝 Nuova conversazione"):
-            authenticator = st.session_state.authenticator
+            storage = st.session_state.storage
             username = st.session_state.username
-            new_chat_id = authenticator.create_new_chat(username)
+            new_chat_id = storage.create_new_chat(username)
 
             if new_chat_id:
                 # modello corrente per la nuova chat
@@ -156,13 +156,13 @@ def _handle_suggestions_and_controls() -> Optional[str]:
     # Col 3: Delete Chat
     with col3:
         if st.button("❌ Elimina conversazione"):
-            st.session_state.authenticator.delete_chat(st.session_state.username, st.query_params.chat)
+            st.session_state.storage.delete_chat(st.session_state.username, st.query_params.chat)
             
-            all_keys = st.session_state.authenticator.get_all_chats(st.session_state.username).keys()
+            all_keys = st.session_state.storage.get_all_chats(st.session_state.username).keys()
             all_keys = sorted(all_keys, reverse=True)
             
             if not all_keys:
-                st.query_params.chat = st.session_state.authenticator.create_new_chat(st.session_state.username)
+                st.query_params.chat = st.session_state.storage.create_new_chat(st.session_state.username)
             else:
                 st.query_params.chat = all_keys[0]
                 
@@ -232,8 +232,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
     # --- USER QUESTION TRACKING ---
     try:
-        storage = st.session_state.assistant.get_storage()
-        storage.log_user_question(
+        st.session_state.storage.log_user_question(
             user_id=st.session_state.username,
             question=prompt,
             model=selected_model,
@@ -250,10 +249,10 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         stop_event = threading.Event()
         result_queue = queue.Queue()
 
-        st.session_state.assistant.get_cfg().generate_request_id()
+        st.session_state.config.set_request_id()
 
         # Start Assistant in background thread
-        assistant = st.session_state.assistant
+        assistant = Orchestrator(st.session_state.config)
         username = st.session_state.username
 
         thread = threading.Thread(
@@ -389,11 +388,11 @@ def _render_model_selector() -> str:
     # Se il modello selezionato è diverso da quello associato alla chat corrente,
     # creiamo una NUOVA chat con quel modello.
     if selected != st.session_state.last_model_for_chat:
-        authenticator = st.session_state.get("authenticator")
+        storage = st.session_state.get("storage")
         username = st.session_state.get("username")
 
-        if authenticator and username:
-            new_chat_id = authenticator.create_new_chat(username)
+        if storage and username:
+            new_chat_id = storage.create_new_chat(username)
             if new_chat_id:
                 # aggiorniamo il modello logico per la nuova chat
                 st.session_state.selected_model = selected
@@ -435,8 +434,7 @@ def _load_case_documents(assistant, username: str) -> List[Dict[str, str]]:
     """
     docs = []
 
-    storage = assistant.get_storage()
-    raw_docs = storage.get_all_documents(username) or []
+    raw_docs = st.session_state.storage.get_all_documents(username) or []
 
     TEXT_KEYS = ["text", "contenuto", "content", "body"]
     NAME_KEYS = ["name", "titolo", "filename"]
@@ -699,9 +697,9 @@ def _stream_logs_to_ui(placeholder, stop_event: threading.Event) -> List[str]:
         List[str]: Collected log lines.
     """
     log_file = os.path.join(
-        st.session_state.assistant.get_cfg().project_root, 
+        st.session_state.config.project_root, 
         "logs", 
-        f"{st.session_state.assistant.get_cfg().get_request_id()}.log"
+        f"{st.session_state.config.get_request_id()}.log"
     )
     
     log_list = ["LOGS:"]
@@ -996,9 +994,9 @@ def _display_operation(index: int, operation: Dict) -> None:
 
 def _save_messages(messages: List[Dict]) -> None:
     """Helper to persist messages to storage."""
-    if "assistant" in st.session_state and st.session_state.username:
+    if "storage" in st.session_state and st.session_state.username:
         for message in messages:
-            st.session_state.assistant.get_storage().add_chat_message(
+            st.session_state.storage.add_chat_message(
                 st.session_state.username,
                 st.query_params.chat,
                 message
@@ -1013,7 +1011,7 @@ def show_home():
     Main page entry point.
     """
     # Guard clause for missing state
-    required_keys = ["assistant", "username", "authenticator"]
+    required_keys = ["config", "username", "storage"]
     if not all(hasattr(st.session_state, k) and getattr(st.session_state, k) for k in required_keys) or not st.query_params.get("chat"):
         st.warning("Inizializzazione della configurazione in corso... Ricarica se il messaggio persiste.")
         st.stop()

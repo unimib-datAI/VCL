@@ -1,10 +1,7 @@
 from utils.DQL_language import DQLLanguage
 from utils.LLM import LLM
 
-def riorganizza(context, what, how) -> tuple[str, dict]:
-    llm = LLM.get_instance()
-    language = DQLLanguage.get_instance()
-    
+def riorganizza(context, what, how, llm, language) -> tuple[str, dict]:
     state = {
         "how": how,
         "context": context,

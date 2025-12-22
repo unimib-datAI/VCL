@@ -1,10 +1,7 @@
 from utils.DQL_language import DQLLanguage
 from utils.LLM import LLM
 
-def altro(query: str, context: str) -> tuple[str, dict]:
-    llm = LLM.get_instance()
-    language = DQLLanguage.get_instance()
-    
+def altro(query: str, context: str, llm, language) -> tuple[str, dict]:
     state = {
         "query": query,
         "context": context

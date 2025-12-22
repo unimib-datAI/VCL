@@ -1,10 +1,7 @@
 from utils.DQL_language import DQLLanguage
 from utils.LLM import LLM
 
-def classifica(context, what, how) -> tuple[str, dict]:
-    llm = LLM.get_instance()
-    language = DQLLanguage.get_instance()
-    
+def classifica(context, what, how, llm, language) -> tuple[str, dict]:
     state = {
         "how": how,
         "context": context,

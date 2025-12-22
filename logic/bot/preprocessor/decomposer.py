@@ -21,9 +21,9 @@ class Decomposer():
                           the LLM instance, paths, and language settings.
         """
         self._cfg = cfg
-        self._llm = cfg.llm
+        self._llm = cfg.get_LLM()
         self._project_root = cfg.project_root
-        self._dql_language = cfg.language
+        self._dql_language = cfg.get_DQL()
         
         self._logger = cfg.get_logger("Decomposer")
         

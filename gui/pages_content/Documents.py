@@ -5,7 +5,7 @@ PAGE_TITLE = "Visualizza i tuoi documenti giudiziari"
 
 def _initialize_docs():
     if "docs" not in st.session_state:
-        st.session_state.docs = st.session_state.authenticator.get_all_documents(st.session_state.username)
+        st.session_state.docs = st.session_state.storage.get_all_documents(st.session_state.username)
         st.session_state.current_doc = st.session_state.docs[0] if st.session_state.docs else {}
 
 def _display_buttons():
@@ -54,7 +54,7 @@ def _display_buttons():
             btn_type = "primary" if is_selected else "secondary"
             label = f"{doc.get('type_doc', '')}\n({doc.get('name', '')})"
 
-            if st.button(label, key=f"btn_{i}", type=btn_type, use_container_width=True):
+            if st.button(label, key=f"btn_{i}", type=btn_type, width='stretch'):
                 st.session_state.current_doc = doc
                 st.rerun()
 
@@ -83,7 +83,7 @@ def show_documents():
     Main page entry point.
     """
     # Guard clause for missing state
-    required_keys = ["assistant", "username", "authenticator"]
+    required_keys = ["config", "username", "storage"]
     
     if not all(hasattr(st.session_state, k) for k in required_keys) and not st.query_params.get("chat"):
         return 
