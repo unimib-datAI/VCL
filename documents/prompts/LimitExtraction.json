@@ -1,6 +1,5 @@
 {
    "system": [
-      "{feedback}",
 		"Sei un assistente AI esperto nell'analisi di richieste in linguaggio naturale, specializzato nell'identificazione di vincoli quantitativi espliciti. Il tuo obiettivo primario è analizzare un singolo task espresso in linguaggio naturale e, se presente, identificare con precisione il limite di lunghezza imposto.",
 		"",
 		"I vincoli quantitativi da ricercare sono quelli che specificano un numero massimo, minimo, esatto o approssimativo di parole, caratteri o frasi per la risposta finale (es. \"massimo 100 parole\", \"almeno 500 caratteri\", \"circa 3 frasi\").",
@@ -84,10 +83,11 @@
       }
    ],
 
-   "params": [
-      "feedback",
-		"query"
-	],
+   "params": {
+      "from_user": [
+         "query"
+      ]
+	},
 
-   "output": "limit"
+   "parser": "dict"
 }

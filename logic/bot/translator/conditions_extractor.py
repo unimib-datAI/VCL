@@ -31,33 +31,93 @@ class ConditionsExtractor:
         self._logger = cfg.get_logger("Conditions Extractor")
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
+        
+        self.CONDITIONS_MAP = {
+            "LimitExtraction": self.limit_extraction
+        }
 
     # ------------------------------
     # --- Main Extraction Method ---
     # ------------------------------
     
     def extract(self, query: str, structured_query: dict, docs: list) -> dict:
-        """
-        Extract additional conditions ('how') from a user query.
+        structured_query["how"] = {}
+        
+        conditions_router = self.conditions_router(query)
+        
+        for key, value in conditions_router.items():
+            if "yes" == value.lower():    
+                specific_conditions = self.CONDITIONS_MAP[key](query)
+                
+                new_key = key.replace("Extraction", "").lower()
+                structured_query["how"].update({new_key: specific_conditions})
+        
+        additional_conditions = self.additional_conditions(query, structured_query, docs)
+        structured_query["how"].update(additional_conditions)
+        
+        return structured_query["how"]
+        
+    def conditions_router(self, query: str):
+        status = "Error"
 
-        Steps:
-            1. Prepare the input dictionary for the LLM, including the raw
-               query, the structured query, and document context.
-            2. Invoke the LLM to extract conditions.
-            3. Convert the result into a dictionary.
-            4. Handle empty queries or errors with a fallback (empty dict).
+        try:
+            prompt = self._dql_language.prompts.get("ConditionsRouter.json", None)
+            
+            if not prompt:
+                raise ValueError("ConditionsRouter.json prompt not found.")
+            
+            if query.strip():
+                conditions = self._llm.invoke(
+                    prompt,
+                    {"query": query}
+                )
 
-        Args:
-            query (str): The raw user input query.
-            structured_query (dict): Structured representation of the query
-                              (containing 'command', 'what', 'from').
-            docs (list): A list of document tuples (name, reference)
-                         extracted in a previous step.
+                status = "Done"
+            else:
+                raise ValueError("Empty query provided to ConditionsRouter.")
 
-        Returns:
-            dict: Extracted conditions as key-value pairs (e.g.,
-                  {"format": "list", "language": "english"}).
-        """
+        except Exception as e:
+            self._logger.error("Conditions Router failed: " + str(e))
+            conditions = {}
+
+        self._logger.info(
+            f"Condition Router -> {conditions} ({status})"
+        )
+
+        return conditions
+        
+    
+    def limit_extraction(self, query: str) -> dict:
+        status = "Error"
+
+        try:
+            prompt = self._dql_language.prompts.get("LimitExtraction.json", None)
+            
+            if not prompt:
+                raise ValueError("LimitExtraction.json prompt not found.")
+            
+            if query.strip():
+                conditions = self._llm.invoke(
+                    prompt,
+                    {"query": query},
+                    True
+                )
+
+                status = "Done"
+            else:
+                raise ValueError("Empty query provided to LimitExtraction.")
+
+        except Exception as e:
+            self._logger.error("Limit extraction failed: " + str(e))
+            conditions = {}
+
+        self._logger.info(
+            f"\"{query}\" -> {conditions} ({status})"
+        )
+
+        return conditions
+
+    def additional_conditions(self, query: str, structured_query: dict, docs: list) -> dict:
         # Prepare the input dictionary for the LLM prompt
         query_dict = {
             "query": query,
