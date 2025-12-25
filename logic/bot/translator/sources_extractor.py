@@ -87,17 +87,20 @@ class SourcesExtractor:
             
             documents = self._explicit_documents_extraction(query) 
             
-            #if chat:
-            #    documents += self._implicit_documents_extraction(query, chat) 
+            if chat:
+                documents += self._previous_message_parsing(query, chat)
             
             if "#" in query and tasks_id:
-                documents += self._task_id_extraction(query, tasks_id)
+                documents += self._task_id_parsing(query, tasks_id)
             
             documents = [d for d in documents if not str(d[0]).startswith("#")]
             
             if not documents:
                 if chat:
-                    documents = [[chat[-1]["id"], "risposta precedente"]]
+                    documents = self._implicit_documents_extraction(query, chat)
+                    
+                if not documents:
+                    raise ValueError("No Reference Found")
                 else:
                     raise ValueError("No Reference Found")
             
@@ -113,23 +116,6 @@ class SourcesExtractor:
         )
         
         return documents
-    
-    def parsing(self, query, base_list, tasks_id: list = None):
-        sources_list = []
-        
-        if not query:
-            return None
-        
-        if "#" in query:
-            sources_list += self._task_id_extraction(query, tasks_id)
-            
-        for b in base_list:
-            if b[0] in query:
-                sources_list.append([b[0], b[0]])
-            elif b[1] in query:
-                sources_list.append(b)
-        
-        return sources_list
     
     def _explicit_documents_extraction(self, query: str) -> list:
         """
@@ -203,8 +189,17 @@ class SourcesExtractor:
         else:
             raise ValueError("Empty query provided to ImplicitDocumentsExtraction.")
     
+    def _previous_message_parsing(self, query: str, chat) -> list:
+        ids = [msg["id"] for msg in chat]
+        
+        documents = [[id, id] for id in ids if id.lower() in query.lower()]
+        
+        # Log the extraction result
+        self._logger.info(f"Previous Message: {documents}")
+        
+        return documents
     
-    def _task_id_extraction(self, query: str, ids) -> list:
+    def _task_id_parsing(self, query: str, ids) -> list:
         found_ids = [int(x) for x in re.findall(r"#(\d+)", query)]
         documents = [[ids[i - 1], f"#{i}"] for i in found_ids if i <= len(ids)]
         
