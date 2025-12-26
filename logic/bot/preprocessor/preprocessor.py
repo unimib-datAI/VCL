@@ -79,4 +79,4 @@ class Preprocessor:
         prompts = self._decomposer_class.decompose(normalized_query)
         self._logger.info("Query decomposition completed.")
 
-        return prompts
+        return normalized_query, prompts

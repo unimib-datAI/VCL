@@ -325,11 +325,15 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
             _typewriter_effect(text, placeholder)
         
             if selected_model == "DQL":
-                _show_expander(result)
                 assistant_msg = result
                 
-                if "logs" not in assistant_msg:
-                    assistant_msg["logs"] = log_list[1:]
+                if "details" not in assistant_msg:
+                    assistant_msg["details"]
+                
+                if "logs" not in assistant_msg["details"]:
+                    assistant_msg["details"]["logs"] = log_list[1:]
+                    
+                _show_expander(assistant_msg)
             else:        
                 assistant_msg = {
                     "role": "assistant",
@@ -869,6 +873,7 @@ def _show_expander(message: Dict) -> None:
     details = message.get("details", {}) if message else {}
     
     prompt = details.get("prompt", "")
+    prompt_process = details.get("prompt_process", prompt)
     tasks = details.get("tasks", [])
     logs = details.get("logs", [])
     
@@ -882,10 +887,11 @@ def _show_expander(message: Dict) -> None:
             op_count_str = "La richiesta non è stata scomposta."
 
         # 1. Structured Input
-        
         st.markdown(
             f"""
             L'utente ha richiesto \"{prompt}\".
+            <p></p>
+            Ai fini di rendere la richiesta gestibile dal sistema, essa è stata rifomulata come: \"{prompt_process}\". 
             <p></p>
             {op_count_str}
             """,
@@ -935,22 +941,31 @@ def _display_task(tasks: list) -> None:
         
         html_code = [
             '<details style="margin-left:20px; margin-top:10px;">',
-            '\t' + f'<summary>Task {index}: {task.get('prompt', '')}</summary>' if len(tasks) != 1 else '\t <summary>Comando DQL</summary>',
+            '\t' + f'<summary>Task {index}: {task.get('prompt', '')}</summary>',
             '\t<p></p>',
-            '\t' + f'<pre><code class="language-json">{task_json}</code></pre>'
+            '\tIl Task è stato trodotto in DQL nel seguente modo:'
+            '\t<p></p>',
+            '\t' + f'<pre><code class="language-json">{task_json}</code></pre>',
+            '\t<p></p>'
         ]
+    
+        n_operations = len(task.get("operations", []))
+        if n_operations > 1:
+            html_code.append('\t' + f'Dopo essere stato tradotto, è stato necessario scomporre il task in {n_operations} operazioni.')
+            operation = [_display_operation(i, t) for i, t in enumerate(task.get("operations", []))]
         
-        for o in operation:
-            for r in o:
-                html_code.append("\t" + r)
+            for o in operation:
+                for r in o:
+                    html_code.append("\t" + r)
+        else:
+            html_code.append('\t' + f'Dopo essere stato tradotto, non è stato necessario scomporre il task.')
         
-        if len(tasks) != 1:
-            html_code.append('\t<details style="margin-left:20px; margin-top:10px;">')
-            html_code.append('\t\t<summary>Risultato Parziale</summary>')
-            html_code.append('\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">')
-            html_code.append('\t\t\t' + task_result)
-            html_code.append('\t\t</div>')
-            html_code.append('\t</details>')
+        html_code.append('\t<details style="margin-left:20px; margin-top:10px;">')
+        html_code.append('\t\t<summary>Visualizza il risultato del task</summary>')
+        html_code.append('\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">')
+        html_code.append('\t\t\t' + task_result)
+        html_code.append('\t\t</div>')
+        html_code.append('\t</details>')
         
         html_code.append('</details>')
             
@@ -981,10 +996,11 @@ def _display_operation(index: int, operation: Dict) -> None:
         '<details style="margin-left:20px; margin-top:10px;">',
         '\t' + f'<summary>Operazione {index}: {operation_command}</summary>',
         '\t<p></p>',
+        '\tIl comando della singola operazione è:'
+        '\t<p></p>',
         '\t' + f'<pre><code class="language-json">{operation_json}</code></pre>',
-        '\t<b>Risultato Parziale:</b>',
         '\t<details style="margin-left:20px; margin-top:10px;">',
-        '\t\t<summary>Visualizza il testo</summary>',
+        '\t\t<summary>Visualizza il risultato dell\'operazione</summary>',
         '\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">',
         '\t\t\t' + operation_result,
         '\t\t</div>',

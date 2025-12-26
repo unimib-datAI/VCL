@@ -105,14 +105,15 @@ class Orchestrator:
             self._logger.info(f"Starting processing for request ID \"{response['id']}\".")
             self._logger.info(f"Request received \"{prompt}\".")
             
-            prompt_process = self._preprocess(prompt)
-            structured_tasks = self._translate(prompt_process)
+            prompt_process, tasks = self._preprocess(prompt)
+            structured_tasks = self._translate(tasks)
             structured_tasks = self._plan(structured_tasks)
             result, last_result = self._execute(structured_tasks)
             
             self._logger.info(f"Processing completed correctly.")
         except Exception as e:
             # Define a safe fallback response
+            prompt_process = prompt
             result = []
             last_result = self.error_msg
             
@@ -120,6 +121,7 @@ class Orchestrator:
 
         response["details"] = {}
         response["details"]["prompt"] = prompt
+        response["details"]["prompt_process"] = prompt_process
         response["details"]["tasks"] = result
         
         response["content"] = last_result
@@ -143,9 +145,9 @@ class Orchestrator:
     def _preprocess(self, prompt: str) -> list:
         """Run preprocessing pipeline on the user input."""
         self._logger.info("Starting Preprocessing step.")
-        prompt_clean = self._preprocessor.process(prompt)
+        prompt_clean, tasks = self._preprocessor.process(prompt)
         self._logger.info("Preprocessing step completed.")
-        return prompt_clean
+        return prompt_clean, tasks
 
     def _translate(self, prompts: list) -> list:
         """Translate the prompts into structured queries."""
