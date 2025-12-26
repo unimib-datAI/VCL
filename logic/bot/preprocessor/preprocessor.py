@@ -30,28 +30,15 @@ class Preprocessor:
         self._spelling_checker_class = SpellingChecker(cfg)
         self._decomposer_class = Decomposer(cfg)
         self._rephraser_class = Rephraser(cfg)
-        self._storage = cfg.storage
+        self._storage = cfg.get_storage()
+        
+        self.get_chat_history = cfg.get_chat_history
 
     # -----------------------------------
     # --- Main Preprocessing Pipeline ---
     # -----------------------------------
-    
-    def get_chat_history(self, user_id, chat_id) -> list:
-        return sorted(
-            [
-                {
-                    "id": chat.get("id", ""), 
-                    "prompt": chat.get("details", {}).get("prompt", ""), 
-                    "used_documents": chat.get("details", {}).get("used_documents", []),
-                    "content": chat.get("content", "")
-                }
-                for chat in self._storage.get_chat_messages(user_id, chat_id)
-                if "details" in chat
-            ], 
-            key=lambda x: x["id"]
-        )
 
-    def process(self, query: str, user_id: str, chat_id: str) -> list:
+    def process(self, query: str) -> list:
         """
         Execute the preprocessing pipeline on the given user query.
 
@@ -69,7 +56,7 @@ class Preprocessor:
         if not query or not isinstance(query, str):
             raise Exception("Received empty or invalid query during preprocessing.")
         
-        chat = self.get_chat_history(user_id, chat_id)
+        chat = self.get_chat_history()
         
         if not chat:
             self._logger.info("No chat history found for preprocessing.")

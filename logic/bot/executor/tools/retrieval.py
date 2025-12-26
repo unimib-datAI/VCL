@@ -50,7 +50,7 @@ class Retrieval:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config, chat_id, operations: list[dict] = None):
+    def __init__(self, cfg: Config, operations: list[dict] = None):
         """
         Initialize the Retrieval component.
 
@@ -61,9 +61,9 @@ class Retrieval:
                 retrieve intermediate results.
         """
         self._client = Elasticsearch(cfg.DB_URL)
-        self._storage = cfg.storage
+        self._storage = cfg.get_storage()
         self._user_id = cfg.get_user_id()
-        self._chat_id = chat_id
+        self._chat_id = cfg.get_chat_id()
         self._operations = operations or []
         self._project_root = cfg.project_root
         self._logger = cfg.get_logger("Retrieval")

@@ -26,30 +26,17 @@ class SourcesExtractor:
             cfg (Config): Global configuration object providing logger, LLM, and DQL language data.
         """
         self._llm = cfg.get_LLM()
-        self._storage = cfg.storage
+        self._storage = cfg.get_storage()
         self._logger = cfg.get_logger("Sources Extractor")
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
         self._src_names = [src["name"] for src in self._dql_language.get_sources()]
+        
+        self.get_chat_history = cfg.get_chat_history
 
     # ------------------------------
     # --- Main Extraction Method ---
     # ------------------------------
-    
-    def get_chat_history(self, user_id, chat_id) -> list:
-        return sorted(
-            [
-                {
-                    "id": chat.get("id", ""), 
-                    "prompt": chat.get("details", {}).get("prompt", ""), 
-                    "used_documents": chat.get("details", {}).get("used_documents", []),
-                    "content": chat.get("content", "")
-                }
-                for chat in self._storage.get_chat_messages(user_id, chat_id)
-                if "details" in chat
-            ], 
-            key=lambda x: x["id"]
-        )
         
     def get_last_used_sources(self, chat_history) -> list[str]:
         """
@@ -80,10 +67,10 @@ class SourcesExtractor:
         return []
 
     
-    def extract(self, query: str, user_id, chat_id, tasks_id: list = None) -> list:
+    def extract(self, query: str, tasks_id: list = None) -> list:
         status = "Error"
         try:
-            chat = self.get_chat_history(user_id, chat_id)
+            chat = self.get_chat_history()
             
             documents = self._explicit_documents_extraction(query) 
             

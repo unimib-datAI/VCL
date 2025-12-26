@@ -9,12 +9,12 @@ def _initialize_user_session(user: dict):
     """
     st.session_state.username = user["username"]
     st.session_state.role = user["role"]
-    st.session_state.auth_status = True
-    st.session_state.config.handle_login(st.session_state.username, st.session_state.role)
     
-    # Create a new chat and redirect
-    st.query_params.chat = st.session_state.storage.create_new_chat(st.session_state.username)
-    st.query_params["page"] = "Home"
+    st.session_state.config.handle_login(st.session_state.username, 
+                                         st.session_state.role)
+    
+    st.session_state.auth_status = True
+    
     st.rerun()
 
 def show_login():

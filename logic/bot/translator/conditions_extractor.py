@@ -32,6 +32,8 @@ class ConditionsExtractor:
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
         
+        self.docs_in_string = cfg.docs_in_string
+        
         self.CONDITIONS_MAP = {
             "LimitExtraction": self.limit_extraction
         }
@@ -163,13 +165,3 @@ class ConditionsExtractor:
         )
 
         return conditions
-    
-    @staticmethod
-    def docs_in_string(docs):
-        info = [
-            f"- con la stringa \"{doc[1]}\" l'utente fa riferimento al documento \"{doc[0]}\""
-            for doc in docs
-            if len(doc) == 2 and doc[0] != doc[1]
-        ]
-        
-        return "\n\t\t".join(info).strip()

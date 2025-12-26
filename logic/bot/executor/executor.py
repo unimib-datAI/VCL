@@ -81,7 +81,7 @@ class Executor:
     # --- Public Methods ---
     # ----------------------
     
-    def generate(self, operations: list[dict], chat_id) -> tuple[str, dict]:
+    def generate(self, operations: list[dict]) -> tuple[str, dict]:
         """
         Generate a response for a single operation.
 
@@ -97,7 +97,7 @@ class Executor:
             tuple[str, dict]: Generated text and the (potentially modified)
                               operation dict.
         """
-        self._retrieval = Retrieval(self._cfg, chat_id, operations)
+        self._retrieval = Retrieval(self._cfg, operations)
         
         for op in operations:
             self._logger.info(f"Executing operation: {op['id']}")

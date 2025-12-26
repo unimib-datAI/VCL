@@ -644,7 +644,7 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
     """
 
     if model_key == "DQL":
-        resp = assistant.chat(prompt, username, chat_id)
+        resp = assistant.chat(prompt)
         text = resp.get("result", "")
 
     elif model_key == "GPT":
@@ -671,7 +671,7 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
     Dispatcher per decidere quale motore usare in base al modello selezionato.
     """
     if selected_model == "DQL":
-        return assistant.chat(prompt, username, chat_id)
+        return assistant.chat(prompt)
 
     elif selected_model == "GPT":
         return _ask_gpt(prompt, assistant, username)

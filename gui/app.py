@@ -129,7 +129,7 @@ def _render_sidebar() -> None:
 
             if st.button(label, key=f"nav_{chat_id}", width='stretch'):
                 # Cambiamo chat
-                st.query_params["chat"] = chat_id
+                st.query_params["chat"] = st.session_state.config.set_chat_id(chat_id)
 
                 # Allineiamo il modello nello stato di Home
                 st.session_state.selected_model = model_key
@@ -182,6 +182,12 @@ current_page = st.query_params["page"]
 is_auth_page = current_page in ["Login"] #, "Registration"]
 
 if st.session_state.auth_status:
+    if (not st.session_state.username) or (not st.session_state.role):
+        st.session_state.auth_status = False
+        st.rerun()
+    
+    # Create a new chat and redirect
+    st.query_params.chat = st.session_state.config.get_chat_id()
     st.session_state.language = st.session_state.config.get_DQL()
     
     _render_sidebar()

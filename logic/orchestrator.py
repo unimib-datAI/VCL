@@ -69,7 +69,7 @@ class Orchestrator:
     # --- Public Methods ---
     # ----------------------
     
-    def chat(self, prompt: str, user_id, chat_id: str) -> dict:
+    def chat(self, prompt: str) -> dict:
         """
         Process a user query through the full DQL pipeline.
 
@@ -105,10 +105,10 @@ class Orchestrator:
             self._logger.info(f"Starting processing for request ID \"{response['id']}\".")
             self._logger.info(f"Request received \"{prompt}\".")
             
-            prompt_process = self._preprocess(prompt, user_id, chat_id)
-            structured_tasks = self._translate(prompt_process, user_id, chat_id)
+            prompt_process = self._preprocess(prompt)
+            structured_tasks = self._translate(prompt_process)
             structured_tasks = self._plan(structured_tasks)
-            result, last_result = self._execute(structured_tasks, chat_id)
+            result, last_result = self._execute(structured_tasks)
             
             self._logger.info(f"Processing completed correctly.")
         except Exception as e:
@@ -140,17 +140,17 @@ class Orchestrator:
     # --- Private Helper Methods ---
     # ------------------------------
     
-    def _preprocess(self, prompt: str, user_id, chat_id) -> list:
+    def _preprocess(self, prompt: str) -> list:
         """Run preprocessing pipeline on the user input."""
         self._logger.info("Starting Preprocessing step.")
-        prompt_clean = self._preprocessor.process(prompt, user_id, chat_id)
+        prompt_clean = self._preprocessor.process(prompt)
         self._logger.info("Preprocessing step completed.")
         return prompt_clean
 
-    def _translate(self, prompts: list, user_id, chat_id: str) -> list:
+    def _translate(self, prompts: list) -> list:
         """Translate the prompts into structured queries."""
         self._logger.info("Starting Translation step.")
-        structured_queries = self._translator.rewrite(prompts, user_id, chat_id)
+        structured_queries = self._translator.rewrite(prompts)
         self._logger.info("Translation step completed.")
         return structured_queries
 
@@ -161,13 +161,13 @@ class Orchestrator:
         self._logger.info("Planning step completed.")
         return operations
 
-    def _execute(self, operations: list[dict], chat_id) -> str:
+    def _execute(self, operations: list[dict]) -> str:
         """Execute all planned operations and generate final result."""
         if len(operations) < 1:
             raise Exception("Tasks not found")
         
         self._logger.info("Starting Execution step.")
-        results = self._executor.generate(deepcopy(operations), chat_id)
+        results = self._executor.generate(deepcopy(operations))
         self._logger.info("Execution step completed.")
             
         return results, results[-1].get("result", self.error_msg)

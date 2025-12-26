@@ -51,7 +51,7 @@ class Translator:
     # --- Main Rewriting Method ---
     # -----------------------------
     
-    def rewrite(self, tasks: list, user_id, chat_id: str) -> dict:
+    def rewrite(self, tasks: list) -> dict:
         """
         Rewrite a raw user query into a structured query dictionary.
 
@@ -88,7 +88,7 @@ class Translator:
         
         # Step 1: (Thread 1) Source Extraction
         thread_from = threading.Thread(
-            target=self._from, args=(deepcopy(tasks), user_id, chat_id, result_from)
+            target=self._from, args=(deepcopy(tasks), result_from)
         )
         
         self._logger.info("Starting sources extraction threading...")
@@ -181,7 +181,7 @@ class Translator:
         
         result_queue.put(result)
         
-    def _from(self, tasks: list, user_id, chat_id, result_queue: queue.Queue):
+    def _from(self, tasks: list, result_queue: queue.Queue):
         """
         Thread target function to run sources extraction.
 
@@ -193,9 +193,7 @@ class Translator:
             ids = sorted([t.get('id', '') for t in tasks])
             result_sources = [
                 self._sources_extractor_class.extract(
-                    t.get("prompt", ''), 
-                    user_id, 
-                    chat_id, 
+                    t.get("prompt", ''),
                     ids
                 )
                 for t in tasks

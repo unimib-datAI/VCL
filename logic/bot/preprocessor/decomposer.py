@@ -25,6 +25,8 @@ class Decomposer():
         self._project_root = cfg.project_root
         self._dql_language = cfg.get_DQL()
         
+        self.docs_in_string = cfg.docs_in_string
+        
         self._logger = cfg.get_logger("Decomposer")
         
     @classmethod
@@ -132,13 +134,3 @@ class Decomposer():
         ordered_prompts = [DG.nodes[n]["data"] for n in ordered_ids]
         
         return ordered_prompts
-    
-    @staticmethod
-    def docs_in_string(docs):
-        info = [
-            f"- con la stringa \"{doc[1]}\" l'utente fa riferimento al documento \"{doc[0]}\""
-            for doc in docs
-            if len(doc) == 2 and doc[0] != doc[1]
-        ]
-        
-        return "\n\t\t".join(info).strip()

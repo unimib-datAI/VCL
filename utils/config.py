@@ -49,7 +49,7 @@ class Config:
     _LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     
     DQL_info = None
-    storage = None
+    _storage = None
     llm = None
     
     def __init__(self, opts: argparse.Namespace = None):
@@ -145,7 +145,7 @@ class Config:
         self._user_id = user_id
         self._role = role
         self._request_id = None
-        self._chat_id = self.set_chat_id()
+        self._chat_id = None
         
         self.DQL_info = self.get_DQL()
         
@@ -162,10 +162,10 @@ class Config:
     # ------------------------------
     
     def get_storage(self):
-        if not self.storage:
-            self.storage = Storage(self.uri_db, self.project_root)
+        if not self._storage:
+            self._storage = Storage(self.uri_db, self.project_root)
         
-        return self.storage
+        return self._storage
     
     def get_LLM(self):
         if not self.llm:
@@ -313,6 +313,37 @@ class Config:
         """
         if id:
             self._chat_id = id
-            return
+        else:
+            self._chat_id = self.get_storage().create_new_chat(self._user_id)
         
-        self._chat_id = self.get_storage().create_new_chat(self._user_id)
+        return self._chat_id
+        
+    def get_chat_history(self) -> list:
+        return sorted(
+            [
+                {
+                    "id": chat.get("id", ""), 
+                    "prompt": chat.get("details", {}).get("prompt", ""), 
+                    "used_documents": chat.get("details", {}).get("used_documents", []),
+                    "content": chat.get("content", "")
+                }
+                for chat in self._storage.get_chat_messages(self.get_user_id(),
+                                                            self.get_chat_id())
+                if "details" in chat
+            ], 
+            key=lambda x: x["id"]
+        )
+    
+    # -----------------------------
+    # --- Conditions Management ---
+    # -----------------------------
+    
+    @staticmethod
+    def docs_in_string(docs):
+        info = [
+            f"- con la stringa \"{doc[1]}\" l'utente fa riferimento al documento \"{doc[0]}\""
+            for doc in docs
+            if len(doc) == 2 and doc[0] != doc[1]
+        ]
+        
+        return "\n\t\t".join(info).strip()
