@@ -48,11 +48,16 @@ class ConditionsExtractor:
         conditions_router = self.conditions_router(query)
         
         for key, value in conditions_router.items():
-            if "yes" == value.lower():    
-                specific_conditions = self.CONDITIONS_MAP[key](query)
-                
-                new_key = key.replace("Extraction", "").lower()
-                structured_query["how"].update({new_key: specific_conditions})
+            if not isinstance(value, str) or value.lower() != "yes":
+                continue
+
+            specific_conditions = self.CONDITIONS_MAP[key](query)
+
+            if isinstance(specific_conditions, dict) and not all(v != "" for v in specific_conditions.values()):
+                continue
+
+            new_key = key.replace("Extraction", "").lower()
+            structured_query["how"][new_key] = specific_conditions
         
         additional_conditions = self.additional_conditions(query, structured_query, docs)
         structured_query["how"].update(additional_conditions)

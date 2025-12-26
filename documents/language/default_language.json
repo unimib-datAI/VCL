@@ -134,6 +134,18 @@
             "atomic": [
                 "*"
             ]
+        },
+        {
+            "key": "z",
+            "command": "riformula",
+            "description": "Riformula una risposta precedentemente generata dal sistema, estendendola o riducendola in modo controllato, nel rispetto rigoroso del limite di lunghezza indicato e preservando integralmente il contesto (che verrà rifornito), il contenuto informativo e la coerenza logica della risposta originaria.",
+            "guidelines": [
+                "- Vincolo di Lunghezza: Rispetta in modo stringente il limite di lunghezza richiesto (in alcuni casi si ha un margine di tolleranza del 15%). L’adattamento deve avvenire senza superamenti o riduzioni arbitrarie.",
+                "- Fedeltà al Contenuto: Mantieni intatti i fatti, i riferimenti normativi, le argomentazioni e le conclusioni già presenti nella risposta precedente, salvo quanto strettamente necessario per l’estensione o la riduzione.",
+                "- Continuità Stilistica: La riformulazione deve risultare come una naturale evoluzione della risposta precedente, senza discontinuità di tono, stile o struttura.",
+                "- Commenti di Sistema: Qualora siano presenti commenti tipici delle risposte di un AI, essi devono essere mantenuti o adattati come se la richiesta di riformulazione non fosse stata esplicitamente formulata, restando coerenti con quelli già utilizzati nelle risposte precedenti.",
+                "- Assenza di Contenuti Nuovi: Non introdurre nuove valutazioni, giudizi o informazioni non già implicitamente contenute nella risposta originaria."
+            ]
         }
     ],
 

@@ -1,5 +1,9 @@
 import json
 import os
+import spacy
+import subprocess
+import sys
+
 
 from typing import Union
 
@@ -83,53 +87,47 @@ class FileHandler:
                     "Unsupported file type. Supported extensions are: .txt, .css, .json"
                 )
 
-#def text_analysis(text: str, key: str = "parole") -> int:
-#    """
-#    Perform a simple text analysis using spaCy (Italian model).
-#
-#    Args:
-#        text (str): The input text to analyze.
-#        key (str): The type of analysis to perform. One of:
-#            - "parole": Count of words (excluding punctuation and spaces).
-#            - "caratteri": Count of characters (excluding leading/trailing spaces).
-#            - "frasi": Count of sentences detected by spaCy.
-#
-#    Returns:
-#        int: The computed count (words, characters, or sentences).
-#
-#    Notes:
-#        - Requires the `it_core_news_sm` spaCy model to be installed.
-#        - Returns 0 if the key is invalid.
-#    """
-#    # Load the Italian spaCy model
-#    ensure_spacy_model("it_core_news_sm")
-#    nlp = spacy.load("it_core_news_sm")
-#
-#    # Validate key
-#    if key not in ["parole", "caratteri", "frasi"]:
-#        return 0
-#
-#    # Character count (simple case)
-#    if key == "caratteri":
-#        return len(text.strip())
-#
-#    # Process text with spaCy
-#    doc = nlp(text)
-#
-#    if key == "parole":
-#        # Count tokens that are not punctuation or spaces
-#        return sum(1 for token in doc if not token.is_punct and not token.is_space)
-#
-#    if key == "frasi":
-#        # Count sentences detected by spaCy
-#        return len(list(doc.sents))
-#    
-#    
-#def ensure_spacy_model(model_name: str):
-#    """
-#    Checks whether a spaCy template is installed, and installs it if necessary.
-#    """
-#    try:
-#        spacy.load(model_name)
-#    except OSError:
-#        subprocess.check_call([sys.executable, "-m", "spacy", "download", model_name])
+    @staticmethod
+    def text_analysis(text: str, key: str = "parole") -> int:
+        """
+        Perform a simple text analysis using spaCy (Italian model).
+
+        Args:
+            text (str): The input text to analyze.
+            key (str): The type of analysis to perform. One of:
+                - "parole": Count of words (excluding punctuation and spaces).
+                - "caratteri": Count of characters (excluding leading/trailing spaces).
+                - "frasi": Count of sentences detected by spaCy.
+
+        Returns:
+            int: The computed count (words, characters, or sentences).
+
+        Notes:
+            - Requires the `it_core_news_sm` spaCy model to be installed.
+            - Returns 0 if the key is invalid.
+        """
+        # Load the Italian spaCy model
+        try:
+            nlp = spacy.load("it_core_news_sm")
+        except OSError:
+            subprocess.check_call([sys.executable, "-m", "spacy", "download", "it_core_news_sm"])
+            nlp = spacy.load("it_core_news_sm")
+
+        # Validate key
+        if key not in ["parole", "caratteri", "frasi"]:
+            return 0
+
+        # Character count (simple case)
+        if key == "caratteri":
+            return len(text.strip())
+
+        # Process text with spaCy
+        doc = nlp(text)
+
+        if key == "parole":
+            # Count tokens that are not punctuation or spaces
+            return sum(1 for token in doc if not token.is_punct and not token.is_space)
+
+        if key == "frasi":
+            # Count sentences detected by spaCy
+            return len(list(doc.sents))

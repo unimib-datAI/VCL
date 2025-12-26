@@ -7,13 +7,13 @@
 		"Il formato della risposta finale deve essere un singolo dizionario Python composto da tre valori obbligatori:",
 		"",
 		"\t- \"sign\": Una stringa che indica l'operatore di confronto o il tipo di vincolo identificato.",
-		"\t\t- \"=\": Per un limite esatto (es. \"di 100\").",
 		"\t\t- \"<=\": Per un limite massimo o inferiore o uguale (es. \"massimo 100\", \"non più di 100\").",
 		"\t\t- \">=\": Per un limite minimo o superiore o uguale (es. \"almeno 500\", \"non meno di 500\").",
+      "\t\t- \"*\": Per un limite determinato da un prodotto/rapporto con il documento di riferimento (es. \"metà delle parole del documento\", \"triplo delle parole del documento\")",
 		"\t\t- \"~\": Per un limite approssimativo (es. \"circa 200\", \"intorno alle 200\").",
 		"\t\t- \"\" (stringa vuota): Se non è possibile determinare un vincolo quantitativo specifico.",
 		"",
-		"\t- \"number\": Un intero che rappresenta il numero del vincolo.",
+		"\t- \"number\": Un numero decimale che rappresenta il numero del vincolo.",
 		"\t\t- \"\" (stringa vuota): Se non è possibile determinare un vincolo quantitativo specifico.",
 		"",
 		"\t- \"unit\": Una stringa che indica l'unità di misura del vincolo.",
@@ -43,31 +43,31 @@
       {
          "input": "Scrivimi un riassunto che non superi le 150 parole.",
          "reasoning": "",
-         "output": {"sign": "<=", "number": 150, "unit": "parole"}
+         "output": {"sign": "<=", "number": 150.0, "unit": "parole"}
       },
 
       {
          "input": "Descrivi il processo in almeno 200 caratteri.",
          "reasoning": "",
-         "output": {"sign": ">=", "number": 200, "unit": "caratteri"}
+         "output": {"sign": ">=", "number": 200.0, "unit": "caratteri"}
       },
 
       {
          "input": "Vorrei un testo di esattamente 5 frasi.",
          "reasoning": "",
-         "output": {"sign": "=", "number": 5, "unit": "frasi"}
+         "output": {"sign": "~", "number": 5.0, "unit": "frasi"}
       },
 
       {
          "input": "Parla del cambiamento climatico in circa 300.",
          "reasoning": "",
-         "output": {"sign": "~", "number": 300, "unit": "parole"}
+         "output": {"sign": "~", "number": 300.0, "unit": "parole"}
       },
 
       {
-         "input": "Quali sono i benefici dell'allenamento?",
+         "input": "Dimezza il numero delle parole della risposta precedente",
          "reasoning": "",
-         "output": {"sign": "", "number": "", "unit": ""}
+         "output": {"sign": "*", "number": 0.5, "unit": "parole"}
       },
 
       {
@@ -77,9 +77,15 @@
       },
 
       {
+         "input": "Riscrivi il documento triplicando il numero dei caratteri",
+         "reasoning": "",
+         "output": {"sign": "*", "number": 3, "unit": "caratteri"}
+      },
+
+      {
          "input": "Un testo breve di 100.",
          "reasoning": "",
-         "output": {"sign": "=", "number": 100, "unit": "parole"}
+         "output": {"sign": "~", "number": 100.0, "unit": "parole"}
       }
    ],
 

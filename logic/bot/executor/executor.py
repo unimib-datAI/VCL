@@ -14,7 +14,6 @@ Dependencies:
 """
 
 import re
-from copy import deepcopy
 
 from logic.bot.executor.tools.retrieval import Retrieval
 from logic.bot.executor.tools.altro import altro
@@ -26,10 +25,13 @@ from logic.bot.executor.tools.estrai_logico import estrai_logico
 from logic.bot.executor.tools.estrai_semantico import estrai_semantico
 from logic.bot.executor.tools.integra import integra
 from logic.bot.executor.tools.riassumi import riassumi
+from logic.bot.executor.tools.riformula import riformula
 from logic.bot.executor.tools.riorganizza import riorganizza
 from logic.bot.executor.tools.verifica import verifica
+
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
+from utils.file_manager import FileHandler
 
 
 class Executor:
@@ -56,6 +58,7 @@ class Executor:
         "estrai semantico": estrai_semantico,
         "integra": integra,
         "riassumi": riassumi,
+        "riformula": riformula,
         "riorganizza": riorganizza,
         "verifica": verifica
     }
@@ -127,6 +130,17 @@ class Executor:
             result = altro("", context, self._cfg.get_LLM(), self._cfg.get_DQL())
         else:
             result = self.FUNCTION_MAP.get(command)(context, what, how, self._cfg.get_LLM(), self._cfg.get_DQL())
+                
+        if "limit" in structured_prompt.get("how", {}):
+            i = 0
+            while (not self.check_limit(result, context, structured_prompt["how"]["limit"])) and (i < 3):
+                self._logger.info("Need to use 'riformula'")
+                new_context = f"[RISPOSTA PRECEDENTEMENTE GENERATA]\n\n{result}\n\n---{context}"
+                result = self.FUNCTION_MAP.get("riformula")(new_context, what, how, self._cfg.get_LLM(), self._cfg.get_DQL())
+                i += 1
+                
+            if i < 3 or self.check_limit(result, context, structured_prompt["how"]["limit"]):
+                self._logger.info("Limit respected")
 
         # Format headings in the result (e.g., # -> **)
         return re.sub(self._pattern, self._format_heading, result)
@@ -154,8 +168,15 @@ class Executor:
         conditions = ["Tuttavia, l'utente ha posto esplicitamente che la risposta debba soddisfare le seguenti condizioni:"]
         for key, value in how.items():
             if value:
-                # Add each valid condition
-                conditions.append(f"- Condizione \"{key}\": {value}")
+                if key == "limit":
+                    sign = value['sign']
+                    
+                    if sign == "*":
+                        sign = f"tale per cui il prodotto con il numero di {value['unit']} sia pari a"
+                        
+                    conditions.append(f"- È obbligatorio che la risposta abbia un numero di {value['unit']} {sign} {value['number']}")
+                else:
+                    conditions.append(f"- Condizione \"{key}\": {value}")
 
         return "\n".join(conditions) if len(conditions) > 1 else ""
 
@@ -212,3 +233,48 @@ class Executor:
             return f"*{content}*"   # H3 -> Italic
         
         return content  # H4+ -> Plain text
+    
+    # -----------------------------
+    # --- Check Limit Condition ---
+    # -----------------------------
+    
+    def check_limit(self, text: str, context: str, constraint: dict) -> bool:
+        file_handler = FileHandler()
+        
+        sign = constraint.get("sign", "")
+        number = constraint.get("number", "")
+        unit = constraint.get("unit", "")
+
+        if sign == "" or number == "":
+            return True
+
+        value = file_handler.text_analysis(text, unit)
+        
+        if sign == "*":
+            value_context = file_handler.text_analysis(context, unit)
+            new_number = number * value_context
+            
+            # I don't think it makes sense to be strict in this situation.
+            tolerance = new_number * 0.15
+            
+            self._logger.info(f"{value} ~ {new_number}")
+            return (new_number - tolerance) <= value <= (new_number + tolerance)
+        
+        self._logger.info(f"{value} {sign} {number}")
+
+        if sign == "=":
+            return value == number
+
+        elif sign == "<=":
+            return value <= number
+
+        elif sign == ">=":
+            return value >= number
+
+        elif sign == "~":
+            # tolerance ±15%
+            tolerance = number * 0.15
+            return (number - tolerance) <= value <= (number + tolerance)
+        
+        else:
+            raise ValueError(f"Sign not supported: {sign}")
