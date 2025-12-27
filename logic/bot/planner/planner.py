@@ -131,7 +131,7 @@ class Planner:
         Creates a sequence of atomic extraction steps followed by a final aggregation step.
         """
         # Conflict prevention between search and extract
-        if (mid_cmd == "cerca" and "estrai" in final_cmd) or (mid_cmd == "estrai" and "cerca" in final_cmd):
+        if (mid_cmd == "cerca" and "estrai" in final_cmd) or ("estrai" in mid_cmd and "cerca" == final_cmd):
             self._logger.warning("Conflict between 'cerca' and 'estrai' detected.")
             if len(sources) == 1:
                 return [self._build_step(p_id, start_idx, mid_cmd, sources, [what], how)]

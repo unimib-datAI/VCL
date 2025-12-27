@@ -63,6 +63,7 @@ class Retrieval:
         self._client = Elasticsearch(cfg.DB_URL)
         self._storage = cfg.get_storage()
         self._user_id = cfg.get_user_id()
+        self._sources_id = cfg.get_sources_id()
         self._chat_id = cfg.get_chat_id()
         self._operations = operations or []
         self._project_root = cfg.project_root
@@ -113,6 +114,8 @@ class Retrieval:
         Returns:
             dict: Retrieved document with 'name', 'text', 'type'.
         """
+        self._logger.info(f"Use Case: {self._sources_id}")
+        
         # Define the retrieval strategies in order of priority.
         retrieval_methods = [
             ("Operations List", self._get_from_operations_list),
@@ -159,7 +162,7 @@ class Retrieval:
         # Try retrieving by type, then ID, then name
         for method in [self._storage.get_document_by_type,
                         self._storage.get_document_by_name]:
-            doc = method(self._user_id, doc_name)
+            doc = method(self._sources_id, doc_name)
             if doc and "text" in doc:
                 return {"name": doc["name"], "text": doc["text"], "type": doc_name}
         return None
@@ -186,7 +189,7 @@ class Retrieval:
                     doc = handler.read_file(path_file)
 
                     # Match by 'name' or 'type_doc' field in the JSON
-                    if doc.get("name") == doc_name or doc.get("type_doc") == doc_name:
+                    if doc.get("name") == doc_name or doc.get("type_doc") == doc_name and doc.get("owner") == self._sources_id:
                         return {
                             "name": doc.get("name", ""),
                             "text": doc.get("text", ""),

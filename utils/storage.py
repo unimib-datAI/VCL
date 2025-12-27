@@ -66,9 +66,11 @@ class Storage:
         client = MongoClient(mongo_uri)
         db = client["auth_db"]
         self._users = db["users"]
+        self._documents = db["documents"]
         
         # Ensure usernames are unique
         self._users.create_index("username", unique=True)
+        self._documents.create_index("username", unique=True)
 
         # Collection for tracking user queries
         self._questions = db["user_questions"]
@@ -154,6 +156,9 @@ class Storage:
         Returns:
             tuple[bool, Optional[dict]]: (True se successo, info utente) o (False, None).
         """
+        if username == "vitali" or username == "salomone":
+            return False, "Username/Email non disponibili"
+        
         # Check for existing user or email
         if self._users.find_one({"username": username}) or self._users.find_one({"email": email}):
             return False, "Username/Email non disponibili"
@@ -177,7 +182,6 @@ class Storage:
                 "password": hashed_pw,
                 "role": role,
                 "data": {
-                    "persisted_docs": self._get_default_docs(),
                     "chat": {} 
                 },
                 "settings": {
@@ -186,9 +190,37 @@ class Storage:
             }
             
             self._users.insert_one(new_user)
+            
+            self._register_documents("vitali")
+            self._register_documents("salomone")
+            
+            self._register_documents(username)
+            
             return True, new_user
         except Exception as e:
              return False, str(e)
+         
+    def _register_documents(self, username):
+        if self._documents.find_one({"username": username}):
+            return
+        
+        persisted_doc = [doc for doc in self._get_default_docs() if doc.get("owner", "") == username]
+        
+        try:
+            # Insert the new user document
+            new_doc = {
+                "_id": ObjectId(),
+                "username": username,
+                "data": {
+                    "persisted_docs": persisted_doc
+                }
+            }
+            
+            self._documents.insert_one(new_doc)
+            return
+        except Exception:
+            return
+        
 
     def login_user(self, username, password) -> tuple[bool, Optional[dict]]:
         """
@@ -235,10 +267,13 @@ class Storage:
         Returns:
             bool: True if the user was successfully deleted, False otherwise.
         """
-        # 1. Deletes the user from the database
+        # 1. Delete from documents
+        self._documents.delete_one({"username": user_id})
+        
+        # 2. Delete users from the user database
         result = self._users.delete_one({"username": user_id})
 
-        # 2. Invalidate all caches associated with this user
+        # 3. Invalidate caches
         if result.deleted_count > 0:
             self._invalidate_cache(user_id, self._chat_cache, self._chat_cache_lock)
             self._invalidate_cache(user_id, self._docs_cache, self._docs_cache_lock)
@@ -252,23 +287,24 @@ class Storage:
     
     def _get_document(self, user_id, key: tuple, value: str) -> Optional[dict]:
         """
-        Private helper to find a specific document in a user's data array directly from DB.
-        Uses MongoDB's $ projection to return only the matched array element.
-        
-        NOTE: Used only if bypassing cache is necessary, otherwise prefer using
-        get_all_documents() and filtering in Python.
+        Private helper to find a specific document in a user's data array.
+        Identifica automaticamente se cercare nella collezione 'users' o 'documents'.
         """
-        # e.g., "data.chat.id"
+        # Determiniamo la collezione corretta in base alla chiave
+        # Se la chiave è 'persisted_docs', cerchiamo nella collezione documenti
+        if key[0] == "persisted_docs":
+            collection = self._documents
+        else:
+            collection = self._users
+
         query_key = f"data.{key[0]}.{key[1]}"
-        # e.g., {"data.chat.$": 1, "_id": 0}
         projection = {f"data.{key[0]}.$": 1, "_id": 0}
         
-        result = self._users.find_one(
+        result = collection.find_one(
             {"username": user_id, query_key: value},
             projection
         )
         
-        # Extract the first matched element from the array
         if result and "data" in result and key[0] in result["data"]:
             return result["data"][key[0]][0]
         return None
@@ -288,7 +324,8 @@ class Storage:
             self._docs_cache,
             self._docs_cache_lock,
             {"data.persisted_docs": 1, "_id": 0},
-            ["data", "persisted_docs"]
+            ["data", "persisted_docs"],
+            collection=self._documents
         )
 
     def get_document_by_type(self, user_id: str, value: str) -> Optional[dict]:
@@ -328,42 +365,26 @@ class Storage:
         ]
 
     def upsert_persisted_doc(self, user_id: str, doc: dict) -> bool:
-        """
-        Insert or replace (upsert) a document in the 'persisted_docs' array.
-        Match is based on the 'type_doc' field.
-
-        Args:
-            user_id (str): The user's username.
-            doc (dict): The document to upsert. Must contain 'type_doc'.
-
-        Returns:
-            bool: True if the database was modified, False otherwise.
-
-        Raises:
-            ValueError: If 'type_doc' is missing from the document.
-        """
-        
+        """Insert or replace a document in the separate documents collection."""
         if "type_doc" not in doc:
             raise ValueError("The document must contain a 'type_doc' field.")
 
         doc.setdefault("updated_at", datetime.utcnow())
-        
         doc_type = doc["type_doc"]
         
-        # 1. Try to update (replace) an existing doc matching the type
-        result = self._users.update_one(
+        # 1. Try to update in self._documents
+        result = self._documents.update_one(
             {"username": user_id, "data.persisted_docs.type_doc": doc_type},
             {"$set": {"data.persisted_docs.$": doc}}
         )
 
-        # 2. If no doc was matched, push it as a new doc
+        # 2. If no doc was matched, push it
         if result.matched_count == 0:
-            result = self._users.update_one(
+            result = self._documents.update_one(
                 {"username": user_id},
                 {"$push": {"data.persisted_docs": doc}}
             )
 
-        # Invalidate cache if any modification happened
         if result.modified_count > 0 or result.matched_count > 0:
             self._invalidate_cache(user_id, self._docs_cache, self._docs_cache_lock)
 
@@ -387,32 +408,20 @@ class Storage:
             if user_id in cache:
                 del cache[user_id]
 
-    def _get_cached_data(self, user_id: str, cache: dict, lock: threading.Lock, projection: dict, data_path: List[str]) -> Optional[Any]:
-        """
-        Generic helper to retrieve data from cache or database.
-
-        Args:
-            user_id (str): The user's username.
-            cache (dict): The cache to check.
-            lock (threading.Lock): The lock for that cache.
-            projection (dict): The MongoDB projection to use.
-            data_path (List[str]): The path to the data in the result (e.g., ["data", "chat"]).
-
-        Returns:
-            Optional[Any]: The cached or retrieved data, or None.
-        """
-        # 1. Check cache first (thread-safe)
+    def _get_cached_data(self, user_id: str, cache: dict, lock: threading.Lock, projection: dict, data_path: List[str], collection: Any = None) -> Optional[Any]:
+        """Generic helper to retrieve data from cache or specific database collection."""
+        # 1. Check cache first
         with lock:
             if user_id in cache:
                 return cache[user_id]
         
-        # 2. Not in cache, query DB (outside lock to avoid holding it during I/O)
-        result = self._users.find_one(
-            {"username": user_id},
-            projection
-        )
+        # Se non specificata, usa la collezione users di default
+        coll = collection if collection is not None else self._users
+
+        # 2. Query specific collection
+        result = coll.find_one({"username": user_id}, projection)
         
-        # 3. Extract data by traversing the data_path
+        # 3. Extract data
         data = None
         if result:
             temp_data = result
@@ -421,13 +430,13 @@ class Storage:
                     temp_data = temp_data[key]
                 data = temp_data
             except KeyError:
-                data = None # Path not found
+                data = None 
         
-        # 4. Store in cache (thread-safe)
+        # 4. Store in cache
         with lock:
-            if data is not None: # Only if data not found
+            if data is not None:
                 cache[user_id] = data
-            
+                
         return data
 
     # -----------------------

@@ -333,6 +333,35 @@ class Config:
             ], 
             key=lambda x: x["id"]
         )
+        
+    # --------------------------
+    # --- Sources Management ---
+    # --------------------------
+    
+    def get_sources_id(self) -> str:
+        """
+        Return the current request ID.
+        
+        Generates a new unique ID if one does not already exist for this
+        request context.
+        
+        Returns:
+            str: The unique request ID.
+        """
+        if not self._sources_id:
+            self.set_sources_id("vitali")
+        return self._sources_id
+    
+    def set_sources_id(self, id: str = None) -> str:
+        if id:
+            if id == "user":
+                self._sources_id = self._user_id
+            else:
+                self._sources_id = id
+        else:
+            self._sources_id = "vitali"
+        
+        return self._sources_id
     
     # -----------------------------
     # --- Conditions Management ---

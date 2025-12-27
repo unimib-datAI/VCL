@@ -117,7 +117,7 @@ def _handle_suggestions_and_controls() -> Optional[str]:
     Returns:
         Optional[str]: A prompt string if a suggestion is clicked, otherwise None.
     """
-    col1, col2, col3 = st.columns([0.70, 0.15, 0.15])
+    col1, col2, col3, col4, col5= st.columns([0.15, 0.45, 0.20, 0.10, 0.10])
     prompt_selected = None
     
     # Col 1: Suggestions
@@ -137,8 +137,43 @@ def _handle_suggestions_and_controls() -> Optional[str]:
             else:
                 st.info("Caricamento configurazione...")
     
-    # Col 2: New Chat
     with col2:
+        # 0. Selettore modello
+        selected_model = _render_model_selector()
+
+        '''label = MODEL_LABELS.get(selected_model, selected_model)
+        st.markdown(
+            f"""
+            <div style="
+                margin-top: 0.5rem;
+                margin-bottom: 0.3rem;
+                display: inline-block;
+                padding: 0.2rem 0.6rem;
+                border-radius: 999px;
+                font-size: 0.85rem;
+                background-color: rgba(255, 255, 255, 0.08);
+                border: 1px solid rgba(255, 255, 255, 0.25);
+            ">
+                🔌 Modello corrente: <b>{label}</b>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )'''
+        
+    with col3:
+        source_pill = st.pills(
+            "Seleziona la fonte",
+            options=["salomone", "vitali", "user"],
+            format_func=lambda option: option.capitalize(),
+            selection_mode="single",
+            default="vitali"
+        )
+        
+        if source_pill:
+            st.session_state.config.set_sources_id(source_pill)
+        
+    # Col 4: New Chat
+    with col4:
         if st.button("📝 Nuova conversazione"):
             storage = st.session_state.storage
             username = st.session_state.username
@@ -153,8 +188,8 @@ def _handle_suggestions_and_controls() -> Optional[str]:
                 st.query_params.chat = st.session_state.config.set_chat_id(new_chat_id)
                 st.rerun()
         
-    # Col 3: Delete Chat
-    with col3:
+    # Col 5: Delete Chat
+    with col5:
         if st.button("❌ Elimina conversazione"):
             st.session_state.storage.delete_chat(st.session_state.username, st.query_params.chat)
             
@@ -168,36 +203,14 @@ def _handle_suggestions_and_controls() -> Optional[str]:
                 
             st.rerun()
 
-    return prompt_selected
+    return prompt_selected, selected_model
 
 def _display_gui_components() -> None:
     """
     Main render function for the chat interface components.
     """
-    # 0. Selettore modello
-    selected_model = _render_model_selector()
-
-    label = MODEL_LABELS.get(selected_model, selected_model)
-    st.markdown(
-        f"""
-           <div style="
-               margin-top: 0.5rem;
-               margin-bottom: 0.3rem;
-               display: inline-block;
-               padding: 0.2rem 0.6rem;
-               border-radius: 999px;
-               font-size: 0.85rem;
-               background-color: rgba(255, 255, 255, 0.08);
-               border: 1px solid rgba(255, 255, 255, 0.25);
-           ">
-               🔌 Modello corrente: <b>{label}</b>
-           </div>
-           """,
-        unsafe_allow_html=True,
-    )
-
     # 1. Controls & Suggestions
-    suggestion_prompt = _handle_suggestions_and_controls()
+    suggestion_prompt, selected_model = _handle_suggestions_and_controls()
 
     # 2. History
     _display_chat_history()
@@ -376,11 +389,9 @@ def _render_model_selector() -> str:
     if "last_model_for_chat" not in st.session_state:
         st.session_state.last_model_for_chat = st.session_state.model_selector
 
-    st.markdown("### Seleziona il motore da interrogare")
-
     # Il widget radio aggiorna automaticamente st.session_state.model_selector
     st.radio(
-        "Motore",
+        "Seleziona il motore da interrogare",
         options=list(MODEL_LABELS.keys()),
         format_func=lambda k: MODEL_LABELS[k],
         horizontal=True,
