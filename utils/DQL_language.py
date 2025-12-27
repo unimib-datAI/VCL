@@ -338,8 +338,8 @@ class DQLLanguage:
         ]
 
         if not default_commands and self._commands:
-            # Fallback to the last command
-            default_commands = [self._commands[-1]]
+            # 'riformula' not user visible
+            default_commands = [self._commands[-2]]
 
         self._default_command = default_commands[0] if default_commands else {}
 
@@ -629,7 +629,8 @@ class DQLLanguage:
                 elif "first" in param:
                     resolved[param] = self._commands[0].get("key", "") if self._commands else ""
                 elif "last" in param:
-                    resolved[param] = self._commands[-1].get("key", "") if self._commands else ""
+                    # 'riformula' not user-visible
+                    resolved[param] = self._commands[-2].get("key", "") if self._commands else ""
             elif "sources" in param:
                 if "|" in param:
                     resolved[param] = str(len(self._sources))
@@ -730,6 +731,6 @@ class DQLLanguage:
             str: A formatted string listing all available commands.
         """
         commands_list = [
-            f"- \"{cmd[main_key]}\": {cmd['description']}" for cmd in commands
+            f"- \"{cmd[main_key]}\": {cmd['description']}" for cmd in commands if not cmd[main_key] == "z" 
         ]
         return "\n".join(commands_list)
