@@ -150,7 +150,7 @@ def _handle_suggestions_and_controls() -> Optional[str]:
                 # salviamo subito l'associazione nella mappa
                 st.session_state.chat_models[new_chat_id] = current_model
 
-                st.query_params.chat = new_chat_id
+                st.query_params.chat = st.session_state.config.set_chat_id(new_chat_id)
                 st.rerun()
         
     # Col 3: Delete Chat
@@ -162,9 +162,9 @@ def _handle_suggestions_and_controls() -> Optional[str]:
             all_keys = sorted(all_keys, reverse=True)
             
             if not all_keys:
-                st.query_params.chat = st.session_state.storage.create_new_chat(st.session_state.username)
+                st.query_params.chat = st.session_state.config.set_chat_id()
             else:
-                st.query_params.chat = all_keys[0]
+                st.query_params.chat = st.session_state.config.set_chat_id(all_keys[0])
                 
             st.rerun()
 
