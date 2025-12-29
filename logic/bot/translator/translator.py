@@ -13,18 +13,18 @@ from utils.config import Config
 
 class Translator:
     """
-    Translates user queries into a structured format suitable for downstream
-    processing.
+    Translates natural language tasks into a structured DQL format.
 
-    This class runs multiple extraction components in parallel (threading)
-    to optimize performance and reduce latency.
+    This class orchestrates specialized extractors to populate the 'command', 'from', 
+    'what', and 'how' components of a query. It utilizes a multi-threaded approach 
+    to process these extractions in parallel, significantly reducing the overall 
+    latency of the translation pipeline.
 
     Responsibilities:
-        - Classify the user's intent into a command.
-        - Identify relevant sources/documents.
-        - Determine the 'what' element (specific target/content).
-        - Extract additional conditions or constraints.
-        - Return a fully structured query dictionary.
+        - Coordinating parallel execution of extraction sub-components.
+        - Mapping raw user prompts to the structured DQL grammar.
+        - Synchronizing results from multiple threads into a coherent task list.
+        - Handling fallback logic for individual extraction failures.
     """
     
     # ----------------------
@@ -33,15 +33,15 @@ class Translator:
 
     def __init__(self, cfg: Config):
         """
-        Initialize the Translator with configuration and dependencies.
+        Initialize the Translator with shared configuration and sub-components.
 
         Args:
-            cfg (Config): Global configuration instance providing LLM, logger,
-                          project paths, and DQL language data.
+            cfg (Config): Global configuration instance providing access to 
+                          LLM services, loggers, and language definitions.
         """
         self._logger = cfg.get_logger("Translator")
 
-        # Initialize all sub-components
+        # Instantiate specialized extraction classes
         self._sources_extractor_class = SourcesExtractor(cfg)
         self._command_classifier_class = CommandClassifier(cfg)
         self._what_extractor_class = WhatExtractor(cfg)
@@ -51,93 +51,90 @@ class Translator:
     # --- Main Rewriting Method ---
     # -----------------------------
     
-    def rewrite(self, tasks: list) -> dict:
+    def rewrite(self, tasks: list) -> list:
         """
-        Rewrite a raw user query into a structured query dictionary.
+        Transforms a list of raw tasks into structured DQL commands.
 
-        This method runs command classification and source/what extraction
-        in parallel threads to reduce latency.
-
-        Steps:
-            1. (Thread 1) Classify the query to identify the command.
-            2. (Thread 2) Extract relevant sources/documents.
-            3. (Thread 2) Extract the 'what' element based on the query.
-            4. (Main) Wait for parallel threads to complete.
-            5. (Main) Extract any additional conditions ('how').
-            6. (Main) Combine all elements into a structured dictionary.
+        The process is optimized using a tiered threading strategy:
+        1. Sources are extracted first as they provide context for 'what' and 'how'.
+        2. Command classification and 'What' extraction run in parallel.
+        3. 'How' extraction runs last to capture constraints based on the full context.
 
         Args:
-            query (str): Raw input query from the user.
+            tasks (list): A list of dictionaries, each containing at least a 'prompt' key.
 
         Returns:
-            dict: Structured query containing keys:
-                  - 'command': str, command name
-                  - 'from': list[str], relevant sources
-                  - 'what': str, target content
-                  - 'how': dict, additional conditions
+            list: The updated list of tasks with a 'structured_prompt' containing:
+                  - 'command': The identified intent.
+                  - 'from': The relevant document sources.
+                  - 'what': The specific target object or section.
+                  - 'how': Optional filters or logical constraints.
         """
         
         if not tasks or not isinstance(tasks, list):
             raise ValueError("Input tasks must be a non-empty list.")
         
-        # Create queues to receive results from threads
+        # Result queues for thread communication
         result_command = queue.Queue()
         result_from = queue.Queue()
         result_what = queue.Queue()
         result_how = queue.Queue()
         
-        # Step 1: (Thread 1) Source Extraction
+        # --- PHASE 1: Source Extraction ---
+        # This is high-priority as sources define the scope for subsequent steps
         thread_from = threading.Thread(
             target=self._from, args=(deepcopy(tasks), result_from)
         )
         
         self._logger.info("Starting sources extraction threading...")
         thread_from.start()
-        thread_from.join()
+        thread_from.join() # Synchronous wait required for source context
         self._logger.info("Sources extraction threading completed.")
         
         from_parameters = result_from.get()
         if not from_parameters or len(from_parameters) != len(tasks):
-            raise ValueError("Error in source extraction threading.")
+            raise ValueError("Inconsistency detected in source extraction results.")
         
+        # Mapping extracted sources back to tasks
         for i in range(len(from_parameters)):
             tasks[i]["from"] = from_parameters[i]
             tasks[i]["structured_prompt"]["from"] = [p[0] for p in from_parameters[i]] 
         
-        # Step 2: (Thread 2) Classify command
+        # --- PHASE 2: Parallel Intent & Content Extraction ---
+        # Command classification and 'What' extraction are independent and can run concurrently
         thread_command = threading.Thread(
             target=self._command, args=(deepcopy(tasks), result_command)
         )
         
-        self._logger.info("Starting command classification threading...")
-        thread_command.start()
-        
-        # Step 3: (Thread 3) What Extraction
         thread_what = threading.Thread(
             target=self._what, args=(deepcopy(tasks), result_what)
         )
         
-        self._logger.info("Starting 'what' extraction threading...")
+        self._logger.info("Starting parallel command and 'what' extraction...")
+        thread_command.start()
         thread_what.start()
         
+        # Wait for both independent threads to finish
         thread_command.join()
-        self._logger.info("Command classification threading completed.")
+        self._logger.info("Command classification completed.")
         thread_what.join()
-        self._logger.info("'What' extraction threading completed.")
+        self._logger.info("'What' extraction completed.")
         
         command_parameters = result_command.get()
         if not command_parameters or len(command_parameters) != len(tasks):
-            raise ValueError("Error in command classification threading.")
+            raise ValueError("Inconsistency detected in command classification results.")
         
         what_parameters = result_what.get()
         if not what_parameters or len(what_parameters) != len(tasks):
-            raise ValueError("Error in what extraction threading.")
+            raise ValueError("Inconsistency detected in 'what' extraction results.")
         
+        # Update tasks with parallel results
         for i in range(len(command_parameters)):
             tasks[i]["structured_prompt"]["command"] = command_parameters[i]
             tasks[i]["structured_prompt"]["what"] = what_parameters[i]
         
-        # Step 4: (Thread 4) How Extraction
+        # --- PHASE 3: Conditional Constraints ('How') ---
+        # Final extraction to capture filters based on the fully structured command
         thread_how = threading.Thread(
             target=self._how, args=(deepcopy(tasks), result_how)
         )
@@ -145,16 +142,19 @@ class Translator:
         self._logger.info("Starting 'how' extraction threading...")
         thread_how.start()
         thread_how.join()
-        self._logger.info("'How' extraction threading completed.")
+        self._logger.info("'How' extraction completed.")
         
         how_parameters = result_how.get()
         if not how_parameters or len(how_parameters) != len(tasks):
-            raise ValueError("Error in how extraction threading.")
+            raise ValueError("Inconsistency detected in 'how' extraction results.")
         
+        # Final cleanup and structuring
         for i in range(len(command_parameters)):
             if how_parameters[i]:
                 tasks[i]["structured_prompt"]["how"] = how_parameters[i]
-                del tasks[i]["from"]  # Clean up to avoid redundancy
+                # Clean up temporary field used for context passing
+                if "from" in tasks[i]:
+                    del tasks[i]["from"]
 
         return tasks
     
@@ -163,32 +163,20 @@ class Translator:
     # -----------------------------------
 
     def _command(self, tasks: list, result_queue: queue.Queue):
-        """
-        Thread target function to run command classification.
-
-        Args:
-            prompt (str): The user query.
-            result_queue (queue.Queue): The queue to store the result.
-        """
+        """Thread target: executes intent classification for all tasks."""
         try:
             result = [
                 self._command_classifier_class.classify(t.get('prompt', ''))
                 for t in tasks
             ]
         except Exception as e:
-            self._logger.error("Command classification failed: " + str(e))
-            result = ["altro"] * len(tasks)
+            self._logger.error(f"Thread Error (Command): {e}")
+            result = ["altro"] * len(tasks) # Fallback to generic command
         
         result_queue.put(result)
         
     def _from(self, tasks: list, result_queue: queue.Queue):
-        """
-        Thread target function to run sources extraction.
-
-        Args:
-            prompt (str): The user query.
-            result_queue (queue.Queue): The queue to store the results tuple.
-        """
+        """Thread target: executes source/document identification for all tasks."""
         try:
             ids = sorted([t.get('id', '') for t in tasks])
             result_sources = [
@@ -199,39 +187,26 @@ class Translator:
                 for t in tasks
             ]
         except Exception as e:
-            self._logger.error("Sources extraction failed: " + str(e))
+            self._logger.error(f"Thread Error (Sources): {e}")
             result_sources = [[]] * len(tasks)
             
         result_queue.put(result_sources)
 
     def _what(self, tasks: list, result_queue: queue.Queue):
-        """
-        Thread target function to run 'what' extraction.
-
-        Args:
-            prompt (str): The user query.
-            result_queue (queue.Queue): The queue to store the results tuple.
-        """
+        """Thread target: identifies the specific content target ('what') for all tasks."""
         try:
             result_what = [
                 self._what_extractor_class.extract(t.get("prompt", ''), t.get("from", []))
                 for t in tasks
             ]
         except Exception as e:
-            self._logger.error("What extraction failed: " + str(e))
-            result_what = [["altro"]] * len(tasks)
+            self._logger.error(f"Thread Error (What): {e}")
+            result_what = ["intero documento"] * len(tasks) # Safe fallback
             
         result_queue.put(result_what)
         
     def _how(self, tasks: list, result_queue: queue.Queue):
-        """
-        Thread target function to run 'conditions' extraction.
-
-        Args:
-            prompt (list): The user tasks.
-            result_queue (queue.Queue): The queue to store the results tuple.
-        """
-        
+        """Thread target: extracts constraints and logical filters ('how') for all tasks."""
         try:
             result_how = [
                 self._conditions_extractor_class.extract(
@@ -242,7 +217,7 @@ class Translator:
                 for t in tasks
             ]
         except Exception as e:
-            self._logger.error("Conditions extraction failed: " + str(e))
+            self._logger.error(f"Thread Error (How): {e}")
             result_how = [{}] * len(tasks)
             
         result_queue.put(result_how)

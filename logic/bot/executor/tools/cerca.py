@@ -1,6 +1,3 @@
-from utils.DQL_language import DQLLanguage
-from utils.LLM import LLM
-
 def cerca(context, what, how, llm, language) -> tuple[str, dict]:
     if what == "intero documento":
         return context

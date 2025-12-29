@@ -13,57 +13,61 @@ from utils.storage import Storage
 
 class Config:
     """
-    Singleton configuration manager for initializing and providing access to 
-    shared application-level components such as LLM and Storage.
+    Thread-safe Singleton configuration manager for the DQL application.
+
+    This class centralizes the initialization and access to global services 
+    such as the LLM engine, persistent storage (MongoDB), and the 
+    domain-specific language (DQL) specifications.
 
     Responsibilities:
-        - Manage global configuration (API keys, DB URLs, model settings, etc.)
-        - Ensure thread-safe singleton instantiation.
-        - Provide access to shared, initialized services (LLM, Storage).
-
-    Attributes:
-        project_root (Path): Root directory of the project.
-        llm (LLM): Singleton instance of the LLM class.
-        storage (Storage): Singleton instance of the Storage class.
-        parsers (bool): Flag to disable LLM-based spell check.
+        - Loading environmental variables and managing project paths.
+        - Orchestrating user login/logout session states.
+        - Providing request-scoped logging with unique file handlers.
+        - Managing unique identifiers for requests, chats, and data sources.
     """
-    # Singleton instance and thread lock
+    
+    # Static variables for the Singleton pattern
     _instance = None
     _lock = threading.Lock()
 
-    # ----------------------
-    # --- Initialization ---
-    # ----------------------
+    # --- Static Initialization ---
     
-    # Load env variable from file .env
+    # Load environmental variables from the .env file (e.g., DB credentials)
     load_dotenv()
     
+    # Global database URL shared across instances
     DB_URL: str = os.getenv("DB_URL")
     
-    # Set directories
+    # Determine the project root and ensure the logs directory exists
     project_root = Path(__file__).resolve().parent.parent
     _log_dir = os.path.join(project_root, "logs")
     os.makedirs(_log_dir, exist_ok=True)
     
-    # Standard format for all log messages
+    # Standard format for log entries: Timestamp - Level - Module - Message
     _LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     
+    # Placeholder for big components initialized lazily
     DQL_info = None
     _storage = None
     llm = None
     
+    # Default source identifier
+    _sources_id = None
+
     def __init__(self, opts: argparse.Namespace = None):
         """
-        Initialize the configuration object with defaults and runtime overrides.
-        This constructor is private; use get_instance() to get the singleton.
+        Private constructor initialized via get_instance.
+        Sets up core attributes from CLI options or system defaults.
+
+        Args:
+            opts (argparse.Namespace, optional): Runtime options (API keys, models).
         """
-        # Prevent re-initialization
+        # Guard against multiple initializations in the same instance
         if getattr(self, "_initialized", False):
             return
 
-        # --- Extract runtime options from argparse ---
+        # Map command-line arguments to instance attributes
         if opts:
-            # Extract values from the provided options
             self.api_key = getattr(opts, "api_key", None)
             self.seconds = self._parse_seconds(getattr(opts, "seconds", None))
             self.model_name = getattr(opts, "model_name", None)
@@ -71,7 +75,7 @@ class Config:
             self.uri_db = getattr(opts, "uri_db", None)
             self.parsers = bool(getattr(opts, "parsers", False))
         else:
-            # Set defaults if no 'opts' are provided
+            # Apply default fallback values
             self.api_key = None
             self.seconds = self._parse_seconds(None)
             self.model_name = None
@@ -84,18 +88,15 @@ class Config:
     @classmethod
     def get_instance(cls, opts: argparse.Namespace = None):
         """
-        Retrieve the global Config singleton instance, creating it if necessary.
-        This method is thread-safe.
+        Thread-safe method to retrieve or create the Config singleton instance.
 
         Args:
-            opts (argparse.Namespace, optional): Command-line arguments.
-                These are only used on the *first* call that creates
-                the instance.
+            opts (argparse.Namespace, optional): Options used only during creation.
 
         Returns:
-            SystemConfig: The singleton configuration instance.
+            Config: The shared configuration instance.
         """
-        # Use a double-check locking pattern for thread-safe singleton creation
+        # Double-checked locking pattern to ensure safety across multiple threads
         if cls._instance is None:
             with cls._lock:
                 if cls._instance is None:
@@ -109,65 +110,68 @@ class Config:
     @staticmethod
     def _parse_seconds(value) -> int:
         """
-        Validate and parse seconds value, ensuring a non-negative integer.
-
-        Args:
-            value (any): The input value (e.g., from command line).
+        Validates and converts a value into a non-negative integer for time-outs.
 
         Returns:
-            int: A non-negative integer. Returns 0 if input is invalid,
-                 None, or negative.
+            int: The parsed seconds or 0 if the input is invalid.
         """
         try:
             seconds = int(value)
-            # Ensure value is not negative
             return seconds if seconds >= 0 else 0
         except (TypeError, ValueError):
-            # Fallback for None or invalid string
             return 0
         
     # ---------------------------------
     # --- Authentication Management ---
     # ---------------------------------
     
-    def handle_login(self, user_id: str, role):
+    def handle_login(self, user_id: str, role: str):
         """
-        Initialize a new user-specific configuration.
+        Configures the session context for a specific authenticated user.
 
         Args:
-            user_id (str): The unique identifier for the user.
-            role (str): The role of the user (Giudice, Avvocato, Altro)
+            user_id (str): The unique user identifier from the database.
+            role (str): The functional role (e.g., Judge, Lawyer) to adapt prompts.
         """
-        # Load global configuration
         if not user_id:
             raise ValueError("User ID must be provided to initialize Orchestrator.")
         
         self._user_id = user_id
         self._role = role
+        # Reset IDs to ensure a fresh session context
         self._request_id = None
         self._chat_id = None
         
+        # Pre-load the DQL language metadata for the logged user
         self.DQL_info = self.get_DQL()
         
     def handle_logout(self):
+        """
+        Clears all user-related state from the configuration.
+        """
         self._user_id = None
         self._role = None
         self._request_id = None
         self._chat_id = None
-        
         self.DQL_info = None
         
-    # ------------------------------
-    # --- Getters Big Components ---
-    # ------------------------------
+    # --------------------------------
+    # --- Big Components Accessors ---
+    # --------------------------------
     
-    def get_storage(self):
+    def get_storage(self) -> Storage:
+        """
+        Returns the persistent Storage (MongoDB) instance.
+        Initializes it lazily if not already available.
+        """
         if not self._storage:
             self._storage = Storage(self.uri_db, self.project_root)
-        
         return self._storage
     
-    def get_LLM(self):
+    def get_LLM(self) -> LLM:
+        """
+        Returns the Large Language Model (LLM) wrapper instance.
+        """
         if not self.llm:
             self.llm = LLM(
                 api_key=self.api_key, 
@@ -176,19 +180,19 @@ class Config:
                 model_name=self.model_name, 
                 provider=self.provider
             )
-        
         return self.llm
     
-    def get_DQL(self):
+    def get_DQL(self) -> DQLLanguage:
+        """
+        Returns the DQLLanguage instance. Sets user role for prompt personalization.
+        """
         if not self.DQL_info:
             self.DQL_info = DQLLanguage(
                 self._user_id,
                 self.get_storage(), 
                 self.project_root
             )
-            
             self.DQL_info.set_role(self._role)
-        
         return self.DQL_info
         
     # --------------
@@ -197,37 +201,32 @@ class Config:
     
     def get_logger(self, name: str, level=logging.INFO) -> logging.Logger:
         """
-        Create or retrieve a logger configured for the current request.
-
-        This method ensures that log handlers are reset for each request
-        to log to a new, request-specific file.
+        Creates or retrieves a logger that writes to a request-specific file.
+        Clears existing handlers to avoid duplicate logs in long-running processes.
 
         Args:
-            name (str): Name of the logger (e.g., "Orchestrator").
-            level (int, optional): Logging level. Defaults to logging.INFO.
+            name (str): The name for the logger instance.
+            level: The logging severity level.
 
         Returns:
-            logging.Logger: Configured logger instance.
+            logging.Logger: The configured logger.
         """
-        
-        # Log file is unique to this request
+        # Path to the log file named after the current Request ID
         log_file = os.path.join(self._log_dir, f"{self.get_request_id()}.log")
         
         logger = logging.getLogger(name)
         logger.setLevel(level)
 
-        # Reset handlers: This is crucial. Because loggers are singletons,
-        # we must clear old handlers (e.g., from a previous request)
-        # to ensure we log to the correct new file (log_file).
+        # Clear existing handlers to prevent log bleeding between requests
         if logger.hasHandlers():
             logger.handlers.clear()
         
-        # Console handler
+        # Add Console output stream
         console_handler = logging.StreamHandler()
         console_handler.setFormatter(logging.Formatter(self._LOG_FORMAT))
         logger.addHandler(console_handler)
 
-        # File handler (specific to this request_id)
+        # Add File output stream with UTF-8 encoding for special characters
         file_handler = logging.FileHandler(log_file, encoding="utf-8")
         file_handler.setFormatter(logging.Formatter(self._LOG_FORMAT))
         logger.addHandler(file_handler)
@@ -239,9 +238,9 @@ class Config:
     # -----------------------
     
     def get_user_id(self) -> str:
+        """Retrieves the active user ID or raises error if unauthenticated."""
         if not self._user_id:
-            raise ValueError("Empty user id")
-        
+            raise ValueError("Authentication error: Empty user id")
         return self._user_id
     
     # --------------------------
@@ -250,33 +249,24 @@ class Config:
     
     def get_request_id(self) -> str:
         """
-        Return the current request ID.
-        
-        Generates a new unique ID if one does not already exist for this
-        request context.
-        
-        Returns:
-            str: The unique request ID.
+        Provides the ID for the current execution request.
+        Auto-generates one if it doesn't exist.
         """
         if not self._request_id:
             self.set_request_id()
         return self._request_id
 
-    def set_request_id(self, id: str = None) -> str:
+    def set_request_id(self, id: str = None):
         """
-        Generate a unique request ID.
-        
-        Format: {user_id}_{utc_timestamp}
-        
-        Returns:
-            str: A unique request ID string.
+        Generates and sets a unique request identifier.
+        Format: user_id + UTC timestamp (ISO format sanitized).
         """
         if id:
             self._request_id = id
             return
         
         timestamp = datetime.now(timezone.utc).isoformat()
-        # Sanitize timestamp for use in filenames
+        # Clean timestamp for safe filename usage
         sanitized = timestamp.replace(":", "").replace(".", "")
         
         if "+" in sanitized:
@@ -289,27 +279,14 @@ class Config:
     # -----------------------
     
     def get_chat_id(self) -> str:
-        """
-        Return the current request ID.
-        
-        Generates a new unique ID if one does not already exist for this
-        request context.
-        
-        Returns:
-            str: The unique request ID.
-        """
+        """Retrieves the current chat session ID."""
         if not self._chat_id:
             self.set_chat_id()
         return self._chat_id
     
     def set_chat_id(self, id: str = None) -> str:
         """
-        Generate a unique request ID.
-        
-        Format: {user_id}_{utc_timestamp}
-        
-        Returns:
-            str: A unique request ID string.
+        Sets a specific chat ID or requests a new one from storage.
         """
         if id:
             self._chat_id = id
@@ -319,6 +296,10 @@ class Config:
         return self._chat_id
         
     def get_chat_history(self) -> list:
+        """
+        Retrieves the chronologically sorted chat history for the active session.
+        Filters out messages without technical details to focus on actual interactions.
+        """
         return sorted(
             [
                 {
@@ -339,20 +320,15 @@ class Config:
     # --------------------------
     
     def get_sources_id(self) -> str:
-        """
-        Return the current request ID.
-        
-        Generates a new unique ID if one does not already exist for this
-        request context.
-        
-        Returns:
-            str: The unique request ID.
-        """
+        """Retrieves the active data source identifier (default: 'vitali')."""
         if not self._sources_id:
             self.set_sources_id("vitali")
         return self._sources_id
     
     def set_sources_id(self, id: str = None) -> str:
+        """
+        Sets the source project ID. If 'user' is selected, it maps to the user's private ID.
+        """
         if id:
             if id == "user":
                 self._sources_id = self._user_id
@@ -368,7 +344,11 @@ class Config:
     # -----------------------------
     
     @staticmethod
-    def docs_in_string(docs):
+    def docs_in_string(docs: list) -> str:
+        """
+        Converts a list of document references into a formatted instruction string.
+        Used to explain to the LLM which nicknames refer to which specific documents.
+        """
         info = [
             f"- con la stringa \"{doc[1]}\" l'utente fa riferimento al documento \"{doc[0]}\""
             for doc in docs

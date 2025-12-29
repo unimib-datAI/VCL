@@ -211,3 +211,4 @@ data/
 documents/*.json
 settings/*
 /**/*.csv
+scripts/evaluation/questions/**/*.json

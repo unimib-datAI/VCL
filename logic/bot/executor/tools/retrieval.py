@@ -1,22 +1,3 @@
-"""
-Retrieval module responsible for fetching documents required by operations.
-
-Responsibilities:
------------------
-- Retrieve documents from multiple sources in priority order:
-    1. Operations list (previously computed results)
-    2. MongoDB storage (user/session-scoped cached documents)
-    3. Local filesystem (fallback under `documents/` directory)
-    4. ElasticSearch (if configured)
-- Structured logging for each retrieval attempt and outcome.
-
-Dependencies:
--------------
-- utils.config.Config: Provides shared logger, MongoDB storage instance, and DB URL.
-- utils.file_manager.FileHandler: Utility for reading JSON/text files.
-- elasticsearch.Elasticsearch: Backend for document search.
-"""
-
 import os
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import (
@@ -30,20 +11,17 @@ from utils.file_manager import FileHandler
 
 class Retrieval:
     """
-    Responsible for retrieving documents needed by operations.
+    Core retrieval engine responsible for fetching documents across multiple storage layers.
 
-    This class follows a chain-of-responsibility pattern, attempting to
-    find a document from the fastest/most-specific source (previous
-    operation results) to the most general (Elasticsearch).
+    This class implements a multi-tiered retrieval strategy (Chain of Responsibility), 
+    attempting to find documents starting from the most volatile/specific source 
+    (in-memory operation results) to the most persistent/general source (Elasticsearch).
 
-    Attributes:
-        _client (Elasticsearch): Elasticsearch client instance.
-        _storage: MongoDB-based storage instance from Config.
-        _rag (bool): Flag for RAG (Retrieval-Augmented Generation) mode.
-        _logger: Logger instance from Config.
-        _project_root (str): Root project path for local file fallback.
-        _user_id (str): User/session identifier for scoped retrieval.
-        _operations (list[dict]): Optional list of operation results.
+    Responsibilities:
+        - Resolving document references from previous pipeline steps.
+        - Fetching user-scoped documents from MongoDB.
+        - Accessing static files from the local filesystem.
+        - Performing indexed searches via Elasticsearch.
     """
 
     # ----------------------
@@ -52,13 +30,12 @@ class Retrieval:
     
     def __init__(self, cfg: Config, operations: list[dict] = None):
         """
-        Initialize the Retrieval component.
+        Initialize the Retrieval component with global configuration.
 
         Args:
-            cfg (Config): The global configuration object.
-            operations (list[dict], optional): A list of previously
-                executed operations in the current pipeline, used to
-                retrieve intermediate results.
+            cfg (Config): Global configuration instance providing DB connections and loggers.
+            operations (list[dict], optional): Results from previously executed 
+                operations in the current session, enabling cross-task references.
         """
         self._client = Elasticsearch(cfg.DB_URL)
         self._storage = cfg.get_storage()
@@ -75,23 +52,18 @@ class Retrieval:
     
     def execute(self, operation: dict) -> list[dict]:
         """
-        Retrieve all documents specified in the operation's 'from' field.
-
-        Retrieval priority:
-            1. Operations list (intermediate results)
-            2. MongoDB storage (session cache)
-            3. Local filesystem (static documents)
-            4. ElasticSearch (general document database)
+        Resolves all document dependencies listed in the 'from' field of an operation.
 
         Args:
-            operation (dict): An operation in DQL format.
+            operation (dict): A structured DQL operation dictionary.
 
         Returns:
-            list[dict]: A list of retrieved documents. Each document is a
-                        dict with 'name', 'text', and 'type'.
+            list[dict]: A list of objects containing 'name', 'text', and 'type' for 
+                        every successfully retrieved document.
         """
         retrieved_docs = []
 
+        # Iterate through all identifiers in the 'from' clause
         for doc_name in operation.get("from", []):
             doc = self._retrieve_document(doc_name)
             if doc:
@@ -105,18 +77,25 @@ class Retrieval:
     
     def _retrieve_document(self, doc_name: str) -> dict:
         """
-        Attempt to retrieve a single document from multiple sources
-        in priority order.
+        Internal dispatcher that attempts retrieval through the defined hierarchy.
+
+        Retrieval Priority:
+            1. Operations List (Internal state)
+            2. MongoDB Documents (Session-specific)
+            3. MongoDB Chat History (Conversation-specific)
+            4. Local Filesystem (Static fallback)
+            5. Elasticsearch (Global index)
 
         Args:
-            doc_name (str): Name, ID, or type of document to retrieve.
+            doc_name (str): The unique identifier or type of the document.
 
         Returns:
-            dict: Retrieved document with 'name', 'text', 'type'.
+            dict: The normalized document dictionary if found; otherwise, 
+                  returns the input as raw text.
         """
-        self._logger.info(f"Use Case: {self._sources_id}")
+        self._logger.info(f"Current Use Case Context: {self._sources_id}")
         
-        # Define the retrieval strategies in order of priority.
+        # Define the ordered sequence of retrieval strategies
         retrieval_methods = [
             ("Operations List", self._get_from_operations_list),
             ("MongoDB (DOC)", self._get_doc_from_mongo),
@@ -131,35 +110,39 @@ class Retrieval:
                 self._logger.info(f"Document '{doc_name}' successfully retrieved from {label}.")
                 return doc
 
-        # Fallback: If no document is found, treat the input.
-        self._logger.warning(f"'{doc_name}' not found in any source. Treating as raw text input.")
+        # Fallback mechanism: If no source contains the ID, treat it as a literal string input
+        self._logger.warning(f"'{doc_name}' not found in any source. Casting to raw text document.")
         return {"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}
 
     def _get_from_operations_list(self, doc_name: str) -> dict | None:
-        """Retrieve document from previously computed operations."""
+        """
+        Checks the internal pipeline state for results from previous tasks.
+        Enables the assistant to 'remember' and use data generated earlier in the same request.
+        """
         for op in self._operations:
-            # Check if an operation ID matches and has a result
+            # Check top-level operations for matching ID
             if op.get("id") == doc_name:
                 if "result" in op and op.get("structured_prompt", {}).get("from"):
-                    # The 'type' is inferred from the source of the previous operation
                     return {"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]}
                 else:
                     return None
-                
+            
+            # Recurse into sub-operations if present
             if "operations" in op:
                 for o in op["operations"]:
-                    # Check if an operation ID matches and has a result
                     if o.get("id") == doc_name:
                         if "result" in o and o.get("structured_prompt", {}).get("from"):
-                            # The 'type' is inferred from the source of the previous operation
                             return {"name": doc_name, "text": o["result"], "type": o["structured_prompt"]["from"][0]}
                         else:
                             return None
         return None
 
     def _get_doc_from_mongo(self, doc_name: str) -> dict | None:
-        """Retrieve document from MongoDB storage scoped by user/session."""
-        # Try retrieving by type, then ID, then name
+        """
+        Retrieves user-scoped legal documents from MongoDB.
+        Checks both the 'type_doc' and 'name' indices.
+        """
+        # Sequential check: Try matching by document type first, then by filename
         for method in [self._storage.get_document_by_type,
                         self._storage.get_document_by_name]:
             doc = method(self._sources_id, doc_name)
@@ -168,7 +151,10 @@ class Retrieval:
         return None
     
     def _get_chat_from_mongo(self, doc_name: str) -> dict | None:
-        """Retrieve document from MongoDB storage scoped by user/session."""
+        """
+        Retrieves a specific message from the current chat history in MongoDB.
+        Useful when the user refers to a previous answer by its unique ID.
+        """
         doc = self._storage.get_message(self._user_id, self._chat_id, doc_name)
         
         if doc and "content" in doc:
@@ -176,7 +162,10 @@ class Retrieval:
         return None
 
     def _get_from_local_system(self, doc_name: str) -> dict | None:
-        """Retrieve document from local filesystem under 'documents/' directory."""
+        """
+        Fallback to the local 'documents/' directory for static JSON files.
+        Validates ownership against the current 'sources_id' config.
+        """
         folder = os.path.join(self._project_root, "documents")
         handler = FileHandler()
 
@@ -188,38 +177,32 @@ class Retrieval:
                     path_file = os.path.join(folder, fname)
                     doc = handler.read_file(path_file)
 
-                    # Match by 'name' or 'type_doc' field in the JSON
-                    if doc.get("name") == doc_name or doc.get("type_doc") == doc_name and doc.get("owner") == self._sources_id:
+                    # Ownership and name/type validation
+                    if (doc.get("name") == doc_name or doc.get("type_doc") == doc_name) and doc.get("owner") == self._sources_id:
                         return {
                             "name": doc.get("name", ""),
                             "text": doc.get("text", ""),
                             "type": doc.get("type_doc", "task"),
                         }
                 except Exception as e:
-                    self._logger.warning(f"Error reading local file '{fname}': {e}")
+                    self._logger.warning(f"Error parsing local file '{fname}': {e}")
         except FileNotFoundError:
-            self._logger.warning(f"Local documents directory not found at: {folder}")
+            self._logger.warning(f"Static document repository not found: {folder}")
         except Exception as e:
-            self._logger.warning(f"Failed to scan local document directory: {e}")
+            self._logger.warning(f"Unexpected error scanning local directory: {e}")
             
         return None
 
     def _get_from_elastic_search(self, doc_name: str) -> dict | None:
         """
-        Attempt to retrieve a document by type from ElasticSearch.
-
-        Args:
-            doc_name (str): Document type to search for.
-
-        Returns:
-            dict | None: Document if found, else None.
+        Queries the global Elasticsearch index for documents matching the requested type.
         """
-        # Assumes doc_name is a 'type_doc' for this query
+        # Search query focused on the 'type_doc' field
         query = {"query": {"bool": {"must": [{"match": {"type_doc": doc_name}}]}}}
 
         try:
             response = self._client.search(index="sperimentazione", body=query)
-            # Return the first valid hit
+            # Fetch the first relevant hit from the results
             for hit in response.get("hits", {}).get("hits", []):
                 src = hit.get("_source", {})
                 if "name" in src and "text" in src:
@@ -228,10 +211,9 @@ class Retrieval:
         except (NotFoundError, RequestError, AuthenticationException,
                 AuthorizationException, ConnectionTimeout, ConnectionError,
                 TransportError, ApiError) as e:
-            # Specific, common ES errors
-            self._logger.warning(f"ElasticSearch retrieval failed for '{doc_name}': {e}")
+            # Handle connectivity and indexing errors gracefully
+            self._logger.warning(f"ElasticSearch backend error for '{doc_name}': {e}")
         except Exception as e:
-            # Catch-all for unexpected errors
-            self._logger.warning(f"Unexpected error retrieving '{doc_name}' from ElasticSearch: {e}")
+            self._logger.warning(f"Unexpected ES failure for '{doc_name}': {e}")
 
         return None

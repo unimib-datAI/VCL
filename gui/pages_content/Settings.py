@@ -15,10 +15,13 @@ PAGE_TITLE = "Definisci il linguaggio DQL"
 
 def _convert_to_editable(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Converts list columns (like 'synonyms') to semicolon-separated strings for the data editor.
+    Prepares the dataframe for the Streamlit UI by converting list-type columns 
+    into semicolon-separated strings. This allows users to edit synonyms easily 
+    as plain text.
     """
     editable_df = df.copy()
     if "synonyms" in editable_df.columns:
+        # Convert list of strings to a single string separated by "; "
         editable_df["synonyms"] = editable_df["synonyms"].apply(
             lambda lst: "; ".join(lst) if isinstance(lst, list) else (lst if isinstance(lst, str) else "")
         )
@@ -28,10 +31,12 @@ def _convert_to_editable(df: pd.DataFrame) -> pd.DataFrame:
 
 def _convert_to_savable(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Parses semicolon-separated strings back into lists for storage.
+    Reverse process of _convert_to_editable. Parses semicolon-separated strings 
+    from the data editor back into Python lists for persistent storage.
     """
     savable_df = df.copy()
     if "synonyms" in savable_df.columns:
+        # Split string by ";" and strip whitespace to reconstruct the original list format
         savable_df["synonyms"] = savable_df["synonyms"].apply(
             lambda x: [s.strip() for s in str(x).split(";") if s.strip()] if (isinstance(x, str) and x.strip()) else []
         )
@@ -39,21 +44,23 @@ def _convert_to_savable(df: pd.DataFrame) -> pd.DataFrame:
 
 def _reload_data_from_class() -> None:
     """
-    Fetches current configuration from the Assistant's Language class 
-    and populates session state dataframes.
+    Synchronizes the Streamlit session state with the backend Language class.
+    Fetches raw dictionaries and initializes dataframes for both display and editing.
     """
+    # Retrieve structured data from the logic layer
     what_data = [item for item in st.session_state.language.get_what() if isinstance(item, dict)]
     from_data = [item for item in st.session_state.language.get_sources() if isinstance(item, dict)]
     commands_data = [item for item in st.session_state.language.get_commands() if isinstance(item, dict)]
     
-    # df_what/df_from contain the "saved" data (with lists)
+    # Snapshot of the data currently persisted in the backend
     st.session_state.df_what = pd.DataFrame(what_data)
     st.session_state.df_from = pd.DataFrame(from_data)
 
-    # edited_what/edited_from contain the data for the editor (with strings)
+    # Working copies for the UI data editor
     st.session_state.edited_what = st.session_state.df_what.copy()
     st.session_state.edited_from = _convert_to_editable(st.session_state.df_from)
 
+    # Cache lists of names for dropdowns and multiselect components
     st.session_state.available_sources = list({
         src.get("name") for src in from_data if src.get("name")
     })
@@ -64,11 +71,13 @@ def _reload_data_from_class() -> None:
 
 def _initialize_session_state() -> None:
     """
-    Initialize session_state variables *only once* ensuring assistant is ready.
+    One-time initialization of the session state variables. Ensures the backend
+    Language class is available before attempting to load data.
     """
     if "state_initialized" in st.session_state:
         return
 
+    # Check for core dependency in session_state
     if "language" not in st.session_state or not st.session_state.language:
         st.error("Errore: Configurazione utente non caricata.")
         st.stop()
@@ -81,7 +90,9 @@ def _initialize_session_state() -> None:
 # --------------------------
 
 def _is_empty_value(x: Any) -> bool:
-    """Checks if a value is considered empty."""
+    """
+    Validation helper to identify null, empty strings, or empty collections.
+    """
     if x is None:
         return True
     if isinstance(x, str) and x.strip() == "":
@@ -91,25 +102,31 @@ def _is_empty_value(x: Any) -> bool:
     return False
 
 def _has_empty_values(df: pd.DataFrame) -> bool:
-    """Checks if any cell in the dataframe is empty."""
+    """
+    Scans the entire dataframe to check for the presence of invalid/empty cells.
+    """
     return df.map(_is_empty_value).values.any()
 
 def _save_changes() -> Union[bool, None]:
     """
-    Persists data from 'edited_what'/'edited_from' back to the Language Class.
+    Validates and persists UI changes to the backend.
+    Converts edited dataframes back to raw dictionary lists.
     
     Returns:
-        bool: True if save successful.
-        None: If validation fails (empty values).
+        bool: True if storage update was successful.
+        None: If validation fails due to empty fields.
     """
     df_what = st.session_state.edited_what.copy()
     df_from_editable = st.session_state.edited_from.copy() 
 
+    # Block save if critical information is missing
     if _has_empty_values(df_what) or _has_empty_values(df_from_editable):
         return None
 
+    # Prepare data for the storage layer (convert strings back to lists)
     df_from_processed = _convert_to_savable(df_from_editable)
     
+    # Update backend class
     result_what = st.session_state.language.set_what(df_what.to_dict(orient="records"))
     result_sources = st.session_state.language.set_sources(df_from_processed.to_dict(orient="records"))
     
@@ -120,7 +137,7 @@ def _save_changes() -> Union[bool, None]:
 
 def _cancel_changes() -> bool:
     """
-    Discards changes by reloading the last saved state.
+    Reverts the UI state by overwriting working copies with the last saved snapshot.
     """
     st.session_state.edited_what = st.session_state.df_what.copy()
     st.session_state.edited_from = _convert_to_editable(st.session_state.df_from)
@@ -128,7 +145,8 @@ def _cancel_changes() -> bool:
 
 def _reset_language() -> bool:
     """
-    Resets configuration to the default hardcoded language definition.
+    Triggers the backend routine to restore the default language definition
+    and refreshes the session state data.
     """
     result = st.session_state.language.set_default_language()
     
@@ -143,7 +161,8 @@ def _reset_language() -> bool:
 
 def _display_confirmation_ui() -> None:
     """
-    Renders the confirmation UI for sensitive actions (Save, Cancel, Reset).
+    Interrupts the main flow to show a confirmation dialog for critical actions.
+    Uses a mapping to determine which backend function to execute on confirmation.
     """
     action = st.session_state.action_pending
     
@@ -182,12 +201,14 @@ def _display_confirmation_ui() -> None:
 
 def _display_form_ui() -> None:
     """
-    Renders the main data editor forms and action buttons.
+    Renders the DQL language definition forms using Streamlit's data_editor.
+    Manages two main sections: FROM (Sources) and WHAT (Concepts/Terms).
     """
     with st.form(key="language_form"):
         st.markdown("### Sezione FROM")
         st.markdown("Per aggiornare l'elenco dei documenti nella sezione successiva devi prima salvare le modifiche di questa sezione.")
         
+        # Table for defining document types and their synonyms
         edited_from_df = st.data_editor(
             st.session_state.edited_from, 
             num_rows="dynamic",
@@ -212,11 +233,13 @@ def _display_form_ui() -> None:
         st.markdown("### Sezione WHAT")
         st.markdown("Definisci i termini utilizzabili nei comandi DQL e le loro caratteristiche.\nConsidera che esistono due elementi non modificabili:\n- \"intero documento\": il comando deve essere applicato all'intero documento selezionato.\n- \"altro\": riguarda tutti quei casi in cui non è possibile categorizzare l'elemento richiesto.")
         
+        # Dynamically link the sources available in the 'WHAT' multiselect to current 'FROM' data
         try:
             current_sources = list(edited_from_df['name'].dropna().unique())
         except Exception:
             current_sources = st.session_state.available_sources
 
+        # Table for defining AI concepts, mapping them to sources and commands
         edited_what_df = st.data_editor(
             st.session_state.edited_what,
             num_rows="dynamic",
@@ -246,6 +269,7 @@ def _display_form_ui() -> None:
             },
         )
         
+        # Action buttons for form management
         col1, col2, col3 = st.columns(3)
         with col1:
             save_pressed = st.form_submit_button("💾 Salva", width='stretch')
@@ -254,7 +278,7 @@ def _display_form_ui() -> None:
         with col3:
             reset_pressed = st.form_submit_button("🔄 Ripristina", width='stretch')
 
-    # --- Handling logic *after* form submission ---
+    # --- Post-submission routing logic ---
     if save_pressed:
         st.session_state.edited_what = edited_what_df
         st.session_state.edited_from = edited_from_df
@@ -275,11 +299,13 @@ def _display_form_ui() -> None:
 
 def show_settings():
     """
-    Main entry point. Acts as a router between editing and confirmation states.
+    Renders the page. Acts as a router between the main editing form 
+    and the confirmation screen for critical actions.
     """
     st.title(PAGE_TITLE)
     _initialize_session_state() 
 
+    # Determine which UI to show based on the presence of a pending action
     if "action_pending" in st.session_state:
         _display_confirmation_ui()
     else:

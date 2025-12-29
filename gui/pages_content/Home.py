@@ -910,6 +910,7 @@ def _show_expander(message: Dict) -> None:
         )
 
         # 2. Operations
+        print(tasks)
         _display_task(tasks)
         
         # 3. Logs
@@ -933,6 +934,7 @@ def _show_expander(message: Dict) -> None:
 def _display_task(tasks: list) -> None:
     """Renders a single operation detail block."""
     for index, task in enumerate(tasks, start=1):
+        prompt_task = task.get('prompt', '')
         structured_prompt = task.get("structured_prompt", {})
         
         # Create a clean subset for display
@@ -952,7 +954,7 @@ def _display_task(tasks: list) -> None:
         
         html_code = [
             '<details style="margin-left:20px; margin-top:10px;">',
-            '\t' + f'<summary>Task {index}: {task.get('prompt', '')}</summary>',
+            '\t' + f'<summary>Task {index}: {prompt_task}</summary>',
             '\t<p></p>',
             '\tIl Task è stato trodotto in DQL nel seguente modo:'
             '\t<p></p>',

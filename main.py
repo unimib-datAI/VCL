@@ -2,20 +2,30 @@ import argparse
 import streamlit.web.cli as stcli
 import sys
 
+from dotenv import load_dotenv
+
+#from scripts.evaluation.main import evaluation
 from utils.config import Config
+
+# Load environmental variables from the .env file (e.g., DB credentials)
+load_dotenv()
 
 def parse_args() -> argparse.Namespace:
     """
     Parse command-line arguments for the DQL application.
 
+    Provides options for configuring LLM providers, API credentials, 
+    database connection strings, and processing behavior.
+
     Returns:
-        argparse.Namespace: Parsed arguments.
+        argparse.Namespace: Object containing the parsed and validated arguments.
     """
     parser = argparse.ArgumentParser(
         description="DQL - Data Query Language",
         formatter_class=argparse.RawTextHelpFormatter,
     )
 
+    # Authentication argument for the AI model
     parser.add_argument(
         "-api",
         action="store",
@@ -27,6 +37,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
+    # Persistence layer connection string
     parser.add_argument(
         "-uri_db",
         action="store",
@@ -38,6 +49,7 @@ def parse_args() -> argparse.Namespace:
         )
     )
 
+    # Throttle control for API rate limits
     parser.add_argument(
         "-wait_seconds",
         action="store",
@@ -48,6 +60,7 @@ def parse_args() -> argparse.Namespace:
         help="Number of seconds to wait after each LLM call (default: 0).",
     )
     
+    # Optimization flag to reduce LLM overhead
     parser.add_argument(
         "-parsers",
         action="store_true",
@@ -57,6 +70,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     
+    # Specific model selection
     parser.add_argument(
         "-model_name",
         action="store",
@@ -73,6 +87,7 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
+    # AI engine provider selection
     parser.add_argument(
         "-provider",
         action="store",
@@ -87,6 +102,16 @@ def parse_args() -> argparse.Namespace:
             "  openai        → OpenAI GPT models\n"
             "  copilot       → GitHub Copilot API\n"
             "  huggingface   → Hugging Face models\n"
+        ),
+    )
+    
+    # Evaluation Script
+    parser.add_argument(
+        "-evaluation_mode",
+        action="store_true",
+        dest="evaluation_mode",
+        help=(
+             "The streamlit application is not applied, but the 'evaluation' script."
         ),
     )
 
@@ -125,14 +150,19 @@ def parse_args() -> argparse.Namespace:
 def _launch_streamlit() -> None:
     """
     Launch the Streamlit user interface for DQL within the same process.
+
+    This helper overrides the system arguments to simulate a direct call 
+    to the 'streamlit run' command pointing to the application's entry point.
     """
 
+    # Modify sys.argv to trigger Streamlit's CLI runner pointing to app.py
     sys.argv = [
         "streamlit",
         "run",
         "gui/app.py",
-        "--server.fileWatcherType=none",
+        "--server.fileWatcherType=none", # Optimized performance by disabling file watcher
     ]
+    # Execute the Streamlit entry point and exit the parent process
     sys.exit(stcli.main())
 
 
@@ -140,13 +170,26 @@ def main() -> None:
     """
     Entry point for the DQL CLI application.
 
-    Parses command-line options, initializes configuration,
-    and launches the Streamlit interface.
+    Workflow:
+        1. Capture runtime arguments from the shell.
+        2. Initialize the thread-safe Config Singleton with the parsed options.
+        3. Transition from the CLI environment to the Streamlit Web UI.
     """
+    # Parse CLI options
     opts = parse_args()
+    
+    # Bootstrap the configuration singleton before starting the UI
     Config.get_instance(opts)
-    _launch_streamlit()
+    
+    if opts:
+        if opts.evaluation_mode:
+            #evaluation()
+            print("TODO")
+        else:
+            # Hand off execution to the web interface
+            _launch_streamlit()
 
 
 if __name__ == "__main__":
+    # Start the application lifecycle
     main()

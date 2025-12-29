@@ -4,22 +4,16 @@ from utils.config import Config
 
 class SpellingChecker:
     """
-    Provides text correction capabilities using either a traditional spell
-    checker or an LLM-based rewriting system for advanced grammar and
-    phrasing correction.
+    Provides text correction capabilities using either a traditional rule-based 
+    spell checker or an LLM-based rewriting system for advanced contextual correction.
+
+    This component acts as a pre-processing filter to ensure that user queries 
+    are grammatically correct and free of typos before they reach the DQL translation engine.
 
     Responsibilities:
-        - Detect and correct spelling errors using a rule-based spell checker.
-        - Optionally refine text using a language model prompt for contextual
-          rewriting.
-
-    Attributes:
-        _llm (LLM): Reference to the application's language model (from Config).
-        _project_root (Path): Root path of the project.
-        _spell (SpellChecker): Instance of the pyspellchecker library.
-        _logger: Logger instance from Config.
-        _parsers (bool): Flag to select correction method.
-        _dql_language: Language-specific settings (like prompts) from Config.
+        - Toggle between basic spell checking and advanced LLM-based rewriting.
+        - Handle Italian language specific corrections.
+        - Ensure robust fallback to original text in case of processing errors.
     """
     
     # ----------------------
@@ -36,11 +30,15 @@ class SpellingChecker:
         """
         self._llm = cfg.get_LLM()
         self._project_root = cfg.project_root
-        # Initialize spell checker for Italian
+        
+        # Initialize the rule-based spell checker for the Italian language
         self._spell = SpellChecker(language="it")
         self._dql_language = cfg.get_DQL()
         
         self._logger = cfg.get_logger("Spelling Checker")
+        
+        # Flag to determine the correction strategy: 
+        # True for basic (pyspellchecker), False for advanced (LLM)
         self._parsers = cfg.parsers
         
     # ------------------------
@@ -49,13 +47,18 @@ class SpellingChecker:
     
     def correct_spelling(self, text: str) -> str:
         """
-        Corrects the spelling of the input text using the configured method.
+        Orchestrates the spelling correction process based on the active parser strategy.
+
+        Steps:
+            1. Validate input text integrity.
+            2. Dispatch to either _correct_text_basic or _correct_text_llm.
+            3. Handle exceptions by returning the original uncorrected text.
 
         Args:
-            text (str): The input text to correct.
+            text (str): The raw input text to verify.
 
         Returns:
-            str: The corrected text.
+            str: The corrected version of the text.
         """
         
         if not text or not isinstance(text, str):
@@ -64,19 +67,22 @@ class SpellingChecker:
         status = "Error"
         try:
             if self._parsers:
-                self._logger.info("Spelling Correction with pyspellchecker")
+                # Rule-based approach using Levenshtein distance/frequency dictionaries
+                self._logger.info("Executing Basic Correction (pyspellchecker)")
                 corrected_query = self._correct_text_basic(text)
             else:
-                self._logger.info("Spelling Correction with LLM")
+                # Contextual approach using Large Language Model capabilities
+                self._logger.info("Executing Advanced Correction (LLM)")
                 corrected_query = self._correct_text_llm(text)
                 
             status = "Done"
         except Exception as e:
-            self._logger.error(f"Error during spelling correction: {e}")
-            corrected_query = text  # Fallback to original text on error
+            # Fallback mechanism: maintain the original query to prevent pipeline interruption
+            self._logger.error(f"Spelling correction failed: {e}")
+            corrected_query = text  
         
-        # Log the final query for traceability
-        self._logger.info(f"{corrected_query} - {status}")
+        # Final audit log for request traceability
+        self._logger.info(f"Correction Result: \"{corrected_query}\" - Status: {status}")
         return corrected_query
         
     # ----------------------------
@@ -85,21 +91,21 @@ class SpellingChecker:
     
     def _correct_text_basic(self, text: str) -> str:
         """
-        Perform a basic spell correction on the provided text using pyspellchecker.
+        Applies word-by-word correction using the pyspellchecker library.
 
         Args:
-            text (str): Input text to correct.
+            text (str): Input text for lexical correction.
 
         Returns:
-            tuple[str, str]: A tuple containing the corrected text and a
-                             status string ("Done" or "Error").
+            str: The text reconstructed with correctly spelled words.
         """
+        # Tokenize the input text into individual words
         words = text.lower().split()
 
-        # Correct each word individually
+        # Iterate through tokens and apply the most likely correction for each
         corrected_words = [self._spell.correction(word) for word in words]
         
-        # filter(None, ...) removes potential None results if correction fails
+        # Join words back together, filtering out any failed correction attempts (None)
         result = " ".join(filter(None, corrected_words))
 
         return result
@@ -110,29 +116,28 @@ class SpellingChecker:
     
     def _correct_text_llm(self, text: str) -> str:
         """
-        Perform advanced text correction using the configured LLM model.
+        Uses an LLM to rewrite the input text, focusing on grammar and context.
 
-        This method leverages a prompt template to guide the LLM
-        to rewrite the input text with improved spelling and grammar.
+        This method is preferred for complex queries where word-by-word 
+        correction might lose the semantic meaning of the sentence.
 
         Args:
-            text (str): Input text to correct contextually.
+            text (str): Input text for contextual rewriting.
 
         Returns:
-            tuple[str, str]: A tuple containing the corrected (rewritten)
-                             text and a status string ("Done" or "Error").
+            str: The rewritten text provided by the LLM.
         """
-        # Retrieve the specific prompt for query correction
+        # Load the specific prompt template from the DQL language configuration
         prompt = self._dql_language.prompts.get("CorrectionQuery.json", None)
             
         if not prompt:
-            raise ValueError("Error during prompt retrieval")
+            raise ValueError("Required prompt 'CorrectionQuery.json' not found.")
         
-        # Invoke LLM to rewrite the query based on the prompt
+        # Request the LLM to perform a high-fidelity rewrite of the user's query
         result = self._llm.invoke(
             prompt,
             { "query": text },
-            True
+            True # Setting structured output mode to True
         )
 
         return result

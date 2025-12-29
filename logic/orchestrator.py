@@ -1,26 +1,16 @@
 """
-Orchestrator module: orchestrates the DQL pipeline.
+Orchestrator module: coordinates the multi-stage DQL pipeline.
 
-Responsibilities:
------------------
-- Preprocess user queries.
-- Translate queries into structured commands.
-- Plan operations from structured queries.
-- Execute operations using document retrieval and LLM.
-- Log all steps and store final results for session tracking.
+The pipeline follows a linear flow to transform natural language into legal insights:
+1. Preprocessing: Cleaning and task identification.
+2. Translation: Mapping tasks to structured DQL commands.
+3. Planning: Decomposing commands into atomic operations.
+4. Execution: Document retrieval and LLM generation.
 
-Dependencies:
--------------
-- utils.config.Config: Global configuration and logger.
-- utils.file_manager.FileHandler: Save/retrieve JSON results.
-- logic.bot.preprocessor.Preprocessor: Query preprocessing.
-- logic.bot.translator.Translator: Translate query to structured commands.
-- logic.bot.planner.Planner: Decompose commands into operations.
-- logic.bot.executor.Executor: Execute operations and generate results.
+
 """
 
 import os
-
 from copy import deepcopy
 from datetime import datetime
 
@@ -34,34 +24,27 @@ from logic.bot.executor.executor import Executor
 
 class Orchestrator:
     """
-    Main DQL assistant class that manages the full processing pipeline.
+    Main DQL assistant engine that manages the full processing pipeline.
     
-    This class initializes all necessary components (logger, preprocessor,
-    translator, planner) and manages the flow of data from the initial
-    user prompt to the final structured response.
+    This class acts as the central hub, initializing specialized components 
+    and ensuring data consistency as it moves through the preprocessing, 
+    translation, planning, and execution phases.
     """
 
-    # ----------------------
-    # --- Initialization ---
-    # ----------------------
-    
+    # Default error message for UI fallback
     error_msg = "Si è verificato un errore. Riprova."
     
     def __init__(self, cfg: Config):
         """
-        Initialize the Orchestrator instance.
+        Initialize the Orchestrator with global configurations.
 
         Args:
-            username (str): The identifier for the user, used to load
-                            the correct configuration and storage.
-            role (str):     The role of the user, used to load the correct
-                            header of Generator prompt
-            
-        Raises:
-            ValueError: If username is not provided.
+            cfg (Config): The global configuration instance containing 
+                          storage references and logging settings.
         """
         self._CFG = cfg
         
+        # Access persistent storage and language definitions via configuration
         self._storage = self._CFG.get_storage()
         self._language = self._CFG.get_DQL()
 
@@ -71,28 +54,25 @@ class Orchestrator:
     
     def chat(self, prompt: str) -> dict:
         """
-        Process a user query through the full DQL pipeline.
-
-        Steps:
-            1. Preprocessing
-            2. Translation to structured query
-            3. Planning operations
-            4. Executing operations and generating results
+        Entry point for processing a user query. Orchestrates the 4-step pipeline.
 
         Args:
-            prompt (str): The user's input query.
+            prompt (str): The raw natural language query from the user.
 
         Returns:
-            dict: Final response containing structured input, operations,
-                  results, and used documents.
+            dict: A comprehensive response object containing:
+                - content: The final text answer.
+                - details: Technical breakdown (tasks, DQL commands, logs).
+                - metadata: Request ID, timestamp, and model used.
         """
-        # Initialize core components
+        # Lazy initialization of specialized components for the current request
         self._logger = self._CFG.get_logger("Orchestrator")
         self._preprocessor = Preprocessor(self._CFG)
         self._translator = Translator(self._CFG)
         self._planner = Planner(self._CFG)
         self._executor = Executor(self._CFG)
         
+        # Structure the base response object
         response = {
             "role": "assistant",
             "time": datetime.now().isoformat(),
@@ -101,32 +81,42 @@ class Orchestrator:
         }
 
         try:
-            # --- Pipeline Execution ---
+            # --- Pipeline Execution Flow ---
             self._logger.info(f"Starting processing for request ID \"{response['id']}\".")
             self._logger.info(f"Request received \"{prompt}\".")
             
+            # Step 1: Clean input and split into logical tasks
             prompt_process, tasks = self._preprocess(prompt)
+            
+            # Step 2: Map tasks to structured DQL (JSON-like commands)
             structured_tasks = self._translate(tasks)
+            
+            # Step 3: Break down complex commands into atomic executable operations
             structured_tasks = self._plan(structured_tasks)
+            
+            # Step 4: Execute RAG (Retrieval Augmented Generation) and merge results
             result, last_result = self._execute(structured_tasks)
             
             self._logger.info(f"Processing completed correctly.")
+        
         except Exception as e:
-            # Define a safe fallback response
+            # Critical error handling: provide a safe fallback for the UI
             prompt_process = prompt
             result = []
             last_result = self.error_msg
-            
-            self._logger.info(f"Processing failed with error: {e}")
+            self._logger.error(f"Processing failed with error: {e}")
 
-        response["details"] = {}
-        response["details"]["prompt"] = prompt
-        response["details"]["prompt_process"] = prompt_process
-        response["details"]["tasks"] = result
+        # Finalizing the response object with metadata and technical details
+        response["details"] = {
+            "prompt": prompt,
+            "prompt_process": prompt_process,
+            "tasks": result
+        }
         
         response["content"] = last_result
         response["result"] = last_result
         
+        # Extract and deduplicate source documents referenced during the process
         used_documents = set()
         available_sources = [src["name"] for src in self._language.get_sources()]
         for task in response["details"]["tasks"]:
@@ -143,51 +133,53 @@ class Orchestrator:
     # ------------------------------
     
     def _preprocess(self, prompt: str) -> list:
-        """Run preprocessing pipeline on the user input."""
+        """Executes query cleaning and semantic task decomposition."""
         self._logger.info("Starting Preprocessing step.")
         prompt_clean, tasks = self._preprocessor.process(prompt)
         self._logger.info("Preprocessing step completed.")
         return prompt_clean, tasks
 
     def _translate(self, prompts: list) -> list:
-        """Translate the prompts into structured queries."""
+        """Converts natural language tasks into the structured DQL format."""
         self._logger.info("Starting Translation step.")
         structured_queries = self._translator.rewrite(prompts)
         self._logger.info("Translation step completed.")
         return structured_queries
 
     def _plan(self, structured_query: dict) -> list[dict]:
-        """Decompose structured query into operations."""
+        """Determines the operational flow for complex cross-document queries."""
         self._logger.info("Starting Planning step.")
         operations = self._planner.decompose(deepcopy(structured_query))
         self._logger.info("Planning step completed.")
         return operations
 
     def _execute(self, operations: list[dict]) -> str:
-        """Execute all planned operations and generate final result."""
+        """Coordinates retrieval and LLM generation for all planned operations."""
         if len(operations) < 1:
-            raise Exception("Tasks not found")
+            raise Exception("Tasks not found during execution phase.")
         
         self._logger.info("Starting Execution step.")
         results = self._executor.generate(deepcopy(operations))
         self._logger.info("Execution step completed.")
             
+        # Returns the full list of results and the specific final generated text
         return results, results[-1].get("result", self.error_msg)
 
     def store_response(self, response: dict):
         """
-        Persist the response in storage (e.g., Redis) and local filesystem.
+        Persists the final response in both remote storage (Redis) and local JSON files.
 
         Args:
-            response (dict): The final response object to store.
+            response (dict): The complete response object generated by the chat method.
         """
         try:
-            # Cache the response in remote storage (e.g., Redis) for 1 hour
+            # Cache the response for 1 hour for quick retrieval in the UI
             self._storage.set_documents(response, ttl=3600)
         except Exception:
+            self._logger.error("Failed to persist document in remote storage.")
             raise Exception("Document not saved in remote storage.")
             
-        # Also save a copy to the local filesystem
-        id = response.get("id", "")
-        file_path = os.path.join(self._CFG.project_root, "documents", f"{id}.json")
+        # File-based persistence for audit and long-term tracking
+        request_id = response.get("id", "unknown")
+        file_path = os.path.join(self._CFG.project_root, "documents", f"{request_id}.json")
         FileHandler().write_file(file_path, response)

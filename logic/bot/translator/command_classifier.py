@@ -4,15 +4,17 @@ from utils.DQL_language import DQLLanguage
 
 class CommandClassifier:
     """
-    Classifies user queries into predefined commands using the LLM and
-    the application's DQL language configuration.
+    Classifies user queries into predefined DQL commands using an LLM.
+
+    This component acts as an intent recognizer that maps natural language 
+    input to the specific operational categories defined in the DQL 
+    language specification (e.g., retrieval, analysis, comparison).
 
     Responsibilities:
-        - Transform the query into a structured format for the LLM.
-        - Invoke the LLM to classify the intent of the query.
-        - Retrieve command information (name and description) from DQLLanguage.
-        - Provide a fallback for unrecognized queries.
-        - Log classification results for traceability.
+        - Mapping queries to the DQL command taxonomy.
+        - Leveraging LLM reasoning with domain-specific prompts.
+        - Managing fallbacks for ambiguous or empty inputs.
+        - Ensuring traceability via structured logging.
     """
     
     # ----------------------
@@ -21,12 +23,13 @@ class CommandClassifier:
     
     def __init__(self, cfg: Config):
         """
-        Initialize the CommandClassifier with configuration and dependencies.
+        Initialize the Classifier with necessary engine and language dependencies.
 
         Args:
-            cfg (Config): Global configuration object providing logger,
-                          LLM instance, and DQL language data.
+            cfg (Config): Global configuration providing access to the LLM 
+                          wrapper, logging services, and DQL grammar.
         """
+        # Inject dependencies from the central configuration
         self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Command Classifier")
         self._project_root = cfg.project_root
@@ -38,60 +41,61 @@ class CommandClassifier:
     
     def classify(self, query: str) -> str:
         """
-        Classify the user query into a DQL command.
+        Processes a raw query string to identify the intended DQL command.
 
-        Steps:
-            1. Prepare the query and available commands for the LLM.
-            2. Call the LLM to determine the intent.
-            3. Map the result to a command name and description.
-            4. Handle unknown queries with a default fallback.
+        The classification logic follows these steps:
+            1. Loading the 'IntentClassification' prompt template.
+            2. Formatting the user query for LLM consumption.
+            3. Parsing the LLM output to match a valid command key.
+            4. Defaulting to 'altro' if no clear intent is identified.
 
         Args:
-            query (str): User input query to classify.
+            query (str): The natural language string provided by the user.
 
         Returns:
-            str: containing 'name' of the classified command.
+            str: The internal 'name' or 'key' of the identified command.
         """
 
-        # Prepare the input dictionary for the LLM prompt
+        # Wrap query in a dictionary for template injection
         query_dict = {
             "query": query
         }
 
         command = {}
-        status = "Error"  # Initial status for logging
+        status = "Error"  # Default status for error tracking
 
         try:
-            # Retrieve the correct prompt for intent classification
+            # Load the system prompt specifically designed for intent recognition
             prompt = self._dql_language.prompts.get("IntentClassification.json", None)
             
             if not prompt:
-                raise ValueError("IntentClassification.json prompt not found.")
+                raise ValueError("IntentClassification.json prompt template is missing from language config.")
             
-            # Only process non-empty queries
+            # Input validation: ensure the query is not just whitespace
             if query_dict.get("query", "").strip():
-                # Invoke the LLM to classify the query
+                # Call the LLM with the formatted prompt and query data
+                # The 'True' flag indicates expected JSON or structured output processing
                 llm_result = self._llm.invoke(
                     prompt,
                     query_dict,
                     True
                 )
 
-                # Retrieve full command information
+                # Cross-reference LLM output with the defined DQL command set
                 command = self._dql_language.get_command_from_key(llm_result)
 
                 status = "Done"
             else:
-                raise ValueError("Empty query provided to CommandClassification.")
+                raise ValueError("Empty query string received.")
 
         except Exception as e:
-            # Fallback to the default 'altro' (other) command in case of any error
-            self._logger.error("Command classification failed: " + str(e))
+            # Safety Fallback: 'altro' (other) ensures the pipeline doesn't crash on unrecognized input
+            self._logger.error(f"Classification pipeline exception: {e}")
             command = "altro"
 
-        # Log the classification result
+        # Record the outcome for auditing and performance monitoring
         self._logger.info(
-            f"\"{query}\" -> {command} ({status})"
+            f"Intent mapping: \"{query}\" -> {command} (Status: {status})"
         )
 
         return command

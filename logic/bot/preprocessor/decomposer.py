@@ -5,6 +5,13 @@ import threading
 from utils.config import Config
 
 class Decomposer():
+    """
+    Handles the decomposition of complex user queries into a sequence of atomic tasks.
+    
+    This class identifies dependencies between sub-questions and uses a Directed Acyclic 
+    Graph (DAG) to ensure tasks are executed in the correct logical order. It implements 
+    a Singleton pattern to manage LLM resources efficiently.
+    """
     _instance = None  # Holds the singleton instance
     _lock = threading.Lock()  # Thread lock for safe initialization
     
@@ -32,13 +39,13 @@ class Decomposer():
     @classmethod
     def get_instance(cls, cfg: Config):
         """
-        Retrieve the singleton instance of Config, creating it if necessary.
+        Retrieve the singleton instance of Decomposer, creating it if necessary.
 
         Args:
-            opts (argparse.Namespace, optional): Parsed command-line options.
+            cfg (Config): The configuration instance.
 
         Returns:
-            Config: The singleton instance of the configuration.
+            Decomposer: The singleton instance.
         """
         if cls._instance is None:
             with cls._lock:  # Ensure thread-safe initialization
@@ -47,45 +54,61 @@ class Decomposer():
         return cls._instance
         
     def decompose(self, query: str) -> list:
+        """
+        Main entry point for query decomposition.
+        
+        The process involves:
+            1. Calling the LLM to identify sub-tasks and dependencies.
+            2. Building a dependency graph to order tasks (Topological Sort).
+            3. Generating unique IDs for each task within the request scope.
+
+        Args:
+            query (str): The raw input query.
+
+        Returns:
+            list: A list of ordered dictionaries representing the structured tasks.
+        """
         status = "Error"
 
         try:
-            # Retrieve the specific prompt for query decomposition
+            # Step 1: Fetch the specialized prompt for decomposition
             prompt = self._dql_language.prompts.get("Decomposition.json", None)
             
             if not prompt:
-                raise ValueError("Error during prompt retrieval")
+                raise ValueError("Decomposition prompt not found in language config.")
             
             if query.strip():
-                # Invoke LLM to rewrite the query based on the prompt
+                # Step 2: Use LLM to extract tasks and their relationships
+                # The result is expected to be a structured list of dicts
                 result = self._llm.invoke(
                     prompt,
                     { "query": query },
                     True
                 )
                 
+                # Step 3: Apply graph logic to sort tasks by dependency
                 result = self.order_tasks(result)
                 
                 status = "Done"
             else:
-                raise ValueError("Empty query provided")
+                raise ValueError("Empty query provided.")
 
         except Exception as e:
+            # Fallback: In case of error, treat the whole query as a single task
             self._logger.error(f"Error during query decomposition: {e}")
             result = [
                 {
                     "id": "1",
                     "prompt": query
                 }
-            ] # Return original text on failure
+            ]
             
-        self._logger.info(f"Decomposition in {len(result)} tasks- {status}")
-        for i, q in enumerate(result, start=1):
-            self._logger.info(f"  Task #{i}: \"{q.get('prompt', '')}\"")
-            
+        self._logger.info(f"Decomposition result: {len(result)} tasks created - {status}")
+        
+        # Format the final task list with unique request-based IDs
         return [
             {
-                "id": f"{self._cfg.get_request_id()}_{str(q.get("id", str(i)))}",
+                "id": f"{self._cfg.get_request_id()}_{str(q.get('id', str(i)))}",
                 "prompt": q.get("prompt", ""),
                 "structured_prompt": {}
             }
@@ -93,43 +116,61 @@ class Decomposer():
         ]
         
     @staticmethod
-    def order_tasks(tasks: list) -> nx.DiGraph:
+    def order_tasks(tasks: list) -> list:
+        """
+        Builds a Directed Acyclic Graph (DAG) to sort tasks based on their dependencies.
+        
+        If multiple terminal (sink) nodes are found, a final 'integration' task 
+        is automatically generated to merge all previous results into a single answer.
+
+        Args:
+            tasks (list): Raw list of tasks with 'id' and 'dependences'.
+
+        Returns:
+            list: Tasks ordered by topological sort.
+        """
         DG = nx.DiGraph()
         
+        # Step 1: Build nodes and edges for the dependency graph
         list_edge = []
         for task in tasks:
+            task_id = str(task.get('id', ''))
             DG.add_node(
-                task.get('id', ''), 
+                task_id, 
                 data={
-                    "id": str(task.get('id', '')), 
+                    "id": task_id, 
                     "prompt": task.get('prompt', '')
                 }
             )
             
+            # Map 'dependences' to graph edges (source -> target)
             for dependence in task.get('dependences', []):
-                edge = (dependence, task.get('id', ''))
+                edge = (str(dependence), task_id)
                 if edge not in list_edge:
                     list_edge.append(edge)
                     
         DG.add_edges_from(list_edge)
         
+        # Step 2: Identify terminal tasks (nodes with no outgoing edges)
         sink_nodes = [n for n in DG.nodes if DG.out_degree(n) == 0]
         
+        # Step 3: Auto-generate an integration task if the reasoning branches out
         if len(sink_nodes) > 1:
             sink_nodes_str = ", ".join([f"#{s}" for s in sink_nodes])
+            new_id = str(len(tasks) + 1)
             
-            new_id = len(tasks) + 1
-            
-            new_task = {
-                "id": str(new_id), 
+            new_task_data = {
+                "id": new_id, 
                 "prompt": f"Integra in un'unica risposta i testi delle risposte {sink_nodes_str}"
             }
             
+            # Connect all sink nodes to the final integration node
             new_edges = [(node, new_id) for node in sink_nodes]
             
-            DG.add_node(new_id, data=new_task)
+            DG.add_node(new_id, data=new_task_data)
             DG.add_edges_from(new_edges)
         
+        # Step 4: Perform topological sort to get a linear execution order
         ordered_ids = list(nx.topological_sort(DG))
         ordered_prompts = [DG.nodes[n]["data"] for n in ordered_ids]
         

@@ -6,12 +6,17 @@ from utils.config import Config
 
 class Preprocessor:
     """
-    Handles preprocessing of user queries before passing them to the assistant.
+    Orchestrates the initial cleaning and structural preparation of user queries.
+
+    This class serves as the first stage of the DQL pipeline. It ensures that 
+    the input is linguistically correct and contextually complete before 
+    breaking it down into executable sub-tasks.
 
     Responsibilities:
-        - Apply spelling and grammar correction.
-        - Normalize text for consistent downstream processing.
-        - Log preprocessing actions for debugging and traceability.
+        - Rectify typos and grammatical errors in new sessions.
+        - Resolve contextual references (anaphora) in ongoing chats.
+        - Normalize text for consistent internal processing.
+        - Decompose complex requests into a sequence of atomic tasks.
     """
     
     # ----------------------
@@ -20,11 +25,11 @@ class Preprocessor:
 
     def __init__(self, cfg: Config):
         """
-        Initialize the Preprocessor with configuration and dependencies.
+        Initialize the Preprocessor with specialized sub-modules.
 
         Args:
-            cfg (Config): Global configuration instance providing logger,
-                          LLM instance, and project paths.
+            cfg (Config): Global configuration instance providing logging, 
+                          storage access, and LLM handles.
         """
         self._logger = cfg.get_logger("Preprocessor")
         self._spelling_checker_class = SpellingChecker(cfg)
@@ -32,50 +37,57 @@ class Preprocessor:
         self._rephraser_class = Rephraser(cfg)
         self._storage = cfg.get_storage()
         
+        # Helper function to retrieve the current conversation history
         self.get_chat_history = cfg.get_chat_history
 
     # -----------------------------------
     # --- Main Preprocessing Pipeline ---
     # -----------------------------------
 
-    def process(self, query: str) -> list:
+    def process(self, query: str) -> tuple:
         """
-        Execute the preprocessing pipeline on the given user query.
+        Executes the full preprocessing workflow on a raw user string.
 
-        The current implementation performs:
-            1. Spell and grammar correction via LLM.
-            2. Lowercasing for normalization.
-            3. Decomposition in tasks
+        The pipeline dynamically adapts based on session history:
+            1. If NEW SESSION: Applies spelling/grammar correction.
+            2. If EXISTING CHAT: Rephrases the query to include previous context.
+            3. Normalization: Converts text to lowercase.
+            4. Decomposition: Splits the query into a structured list of tasks.
 
         Args:
-            query (str): Raw input query from the user.
+            query (str): The raw string input from the user interface.
 
         Returns:
-            list: Preprocessed query, corrected, normalized and divided in tasks.
+            tuple: A tuple containing (normalized_query, list_of_tasks), 
+                   where list_of_tasks contains dictionaries ready for translation.
+        
+        Raises:
+            Exception: If the input query is empty or not a valid string.
         """
         if not query or not isinstance(query, str):
             raise Exception("Received empty or invalid query during preprocessing.")
         
+        # Retrieve context to decide between correction or rephrasing
         chat = self.get_chat_history()
         
         if not chat:
-            self._logger.info("No chat history found for preprocessing.")
-            # Step 1: Correct spelling and grammar using the LLM-based correction module
-            self._logger.info("Starting spelling and grammar correction.")
+            # PHASE 1A: Basic linguistic cleanup for standalone queries
+            self._logger.info("No chat history found. Initiating basic spelling/grammar correction.")
             corrected_query = self._spelling_checker_class.correct_spelling(query)
             self._logger.info("Spelling and grammar correction completed.")
         else:
-            self._logger.info("Chat history found for preprocessing.")
-            # Step 1: Rephrase the query to be self-contained using the LLM-based rephraser module
-            self._logger.info("Starting query rephrasing.")
+            # PHASE 1B: Contextual expansion for ongoing conversations
+            self._logger.info("Chat history detected. Initiating contextual rephrasing.")
             corrected_query = self._rephraser_class.rephrase(query, chat)
             self._logger.info("Query rephrasing completed.")
 
-        # Step 2: Normalize casing
+        # PHASE 2: Text Normalization
+        # Lowercasing helps standardizing the input for the DQL keyword matching
         normalized_query = corrected_query.lower()
         
-        # Step 3: Decompose prompt in tasks
-        self._logger.info("Starting query decomposition into tasks.")
+        # PHASE 3: Structural Decomposition
+        # Breaking the complex prompt into atomic, interdependent tasks
+        self._logger.info("Starting query decomposition into atomic tasks.")
         prompts = self._decomposer_class.decompose(normalized_query)
         self._logger.info("Query decomposition completed.")
 

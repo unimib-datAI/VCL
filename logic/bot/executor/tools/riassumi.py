@@ -1,6 +1,3 @@
-from utils.DQL_language import DQLLanguage
-from utils.LLM import LLM
-
 def riassumi(context, what, how, llm, language) -> tuple[str, dict]:
     state = {
         "how": how,

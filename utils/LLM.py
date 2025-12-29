@@ -11,45 +11,33 @@ from langchain_core.output_parsers import StrOutputParser
 
 class LLM:
     """
-    Thread-safe Singleton class for initializing, managing, and invoking
-    Large Language Models (LLMs) through LangChain.
+    Thread-safe Singleton class for managing Large Language Models via LangChain.
 
-    This class provides a unified interface to multiple LLM providers 
-    (Gemini, OpenAI, Copilot, HuggingFace) while ensuring that only a single 
-    model instance is created across threads. It handles provider-specific 
-    API key management, prompt template construction, and controlled invocation
-    with a configurable delay between requests.
+    This class provides a unified abstraction layer over multiple LLM providers, 
+    ensuring that only one model instance exists per execution context. It handles 
+    automatic fallback to Gemini if the primary provider fails and enforces 
+    rate-limiting through configurable delays.
 
-    Supported providers:
-        - google_genai (Gemini)
-        - openai (GPT models)
-        - copilot (GitHub Copilot API)
-        - huggingface (Hugging Face Inference API)
-
-    If initialization with the selected provider fails, the class 
-    automatically falls back to Gemini ("gemini-2.0-flash").
-
-    Attributes:
-        _model_name (str): The name of the LLM model (e.g., "gpt-4o-mini").
-        _provider (str): The provider name ("google_genai", "openai", etc.).
-        _llm: The initialized LangChain chat model instance.
-        parser (StrOutputParser): Default parser for string-based model responses.
-        _seconds (int): Delay (in seconds) between consecutive LLM invocations.
-        _project_root (Path): Root directory used to locate API key files (unused for env vars).
+    Responsibilities:
+        - Abstracting provider-specific logic (OpenAI, Gemini, Copilot, HF).
+        - Managing environment variables for API authentication.
+        - Parsing diverse LLM output formats (JSON, Python literals, Markdown).
+        - Ensuring thread safety during initialization using a global lock.
     """
-    # Load env variable from file .env
+    
+    # Load environmental variables from .env on class definition
     load_dotenv()
     
-    # Singleton instance and thread lock
+    # Static variables for Singleton management
     _instance = None
     _lock = threading.Lock()
 
-    # Default model configuration
+    # Default settings
     model_name: str = "gemini-2.0-flash"
     provider: str = "google_genai"
     parser = StrOutputParser()
 
-    # Mapping between provider names and environment variable names
+    # Mapping of logical provider names to their respective environment keys
     _PROVIDER_ENV_MAP = {
         "google_genai": "GOOGLE_API_KEY",
         "openai": "OPENAI_API_KEY",
@@ -70,22 +58,23 @@ class LLM:
         provider: str = "google_genai",
     ):
         """
-        Initialize the LLM instance. (Private, use get_instance())
+        Private constructor to set up the LLM engine.
 
         Args:
-            api_key (str, optional): Provider API key.
-            seconds (int): Delay between LLM invocations.
-            project_root (Path): Root directory (kept for compatibility).
-            model_name (str): Name of the model to use.
-            provider (str): LLM provider ('google_genai', 'openai', 'copilot', 'huggingface').
+            api_key (str, optional): Key for API access. Defaults to env lookup.
+            seconds (int): Pause duration between invocations to prevent rate-limiting.
+            project_root (Path): Root project directory for path resolution.
+            model_name (str): Specific model ID (e.g., 'gpt-4o-mini').
+            provider (str): Provider key (e.g., 'openai').
         """
         self._project_root = project_root
 
         try:
+            # Primary attempt: Initialize with user preferences
             self._initialize_llm(api_key, model_name, provider)
         except Exception as e:
-            # Fallback to Gemini in case of provider failure
-            print(f"Failed to initialize requested LLM ({provider}/{model_name}). Falling back to Gemini. Error: {e}")
+            # Secondary attempt: Automatic fallback to highly available Gemini engine
+            print(f"CRITICAL: Failed to initialize {provider}/{model_name}. Fallback triggered. Error: {e}")
             self._initialize_llm(None, "gemini-2.0-flash", "google_genai")
 
         self._seconds = seconds
@@ -101,17 +90,13 @@ class LLM:
         provider: str = "google_genai",
     ):
         """
-        Retrieve the singleton instance of the LLM in a thread-safe manner.
+        Thread-safe accessor for the Singleton instance.
 
-        Args:
-            api_key (str, optional): Provider API key.
-            seconds (int): Delay between LLM invocations.
-            project_root (Path): Root directory.
-            model_name (str): Name of the model to use.
-            provider (str): LLM provider.
-        
+        Uses the Double-Checked Locking pattern to minimize overhead 
+        while ensuring safe concurrent access during the first creation.
+
         Returns:
-            LLM: The singleton LLM instance.
+            LLM: The shared engine instance.
         """
         if cls._instance is None:
             with cls._lock:
@@ -129,60 +114,55 @@ class LLM:
     # --- Private Helpers ---
     # -----------------------
 
-    def _initialize_llm(self, api_key, model_name, provider):
+    def _initialize_llm(self, api_key: str, model_name: str, provider: str):
         """
-        Initialize the LangChain chat model for the specified provider and model.
+        Constructs the LangChain chat model after verifying authentication.
         """
         self._model_name = model_name
         self._provider = provider
 
-        # Load API key (from arg or environment)
+        # Retrieve and sanitize the API key
         api_key = self._load_api_key(api_key, provider)
 
-        # Set environment variable
+        # Inject key into os.environ for LangChain standard compatibility
         self._set_env_key(provider, api_key)
 
-        # Initialize model
+        # Initialize the dynamic LangChain chat model wrapper
         self._llm = init_chat_model(model_name, model_provider=provider)
 
     def _set_env_key(self, provider: str, api_key: str):
         """
-        Set the correct environment variable for each supported provider.
+        Updates process-level environment variables for the selected provider.
         """
         env_name = self._PROVIDER_ENV_MAP.get(provider, "")
         if not env_name:
-            raise ValueError(f"Unsupported provider: {provider}")
+            raise ValueError(f"Integration error: Unsupported provider '{provider}'")
         os.environ[env_name] = api_key
 
     def _load_api_key(self, api_key: str, provider: str) -> str:
         """
-        Load the API key from argument or from environment variables.
+        Resolves API credentials from either function arguments or system environment.
 
         Args:
-            api_key (str): Provided API key.
-            provider (str): The LLM provider name to look up in environment.
+            api_key (str): Direct key input.
+            provider (str): Provider identifier to map to env keys.
 
         Returns:
-            str: Valid API key.
-            
-        Raises:
-            ValueError: If no API key is provided and none found in environment.
+            str: Verified API token.
         """
-        # 1. If api_key is passed directly, use it
+        # Priority 1: Explicitly provided key
         if api_key:
             return api_key
 
-        # 2. Identify the environment variable name
+        # Priority 2: Environmental variable lookup
         env_var_name = self._PROVIDER_ENV_MAP.get(provider)
         if not env_var_name:
-            raise ValueError(f"Unsupported provider for API key lookup: {provider}")
+            raise ValueError(f"Configuration error: Provider '{provider}' has no environment mapping.")
 
-        # 3. Retrieve from environment (.env should be loaded prior to running or by system)
         fetched_key = os.getenv(env_var_name)
 
-        # 4. If still no key, it's an error
         if not fetched_key:
-            raise ValueError(f"No API key found. Please provide it as an argument or set the {env_var_name} environment variable.")
+            raise ValueError(f"Auth error: No key found in {env_var_name}. Check your .env file.")
 
         return fetched_key
 
@@ -190,77 +170,57 @@ class LLM:
     # --- Output Formatter ---
     # ------------------------
 
-    # --- JSON Formatter ---
-    
     @staticmethod
     def str_in_dict(output: str) -> dict:
         """
-        Safely extract and parse a dictionary from a string.
-        Handles both JSON and Python literal dict formats.
-
-        Args:
-            output (str): String containing a JSON or Python dictionary.
-
-        Returns:
-            dict: Parsed dictionary or empty dict if parsing fails.
+        Extracts a dictionary structure from raw LLM text using mixed parsing strategies.
+        
+        Attempts standard JSON decoding first, falling back to Python Abstract Syntax 
+        Tree (AST) evaluation for non-strict JSON formatted outputs.
         """
         try:
-            # Find the first '{' and last '}'
+            # Semantic extraction: isolate content within the outermost curly braces
             output = output[output.index("{"): output.rfind("}") + 1]
             try:
-                # Try parsing as JSON (strict)
                 return json.loads(output)
             except json.JSONDecodeError:
-                # Fallback to parsing as Python literal (more permissive)
+                # Periphery parser for LLM outputs that use Python syntax (single quotes, etc.)
                 return ast.literal_eval(output)
         except (ValueError, SyntaxError):
-            # Return empty if no dict is found or parsing fails
             return {}
 
     @staticmethod
     def str_in_list(output: str) -> list:
         """
-        Safely extract and parse a list from a string.
-
-        Args:
-            output (str): String containing a Python list.
-
-        Returns:
-            list: Parsed list or empty list if parsing fails.
+        Safely extracts a list structure from a string using AST literal evaluation.
         """
         try:
-            # Find the first '[' and last ']'
+            # Isolate content within square brackets
             output = output[output.index("["): output.rfind("]") + 1]
             return ast.literal_eval(output)
         except (ValueError, SyntaxError):
             return []
             
-    # --- String Formatter ---
-    
     def _clean_response(self, result: str, lower: bool) -> str:
         """
-        Normalize and clean the raw LLM response.
-        Removes common preamble markers (like "result:") and normalizes case.
+        Performs post-generation cleanup to remove boilerplate markers and whitespace.
         
         Args:
-            result (str): The raw output from the LLM.
-            lower (bool): Whether to convert the result to lowercase.
-            
-        Returns:
-            str: The cleaned string.
+            result (str): Raw string from LLM.
+            lower (bool): Flag to force lowercase output.
         """
         if lower:
             result = result.lower()
 
-        # These markers (some in Italian) are specific to the app's prompts
-        for marker in ["risultato:", "risposta:", "result:", "response:"]:
+        # Remove domain-specific prefixes added by some instruction-tuned models
+        prefixes = ["risultato:", "risposta:", "result:", "response:"]
+        for marker in prefixes:
             if marker in result.lower():
-                # Find index of marker and strip everything before it
                 idx = result.lower().index(marker) + len(marker)
                 result = result[idx:]
 
         result = result.strip()
-        # Handle cases where the LLM returns an empty string literal
+        # Handle empty string representations
         return "" if result == "''" else result
 
     # ----------------------
@@ -269,43 +229,42 @@ class LLM:
 
     def invoke(self, prompt_info: tuple, info_user: dict, lower: bool = False) -> str | list | dict:
         """
-        Invoke the LLM with the given prompt template and input data.
+        Coordinates the full LangChain chain execution: Prompt -> LLM -> Parser.
+
+        This method merges static DQL parameters with dynamic user-provided data, 
+        invokes the pipeline, and applies the requested formatting logic.
 
         Args:
-            prompt_info (tuple): A tuple containing prompt components:
-                (prompt_template, static_params, user_param_keys, parser_type)
-            info_user (dict): A dictionary containing user-specific data
-                            (e.g., {"query": "...", "context": "..."}).
-            lower (bool, optional): Whether to lowercase the final result.
+            prompt_info (tuple): (ChatPromptTemplate, DQL_params, user_keys, output_type).
+            info_user (dict): User context data (e.g. queries, retrieved documents).
+            lower (bool): True to lowercase the final response string.
 
         Returns:
-            str | list | dict: The cleaned and parsed LLM response. The
-                                type depends on the `parser_type` in prompt_info.
+            The parsed response (dict, list, or str) based on the prompt definition.
         """
-        # Unpack the prompt information tuple
+        # Unpack structural metadata from the prompt loader
         prompt, params_DQL, params_user, parser_type = prompt_info
         
-        # Build the input prompt dictionary
+        # Assemble variables: combine system-level DQL context with user interaction data
         input_prompt = deepcopy(params_DQL) if params_DQL else {}
         for param_key in params_user:
-            # Map keys from info_user (e.g., "query") to the prompt
             input_prompt[param_key] = info_user.get(param_key, "")
 
-        # Create and invoke the LangChain chain
+        # LangChain Expression Language (LCEL) chain orchestration
         chain = prompt | self._llm | self.parser
-        result = chain.invoke(input_prompt)
+        raw_result = chain.invoke(input_prompt)
         
-        # Clean the raw string output
-        result = self._clean_response(result, lower)
+        # Cleanup and dynamic parsing based on the expected 'parser_type'
+        cleaned_result = self._clean_response(raw_result, lower)
         
-        # Parse the result based on the expected type
         if parser_type == "list":
-            result = self.str_in_list(result)
+            final_output = self.str_in_list(cleaned_result)
         elif parser_type == "dict":
-            result = self.str_in_dict(result)
-        # If parser_type is not "list" or "dict", the raw string is returned
+            final_output = self.str_in_dict(cleaned_result)
+        else:
+            final_output = cleaned_result
         
-        # Enforce a delay to avoid rate-limiting
+        # Throttle execution to comply with provider API rate limits
         time.sleep(self._seconds)
 
-        return result
+        return final_output
