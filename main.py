@@ -1,14 +1,13 @@
+from dotenv import load_dotenv
+# Load environmental variables from the .env file (e.g., DB credentials)
+load_dotenv()
+
 import argparse
 import streamlit.web.cli as stcli
 import sys
 
-from dotenv import load_dotenv
-
-#from scripts.evaluation.main import evaluation
+from scripts.evaluation.main import evaluation
 from utils.config import Config
-
-# Load environmental variables from the .env file (e.g., DB credentials)
-load_dotenv()
 
 def parse_args() -> argparse.Namespace:
     """
@@ -183,8 +182,7 @@ def main() -> None:
     
     if opts:
         if opts.evaluation_mode:
-            #evaluation()
-            print("TODO")
+            evaluation()
         else:
             # Hand off execution to the web interface
             _launch_streamlit()

@@ -1,0 +1,299 @@
+{
+    "commands": [
+        {
+            "key": "a",
+            "command": "cerca",
+            "description": "Individua ed estrae puntualmente entità, concetti o termini richiesti (includendo elementi descrittivi), garantendo la massima completezza informativa.",
+            "guidelines": [
+                "- Pertinenza Rigorosa: Seleziona solo i passaggi che rispondono inequivocabilmente alla richiesta.",
+                "- Esaustività: Estrai tutte le occorrenze pertinenti presenti nel documento.",
+                "- Fedeltà Testuale: Riporta il testo esattamente come appare, senza parafrasi.",
+                "- No Rumore: Escludi il testo circostante non necessario alla comprensione del frammento."
+            ]
+        },
+        {
+            "key": "b",
+            "command": "riassumi",
+            "description": "Elabora una sintesi tecnica del documento, preservando i fatti determinanti e la struttura logica, eliminando solo le ridondanze.",
+            "guidelines": [
+                "- Focus Sostanziale: Mantieni intatti i riferimenti chiave, le date, i nomi dei soggetti e il cuore delle argomentazioni.",
+                "- Densità Informativa: Non sacrificare dettagli fondamentali per la brevità.",
+                "- Coerenza: Riporta eventuali contraddizioni originali senza risolverle.",
+                "- Autonomia: Il testo deve permettere la comprensione del documento senza ricorrere all'originale.",
+                "- Oggettività: Non aggiungere valutazioni personali sulla qualità del contenuto."
+            ]
+        },
+        {
+            "key": "c",
+            "command": "estrai semantico",
+            "description": "Isola sezioni dotate di autonomia di significato anche se non esplicitamente titolate, restituendole con ricchezza di dettagli.",
+            "guidelines": [
+                "- Identificazione Implicita: Riconosci le sezioni in base al contenuto tematico.",
+                "- Completezza della Sezione: Includi tutti i dettagli che compongono la sezione individuata.",
+                "- Riformulazione Chiara: Puoi riorganizzare la sintassi per chiarezza senza alterare il significato originale.",
+                "- Trasparenza: Se una sezione tematica è assente, dichiaralo esplicitamente.",
+                "- Struttura Logica: Presenta il risultato evidenziando la funzione della parte estratta."
+            ]
+        },
+        {
+            "key": "d",
+            "command": "estrai logico",
+            "description": "Mappa l'intero iter logico-argomentativo, esplicitando premesse, passaggi inferenziali e conclusioni.",
+            "guidelines": [
+                "- Dettaglio Sequenziale: Ricostruisci la catena logica passo dopo passo.",
+                "- Esplicitazione: Rendi manifesti i passaggi logici impliciti se chiaramente deducibili.",
+                "- Fedeltà al Ragionamento: Riporta il ragionamento così come formulato, inclusi eventuali errori logici dell'autore.",
+                "- Completezza: Includi tutte le tesi trattate se funzionali alla conclusione.",
+                "- Output Analitico: Mostra chiaramente le relazioni causa-effetto."
+            ]
+        },
+        {
+            "key": "e",
+            "command": "confronta",
+            "description": "Esegue un'analisi comparativa tra documenti, evidenziando convergenze o divergenze su fatti, dati e conclusioni.",
+            "guidelines": [
+                "- Analisi Differenziale: Scendi nel dettaglio delle sfumature e delle discrepanze minime.",
+                "- Supporto Testuale: Cita brevi passaggi dai documenti per sostanziare il confronto.",
+                "- Oggettività: Registra le discrepanze senza stabilire quale fonte sia corretta.",
+                "- Struttura Chiara: Usa tabelle o elenchi contrapposti per rendere immediato il confronto.",
+                "- Esaustività: Copri tutti gli aspetti rilevanti dei documenti analizzati."
+            ]
+        },
+        {
+            "key": "f",
+            "command": "integra",
+            "description": "Genera un testo unico consolidato fondendo più fonti, risolvendo le sovrapposizioni e mantenendo ogni dettaglio informativo unico.",
+            "guidelines": [
+                "- Conservazione: Se un dettaglio è presente in una sola fonte, deve essere presente nel testo finale.",
+                "- Gestione Conflitti: Segnala esplicitamente dati inconciliabili tra le fonti.",
+                "- Pulizia: Elimina solo le ripetizioni identiche.",
+                "- Coesione: Il testo finale deve essere fluido e logicamente raccordato.",
+                "- Massima Estensione: Il risultato deve contenere la somma di tutte le informazioni uniche."
+            ]
+        },
+        {
+            "key": "g",
+            "command": "verifica",
+            "description": "Effettua un controllo tecnico sulla coerenza interna e sulla correttezza dei riferimenti, segnalando errori oggettivi.",
+            "guidelines": [
+                "- Controllo Puntuale: Verifica la correttezza formale di citazioni e dati tecnici.",
+                "- Rilevazione Contraddizioni: Segnala passaggi in cui il documento smentisce se stesso.",
+                "- Neutralità: Limita l'analisi alla correttezza logico-formale senza giudicare il merito.",
+                "- Precisione: Indica l'esatta posizione dell'errore.",
+                "- Output Negativo: Se non ci sono errori, conferma l'assenza di incongruenze."
+            ]
+        },
+        {
+            "key": "h",
+            "command": "analizza",
+            "description": "Decompone il documento nei suoi elementi costitutivi valutandone la completezza rispetto allo scopo prefissato.",
+            "guidelines": [
+                "- Anatomia del Testo: Isola ogni componente funzionale del documento.",
+                "- Valutazione Strutturale: Verifica se sono presenti i requisiti necessari per la tipologia di documento.",
+                "- Analisi Relazionale: Spiega come le diverse parti si connettono tra loro.",
+                "- Rilevazione Assenze: Segnala chiaramente elementi essenziali mancanti.",
+                "- Report Dettagliato: Fornisci un quadro esaustivo della struttura."
+            ]
+        },
+        {
+            "key": "i",
+            "command": "riorganizza",
+            "description": "Ristruttura le informazioni esistenti secondo un nuovo criterio (cronologico, tematico, etc.) senza perdere contenuto.",
+            "guidelines": [
+                "- Criterio Rigido: Attieniti strettamente all'ordine richiesto.",
+                "- Integrità: Ricolloca ogni singola informazione senza tagli.",
+                "- Atomicità: Sposta i blocchi informativi nella loro interezza.",
+                "- Fluidità: Garantisci la leggibilità grammaticale del nuovo ordine.",
+                "- Verifica: Assicura che nessun concetto sia stato smarrito."
+            ]
+        },
+        {
+            "key": "j",
+            "command": "classifica",
+            "description": "Attribuisce etichette categoriali a porzioni di testo in base alla loro funzione o contenuto.",
+            "guidelines": [
+                "- Granularità: Classifica ogni segmento rilevante, non solo i macro-paragrafi.",
+                "- Precisione Terminologica: Usa termini tecnici appropriati per la categoria.",
+                "- Sostanza: Classifica in base a ciò che il testo esprime, non solo ai titoli.",
+                "- Mappatura: Associa ogni etichetta al rispettivo testo in modo univoco.",
+                "- Trasparenza: Segnala i casi di ambiguità non classificabili."
+            ]
+        },
+        {
+            "key": "k",
+            "command": "adegua lunghezza",
+            "description": "Rimodula la lunghezza del documento o di una risposta precedentemente generata secondo un limite richiesto, preservando integralmente il contenuto informativo e la struttura argomentativa originale.",
+            "guidelines": [
+                "- Invarianza Semantica: Non alterare significato, fatti, date, nomi o relazioni logiche presenti nel testo.",
+                "- Controllo Dimensionale: Espandi o riduci il testo solo tramite riformulazione, accorpamento o distensione sintattica.",
+                "- Completezza: Nessuna informazione rilevante deve essere eliminata o introdotta.",
+                "- Coerenza Strutturale: Mantieni l’ordine logico e gerarchico degli argomenti.",
+                "- Neutralità: Evita interpretazioni, commenti o valutazioni non presenti nel documento originale.",
+                "- Rispetto del Limite: il limite richiesto è quasi più importante del contenuto, assicurati che venga rispettato"
+            ]
+        },
+        {
+            "key": "l",
+            "command": "altro",
+            "description": "Gestisce richieste non standard applicando i principi generali di fedeltà al testo, esaustività e pertinenza legale.",
+            "guidelines": [
+                "- Interpretazione Conservativa: Cerca di soddisfare la richiesta attenendoti strettamente ai dati presenti.",
+                "- Massima Dettagliatezza: In dubbio, fornisci più dettagli piuttosto che meno.",
+                "- Trasparenza: Se la richiesta richiede un'operazione impossibile con i dati forniti, dichiaralo subito.",
+                "- Stile Professionale: Mantieni il tono formale e l'assenza di concetti irrilevanti per il dominio legale.",
+                "- Adattabilità Rigorosa: Usa gli strumenti di analisi, sintesi o estrazione secondo necessità, ma senza mai inventare informazioni."
+            ],
+            "default": true,
+            "atomic": [
+                "*"
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "name": "Sentenza di Tribunale",
+            "synonyms": ["sentenza di primo grado"],
+            "description": ""
+        },
+        {
+            "name": "Sentenza di Corte d'Appello",
+            "synonyms": ["sentenza di secondo grado"],
+            "description": ""
+        },
+
+        {
+            "name": "Ricorso",
+            "synonyms": [],
+            "description": ""
+        },
+
+        {
+            "name": "Comparsa di Costituzione e Risposta",
+            "synonyms": [],
+            "description": ""
+        }
+    ],
+    "what": [
+        {
+            "name": "estratto",
+            "definition": "Specifica porzione di testo letterale o citazione.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["cerca"]
+        },
+        {
+            "name": "soggetto",
+            "definition": "Persone, enti, organizzazioni o attori menzionati nel testo.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["cerca"]
+        },
+        {
+            "name": "dati numerici",
+            "definition": "Valori monetari, statistiche, date o quantità.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["cerca"]
+        },
+        {
+            "name": "argomentazione",
+            "definition": "Sequenza di ragionamenti volti a sostenere una tesi o una conclusione.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["estrai logico"]
+        },
+        {
+            "name": "fatti",
+            "definition": "Descrizione di eventi, azioni o circostanze oggettive.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["estrai semantico"]
+        },
+        {
+            "name": "conclusioni",
+            "definition": "Esiti finali, decisioni o risultati derivanti dall'analisi o dal processo descritto.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["estrai semantico"]
+        },
+        {
+            "name": "metodologia",
+            "definition": "Descrizione delle procedure, dei metodi o degli approcci utilizzati.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["estrai semantico"]
+        },
+        {
+            "name": "definizioni",
+            "definition": "Spiegazioni di termini specifici, acronimi o concetti chiave all'interno del testo.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["cerca"]
+        },
+        {
+            "name": "riferimenti temporali",
+            "definition": "Date, archi temporali, scadenze o sequenze cronologiche.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["cerca"]
+        },
+        {
+            "name": "obiettivi",
+            "definition": "Finalità dichiarate, scopi o intenti dell'autore o dei soggetti coinvolti.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["estrai semantico"]
+        },
+        {
+            "name": "rischi e criticità",
+            "definition": "Segnalazione di problemi, minacce, punti deboli o elementi di incertezza.",
+            "available": [
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello",
+                "Comparsa di Costituzione e Risposta",
+                "Ricorso"
+            ],
+            "relative_command": ["estrai semantico"]
+        }
+    ]
+}

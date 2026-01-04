@@ -136,10 +136,7 @@ class DQLLanguage:
         
     def _get_default_language_from_file(self) -> dict:
         """Internal helper to load the base JSON grammar from static assets."""
-        default_language_path = os.path.join(
-            self._project_root, "documents", "language", "default_language.json"
-        )
-        return FileHandler().read_file(default_language_path)
+        return self._storage._get_default_language(self._user_id)
 
     def set_default_language(self) -> bool:
         """Restores the user grammar to system defaults."""
@@ -236,7 +233,7 @@ class DQLLanguage:
         ]
         # Safety fallback: uses the penultimate command (excluding 'riformula')
         if not default_commands and self._commands:
-            default_commands = [self._commands[-2]]
+            default_commands = [self._commands[-1]]
 
         self._default_command = default_commands[0] if default_commands else {}
 
@@ -398,9 +395,9 @@ class DQLLanguage:
                 if "default" in param: 
                     resolved[param] = self._default_command.get("key", "")
                 elif "last" in param: 
-                    resolved[param] = self._commands[-2].get("key", "") if len(self._commands) > 2 else ""
+                    resolved[param] = self._commands[-1].get("key", "") if len(self._commands) > 0 else ""
                 elif "first" in param: 
-                    resolved[param] = self._commands[0].get("key", "") if len(self._commands) > 1 else ""
+                    resolved[param] = self._commands[0].get("key", "") if len(self._commands) > 0 else ""
             elif "sources" in param:
                 resolved[param] = str(len(self._sources)) if "|" in param else self.sources_string(self._sources)
         return resolved
@@ -426,11 +423,14 @@ class DQLLanguage:
         sources_list = []
         for src in sources:
             synonyms = [f"'{s.strip()}'" for s in src.get("synonyms", [])]
-            label = f'"{src["name"]}"' + (f" (o {', '.join(synonyms)})" if synonyms else "")
-            sources_list.append(f'\t\t- {label}: {src["description"]}')
-        return "\n".join(["\t- \"Legal Documents\": Only the following are available:"] + sources_list)
+            label = f'\"{src["name"]}\"' + (f" (o {', '.join(synonyms)})" if synonyms else "")
+            label = f'{label}: {src["description"]}'.strip()
+            if label.endswith(":"):
+                label = label[:-1]
+            sources_list.append(f'\t- {label}')
+        return "\n".join(sources_list)
     
     @staticmethod
     def commands_string(commands: list, main_key: str = 'key') -> str:
         """Renders command intents as a bulleted list for LLM context."""
-        return "\n".join([f"- \"{cmd[main_key]}\": {cmd['description']}" for cmd in commands if cmd[main_key] != "z"])
+        return "\n".join([f"- \"{cmd[main_key]}\": {cmd['description']}" for cmd in commands])

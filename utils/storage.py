@@ -122,7 +122,7 @@ class Storage:
     # --- Authentication ---
     # ----------------------
     
-    def register_user(self, username, email, password, role) -> Tuple[bool, Any]:
+    def register_user(self, username, email, password, role = "Altro") -> Tuple[bool, Any]:
         """
         Creates a new user profile, enforces security policies, and prepares 
         default environment (documents/settings).
@@ -164,7 +164,7 @@ class Storage:
                 "password": hashed_pw,
                 "role": role,
                 "data": {"chat": {}},
-                "settings": {"language": self._get_default_language()}
+                "settings": {"language": self._get_default_language(username)}
             }
             
             self._users.insert_one(new_user)
@@ -278,14 +278,16 @@ class Storage:
     def get_document_by_type(self, user_id: str, value: str) -> Optional[dict]:
         """Retrieves a document filtered by its functional type."""
         docs = self.get_all_documents(user_id)
+        value = value.lower()
         if not docs: return None
-        return next((doc for doc in docs if doc.get("type_doc") == value), None)
+        return next((doc for doc in docs if doc.get("type_doc").lower() == value), None)
     
     def get_document_by_name(self, user_id: str, value: str) -> Optional[dict]:
         """Retrieves a document filtered by its filename/name."""
         docs = self.get_all_documents(user_id)
+        value = value.lower()
         if not docs: return None
-        return next((doc for doc in docs if doc.get("name") == value), None)
+        return next((doc for doc in docs if doc.get("name").lower() == value), None)
     
     def _get_default_docs(self) -> list:
         """Loads base JSON documents from the local filesystem."""
@@ -511,9 +513,11 @@ class Storage:
     
     def set_default_language(self, user_id: str) -> bool:
         """Resets language settings to system factory defaults."""
-        return self.set_language(user_id, self._get_default_language())
+        return self.set_language(user_id, self._get_default_language(user_id))
 
-    def _get_default_language(self) -> dict:
-        """Loads the factory default language JSON from disk."""
-        path = os.path.join(self._project_root, "documents", "language", "default_language.json")
+    def _get_default_language(self, username) -> dict:
+        """Loads the factory default language JSON from disk. 
+        DQL-Default, LDQL-Default, LDQL-Specific are users for evaluation"""
+        prefix = "default" if username.lower() not in ["dql-default", "ldql-default", "ldql-specific"] else username.lower()
+        path = os.path.join(self._project_root, "documents", "language", f"{prefix}_language.json")
         return self._file_handler.read_file(path)

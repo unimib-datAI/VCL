@@ -14,7 +14,7 @@
         {
             "key": "b",
             "command": "riassumi",
-            "description": "Elabora una sintesi tecnica del documento, preservando integralmente i fatti determinanti, le argomentazioni in diritto e il dispositivo, eliminando solo le ridondanze stilistiche.",
+            "description": "Elabora una sintesi tecnica del documento, preservando integralmente i fatti determinanti, le argomentazioni in diritto e il dispositivo, eliminando solo le ridondanze stilistiche. Riduce quindi il numero di parole di una risposta.",
             "guidelines": [
                 "- Focus Legale: Mantieni intatti i riferimenti normativi, le date cruciali, i nomi delle parti e il cuore logico delle argomentazioni.",
                 "- Densità Informativa: Non sacrificare dettagli sostanziali per la brevità. Il riassunto deve essere denso di informazioni utili a un avvocato.",
@@ -121,6 +121,19 @@
         },
         {
             "key": "k",
+            "command": "adegua lunghezza",
+            "description": "Rimodula/Adegua/Adatta la lunghezza del documento o di una risposta precedentemente generata secondo un limite richiesto, preservando integralmente il contenuto informativo e la struttura argomentativa originale.",
+            "guidelines": [
+                "- Invarianza Semantica: Non alterare significato, fatti, date, nomi o relazioni logiche presenti nel testo.",
+                "- Controllo Dimensionale: Espandi o riduci il testo solo tramite riformulazione, accorpamento o distensione sintattica.",
+                "- Completezza: Nessuna informazione rilevante deve essere eliminata o introdotta.",
+                "- Coerenza Strutturale: Mantieni l’ordine logico e gerarchico degli argomenti.",
+                "- Neutralità: Evita interpretazioni, commenti o valutazioni non presenti nel documento originale.",
+                "- Rispetto del Limite: il limite richiesto è quasi più importante del contenuto, assicurati che venga rispettato"
+            ]
+        },
+        {
+            "key": "l",
             "command": "altro",
             "description": "Gestisce richieste non standard applicando i principi generali di fedeltà al testo, esaustività e pertinenza legale.",
             "guidelines": [
@@ -139,57 +152,24 @@
 
     "sources": [
         {
-            "name": "sentenza di primo grado",
-            "synonyms": ["s. trib.", "s. g.d.p.", "s. i grado", "s1"],
-            "description": "Provvedimento decisorio emesso dall'organo giudicante che si è pronunciato per primo sulla controversia (es. Tribunale, Giudice di Pace)."
+            "name": "Ricorso",
+            "synonyms": ["Ricorso giuridico", "ricorso", "r1", "r2"],
+            "description": "Atto con cui l'attore avvia il II grado e chiama in causa la controparte."
         },
-
         {
-            "name": "atto di citazione",
-            "synonyms": [],
-            "description": "È l'atto introduttivo del giudizio con cui l'attore (chi inizia la causa) chiama in giudizio il convenuto, espone i fatti e formula le sue richieste al giudice"
+            "name": "Comparsa di Costituzione e Risposta",
+            "synonyms": ["Comparsa di risposta", "Risposta del convenuto", "Memoria Difensiva", "memoria", "m1", "m2"],
+            "description": "Atto con cui il convenuto si difende, propone eccezioni o domande riconvenzionali."
         },
-
         {
-            "name": "atto difensivo costituzione iniziale convenuta",
-            "synonyms": [],
-            "description": "È il primo atto difensivo del convenuto (chi viene chiamato in causa). Con questo documento il convenuto si presenta in giudizio, contesta le richieste dell'attore e propone le proprie difese ed eccezioni"
+            "name": "Sentenza di Tribunale",
+            "synonyms": ["Sentenza di primo grado", "s. trib.", "s. g.d.p.", "s. i grado", "s1"],
+            "description": "Decisione emessa dal Tribunale in composizione monocratica o collegiale."
         },
-
         {
-            "name": "memoria attrice: precisazione delle domande",
-            "synonyms": [],
-            "description": "La parte attrice precisa o modifica le domande e le eccezioni già proposte, senza però introdurne di nuove."
-        },
-
-        {
-            "name": "memoria attrice: richieste mezzi istruttori",
-            "synonyms": [],
-            "description": "La parte attrice richiede i mezzi di prova (es. testimoni, documenti) che si vogliono utilizzare per dimostrare i fatti."
-        },
-
-        {
-            "name": "memoria convenuta: precisazione delle difese",
-            "synonyms": [],
-            "description": "La parte convenuta precisa o modifica le difese già proposte, senza però introdurne di nuove."
-        },
-
-        {
-            "name": "memoria convenuta: richieste mezzi istruttori",
-            "synonyms": [],
-            "description": "La parte convenuta richiede i mezzi di prova (es. testimoni, documenti) che si vogliono utilizzare per dimostrare i fatti."
-        },
-
-        {
-            "name": "memoria convenuta: prova contraria finale",
-            "synonyms": [],
-            "description": "La parte convenuta indica le prove \"contrarie\" per rispondere alle richieste di prova della controparte."
-        },
-
-        {
-            "name": "atto conclusivo finale difesa attrice",
-            "synonyms": [],
-            "description": "È l'atto difensivo finale scritto, depositato al termine della causa. Riassume l'intero svolgimento del processo e illustra le ragioni di fatto e di diritto per cui il giudice dovrebbe accogliere le proprie conclusioni, alla luce di quanto emerso durante l'istruttoria."
+            "name": "Sentenza di Corte d'Appello",
+            "synonyms": ["Sentenza di secondo grado", "s. app.", "sent. ii° gr", "s2"],
+            "description": "Decisione sull'impugnazione della sentenza di primo grado."
         }
     ],
 
@@ -198,15 +178,10 @@
             "name": "frase",
             "definition": "L'operazione si focalizza su una specifica proposizione o un estratto testuale letterale (es. 'cerca questa citazione').",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "cerca"
@@ -217,15 +192,10 @@
             "name": "persona",
             "definition": "La ricerca o l'analisi è mirata a persone fisiche (es. Tizio, Caio), parti processuali (attore, convenuto, terzo intervenuto) o organi giudicanti (es. il Giudice Istruttore).",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "cerca"
@@ -236,15 +206,10 @@
             "name": "fonte",
             "definition": "Ricerca mirata a riferimenti normativi (es. 'art. 2043 c.c.'), giurisprudenziali (massime o sentenze) o dottrinali citati all'interno del testo.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "cerca"
@@ -255,15 +220,10 @@
             "name": "organizzazione",
             "definition": "La ricerca è focalizzata su entità giuridiche, pubbliche o private, menzionate nel testo (es. società, enti pubblici, istituti di credito).",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "cerca"
@@ -274,15 +234,10 @@
             "name": "luogo",
             "definition": "Ricerca di toponimi o luoghi geografici rilevanti ai fini della competenza territoriale o della descrizione dei fatti (es. 'il luogo del sinistro').",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "cerca"
@@ -293,15 +248,10 @@
             "name": "denaro",
             "definition": "Ricerca o estrazione di qualsiasi importo monetario, inclusi il petitum (somma richiesta), il risarcimento del danno, o la liquidazione delle spese di lite.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "cerca"
@@ -312,15 +262,10 @@
             "name": "precedente",
             "definition": "Ricerca specifica di precedenti giurisprudenziali (sentenze passate) invocati a sostegno di una tesi o utilizzati dal giudice come fondamento della decisione.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "cerca"
@@ -331,15 +276,10 @@
             "name": "sillogismo",
             "definition": "Estrazione di uno specifico schema argomentativo che applica una norma (premessa maggiore) a un fatto (premessa minore) per trarne una conclusione giuridica.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "estrai logico"
@@ -350,15 +290,10 @@
             "name": "percorso logico",
             "definition": "Ricostruzione dell'intera catena argomentativa (ratio decidendi) seguita dal giudice o dalla parte, dall'analisi dei fatti all'applicazione delle norme.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "estrai logico"
@@ -369,15 +304,10 @@
             "name": "passaggio logico",
             "definition": "Analisi di una singola inferenza o di uno specifico snodo argomentativo all'interno del ragionamento giuridico complessivo.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "estrai logico"
@@ -388,15 +318,10 @@
             "name": "fatto",
             "definition": "Estrazione delle parti del testo relative alla ricostruzione storica degli eventi, alle circostanze materiali e alle prove che costituiscono l'oggetto della controversia.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -407,7 +332,10 @@
             "name": "dispositivo",
             "definition": "Estrazione della parte finale che contiene la statuizione decisoria del giudice (es. 'accoglie', 'respinge', 'condanna').",
             "available": [
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -418,15 +346,10 @@
             "name": "motivi",
             "definition": "Estrazione delle argomentazioni in fatto e in diritto (ratio decidendi) che costituiscono la motivazione e il fondamento logico-giuridico della decisione.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -437,15 +360,10 @@
             "name": "richieste",
             "definition": "Estrazione delle conclusioni o delle istanze formulate dalle parti (es. domande principali, eccezioni, richieste istruttorie) e rivolte al giudice.",
             "available": [
-                "atto conclusivo finale difesa attrice",
-                "atto di citazione",
-                "atto difensivo costituzione iniziale convenuta",
-                "memoria attrice: precisazione delle domande",
-                "memoria attrice: richieste mezzi istruttori",
-                "memoria convenuta: richieste mezzi istruttori",
-                "memoria convenuta: precisazione delle difese",
-                "memoria convenuta: prova contraria finale",
-                "sentenza di primo grado"
+                "Ricorso",
+                "Comparsa di Costituzione e Risposta",
+                "Sentenza di Tribunale",
+                "Sentenza di Corte d'Appello"
             ],
             "relative_command": [
                 "estrai semantico"
