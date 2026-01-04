@@ -1,5 +1,7 @@
-import json
 import concurrent.futures
+import json
+import time
+
 from openai import OpenAI
 from typing import List, Dict
 
@@ -14,20 +16,33 @@ class GPTJudge:
         self.documents = []
 
     def _execute_evaluation(self, prompt: str, system_message: str = "Sei un auditor legale esperto in analisi di conformità e logica formale.") -> Dict:
-        """Esegue la chiamata a GPT con vincolo JSON."""
-        try:
-            response = client.chat.completions.create(
-                model=self.MODEL,
-                messages=[
-                    {"role": "system", "content": system_message},
-                    {"role": "user", "content": prompt}
-                ],
-                temperature=0,
-                response_format={"type": "json_object"}
-            )
-            return json.loads(response.choices[0].message.content)
-        except Exception as e:
-            return {"score": 0.0, "motivation": f"Errore critico API: {str(e)}"}
+        """Esegue la chiamata a GPT con vincolo JSON e gestione retry in caso di errore."""
+        max_retries = 3
+        retry_delay = 60
+
+        for attempt in range(max_retries):
+            try:
+                response = client.chat.completions.create(
+                    model=self.MODEL,
+                    messages=[
+                        {"role": "system", "content": system_message},
+                        {"role": "user", "content": prompt}
+                    ],
+                    temperature=0,
+                    response_format={"type": "json_object"}
+                )
+                return json.loads(response.choices[0].message.content)
+                
+            except Exception as e:
+                print(f"Tentativo {attempt + 1} fallito: {str(e)}")
+                if attempt < max_retries - 1:
+                    print(f"Attesa di {retry_delay} secondi prima del prossimo tentativo...")
+                    time.sleep(retry_delay)
+                else:
+                    return {
+                        "score": 0.0, 
+                        "motivation": f"Errore critico API dopo {max_retries} tentativi: {str(e)}"
+                    }
 
     # ---------------------------------------------------------
     # METRICHE OTTIMIZZATE CON LOGICA LEGALE RIGOROSA

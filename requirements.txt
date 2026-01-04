@@ -45,3 +45,8 @@ streamlit-cookies-manager
 
 # For parsing Markdown (if used outside of Streamlit)
 markdown
+
+# For documents analysis
+numpy==1.26.4
+spacy
+tomlkit

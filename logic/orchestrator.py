@@ -116,6 +116,8 @@ class Orchestrator:
         response["content"] = last_result
         response["result"] = last_result
         
+        self._logger.info(last_result)
+        
         # Extract and deduplicate source documents referenced during the process
         used_documents = set()
         available_sources = [src["name"] for src in self._language.get_sources()]

@@ -169,17 +169,21 @@ class Planner:
                     not_used_sources.append(src)
         else:
             not_used_sources = sources
-
-        # Final aggregation step links back to the IDs of the atomic operations
-        final_step_id = f"{p_id}_{len(atomic_ops) + start_idx}"
-        final_op = {
-            "id": final_step_id,
-            "structured_prompt": {
-                "command": final_cmd,
-                "from": [op["id"] for op in atomic_ops] + not_used_sources,
-                "how": how
+        
+        if len(atomic_ops) == 1 and len(not_used_sources) == 0:
+            atomic_ops[-1]["structured_prompt"]["how"] = how
+            final_op = {}
+        else:
+            # Final aggregation step links back to the IDs of the atomic operations
+            final_step_id = f"{p_id}_{len(atomic_ops) + start_idx}"
+            final_op = {
+                "id": final_step_id,
+                "structured_prompt": {
+                    "command": final_cmd,
+                    "from": [op["id"] for op in atomic_ops] + not_used_sources,
+                    "how": how
+                }
             }
-        }
         
         return atomic_ops + [final_op]
 
