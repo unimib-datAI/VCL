@@ -89,6 +89,9 @@ class Decomposer():
                 # Step 3: Apply graph logic to sort tasks by dependency
                 result = self.order_tasks(result)
                 
+                if len(result) == 0:
+                    raise Exception("0 task detected")
+                
                 status = "Done"
             else:
                 raise ValueError("Empty query provided.")
