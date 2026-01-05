@@ -71,15 +71,12 @@ class Preprocessor:
         chat = self.get_chat_history()
         
         if not chat:
-            # PHASE 1A: Basic linguistic cleanup for standalone queries
-            self._logger.info("No chat history found. Initiating basic spelling/grammar correction.")
-            corrected_query = self._spelling_checker_class.correct_spelling(query)
-            self._logger.info("Spelling and grammar correction completed.")
-        else:
-            # PHASE 1B: Contextual expansion for ongoing conversations
-            self._logger.info("Chat history detected. Initiating contextual rephrasing.")
-            corrected_query = self._rephraser_class.rephrase(query, chat)
-            self._logger.info("Query rephrasing completed.")
+            chat = ["EMPTY CHAT"]
+        
+        # PHASE 1: Contextual expansion for ongoing conversations
+        self._logger.info("Initiating contextual rephrasing.")
+        corrected_query = self._rephraser_class.rephrase(query, chat)
+        self._logger.info("Query rephrasing completed.")
 
         # PHASE 2: Text Normalization
         # Lowercasing helps standardizing the input for the DQL keyword matching

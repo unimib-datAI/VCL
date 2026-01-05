@@ -56,7 +56,7 @@ class WhatExtractor:
             list[str]: A list of extracted 'what' identifiers or a default fallback list.
         """
         # Retrieve the dictionary of valid 'what' elements specific to the active sources
-        available_what = self._dql_language.get_available_what(sources)
+        available_what = [w.lower() for w in self._dql_language.get_available_what(sources)]
         language_what_str = self._what_string(
             available_what
         )
@@ -90,8 +90,8 @@ class WhatExtractor:
                 # Validation: ensure every extracted term exists in the current grammar
                 for i, w in enumerate(what):
                     if w not in available_what and w != "altro" and w != "intero documento":
-                        self._logger.warning(f"What Extractor Validation: \"{w}\" not in available what. Falling back to 'altro'.")
-                        what[i] = "altro"
+                        self._logger.warning(f"What Extractor Validation: \"{w}\" not in available what.")
+                        what[i] = "intero documento"
                 
                 status = "Done"
             else:

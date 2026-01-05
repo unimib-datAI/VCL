@@ -178,7 +178,7 @@ class Retrieval:
                     doc = handler.read_file(path_file)
 
                     # Ownership and name/type validation
-                    if (doc.get("name") == doc_name or doc.get("type_doc") == doc_name) and doc.get("owner") == self._sources_id:
+                    if (doc.get("name").lower() == doc_name.lower() or doc.get("type_doc").lower() == doc_name.lower()) and doc.get("owner") == self._sources_id:
                         return {
                             "name": doc.get("name", ""),
                             "text": doc.get("text", ""),

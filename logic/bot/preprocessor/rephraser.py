@@ -83,7 +83,7 @@ class Rephraser():
                 # Setting result format to True to ensure structured/clean text output
                 result = self._llm.invoke(
                     prompt,
-                    { "query": query, "chat": chat },
+                    { "query": query, "chat": "\n".join(chat) },
                     True
                 )
                 
