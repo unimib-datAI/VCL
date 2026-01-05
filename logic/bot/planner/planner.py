@@ -170,38 +170,47 @@ class Planner:
         else:
             not_used_sources = sources
         
+        final_op = []
         if len(atomic_ops) == 1 and len(not_used_sources) == 0:
             atomic_ops[-1]["structured_prompt"]["how"] = how
-            final_op = {}
         else:
             # Final aggregation step links back to the IDs of the atomic operations
             final_step_id = f"{p_id}_{len(atomic_ops) + start_idx}"
-            final_op = {
-                "id": final_step_id,
-                "structured_prompt": {
-                    "command": final_cmd,
-                    "from": [op["id"] for op in atomic_ops] + not_used_sources,
-                    "how": how
+            final_op = [
+                {
+                    "id": final_step_id,
+                    "structured_prompt": {
+                        "command": final_cmd,
+                        "from": [op["id"] for op in atomic_ops] + not_used_sources,
+                        "how": how
+                    }
                 }
-            }
+            ]
         
-        return atomic_ops + [final_op]
+        return atomic_ops + final_op
 
     def _decompose_summarize(self, mid_cmd: str, sources: list, what: str, 
                             how: dict, p_id: str, start_idx: int) -> List[Dict]:
         """
         Specialized pipeline for 'summarize': Retrieve data -> Integrate -> Summarize.
         """
-        # First, generate retrieval and integration steps
-        ops = self._create_operations(mid_cmd, "integra", sources, what, {}, p_id, start_idx)
-        
-        # Optimize: if only one source exists, 'integra' is redundant
-        if len(ops) == 2:
-            ops.pop(-1)
+        # Optimize: if only one source exists and not any particular what, middle ops are useless
+        if what == "intero documento" and len(sources) == 1:
+            ops = []
+            op_id = sources[0]
+        else:
+            # Generate retrieval and integration steps
+            ops = self._create_operations(mid_cmd, "integra", sources, what, {}, p_id, start_idx)
+            
+            # Optimize: if only one source exists, 'integra' is redundant
+            if len(ops) == 2:
+                ops.pop(-1)
+            
+            op_id = ops[-1]["id"]
 
         # Append the final summarization command referencing the previous results
         summarize_step = self._build_step(
-            p_id, start_idx + len(ops), "riassumi", [ops[-1]["id"]], how=how
+            p_id, start_idx + len(ops), "riassumi", [op_id], how=how
         )
         ops.append(summarize_step)
         return ops
