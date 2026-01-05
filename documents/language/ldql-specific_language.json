@@ -152,22 +152,22 @@
 
     "sources": [
         {
-            "name": "Ricorso",
-            "synonyms": ["Ricorso giuridico", "ricorso", "r1", "r2"],
+            "name": "ricorso",
+            "synonyms": ["Ricorso giuridico", "r1", "r2"],
             "description": "Atto con cui l'attore avvia il II grado e chiama in causa la controparte."
         },
         {
-            "name": "Comparsa di Costituzione e Risposta",
+            "name": "comparsa di costituzione e risposta",
             "synonyms": ["Comparsa di risposta", "Risposta del convenuto", "Memoria Difensiva", "memoria", "m1", "m2"],
             "description": "Atto con cui il convenuto si difende, propone eccezioni o domande riconvenzionali."
         },
         {
-            "name": "Sentenza di Tribunale",
+            "name": "sentenza di tribunale",
             "synonyms": ["Sentenza di primo grado", "s. trib.", "s. g.d.p.", "s. i grado", "s1"],
             "description": "Decisione emessa dal Tribunale in composizione monocratica o collegiale."
         },
         {
-            "name": "Sentenza di Corte d'Appello",
+            "name": "sentenza di corte d'appello",
             "synonyms": ["Sentenza di secondo grado", "s. app.", "sent. ii° gr", "s2"],
             "description": "Decisione sull'impugnazione della sentenza di primo grado."
         }
@@ -178,10 +178,10 @@
             "name": "frase",
             "definition": "L'operazione si focalizza su una specifica proposizione o un estratto testuale letterale (es. 'cerca questa citazione').",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "cerca"
@@ -192,10 +192,10 @@
             "name": "persona",
             "definition": "La ricerca o l'analisi è mirata a persone fisiche (es. Tizio, Caio), parti processuali (attore, convenuto, terzo intervenuto) o organi giudicanti (es. il Giudice Istruttore).",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "cerca"
@@ -206,10 +206,10 @@
             "name": "fonte",
             "definition": "Ricerca mirata a riferimenti normativi (es. 'art. 2043 c.c.'), giurisprudenziali (massime o sentenze) o dottrinali citati all'interno del testo.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "cerca"
@@ -220,10 +220,10 @@
             "name": "organizzazione",
             "definition": "La ricerca è focalizzata su entità giuridiche, pubbliche o private, menzionate nel testo (es. società, enti pubblici, istituti di credito).",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "cerca"
@@ -234,10 +234,10 @@
             "name": "luogo",
             "definition": "Ricerca di toponimi o luoghi geografici rilevanti ai fini della competenza territoriale o della descrizione dei fatti (es. 'il luogo del sinistro').",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "cerca"
@@ -248,10 +248,10 @@
             "name": "denaro",
             "definition": "Ricerca o estrazione di qualsiasi importo monetario, inclusi il petitum (somma richiesta), il risarcimento del danno, o la liquidazione delle spese di lite.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "cerca"
@@ -262,10 +262,10 @@
             "name": "precedente",
             "definition": "Ricerca specifica di precedenti giurisprudenziali (sentenze passate) invocati a sostegno di una tesi o utilizzati dal giudice come fondamento della decisione.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "cerca"
@@ -276,10 +276,10 @@
             "name": "sillogismo",
             "definition": "Estrazione di uno specifico schema argomentativo che applica una norma (premessa maggiore) a un fatto (premessa minore) per trarne una conclusione giuridica.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "estrai logico"
@@ -290,10 +290,10 @@
             "name": "percorso logico",
             "definition": "Ricostruzione dell'intera catena argomentativa (ratio decidendi) seguita dal giudice o dalla parte, dall'analisi dei fatti all'applicazione delle norme.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "estrai logico"
@@ -304,10 +304,10 @@
             "name": "passaggio logico",
             "definition": "Analisi di una singola inferenza o di uno specifico snodo argomentativo all'interno del ragionamento giuridico complessivo.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "estrai logico"
@@ -318,10 +318,10 @@
             "name": "fatto",
             "definition": "Estrazione delle parti del testo relative alla ricostruzione storica degli eventi, alle circostanze materiali e alle prove che costituiscono l'oggetto della controversia.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -332,10 +332,10 @@
             "name": "dispositivo",
             "definition": "Estrazione della parte finale che contiene la statuizione decisoria del giudice (es. 'accoglie', 'respinge', 'condanna').",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -346,10 +346,10 @@
             "name": "motivi",
             "definition": "Estrazione delle argomentazioni in fatto e in diritto (ratio decidendi) che costituiscono la motivazione e il fondamento logico-giuridico della decisione.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "estrai semantico"
@@ -360,10 +360,10 @@
             "name": "richieste",
             "definition": "Estrazione delle conclusioni o delle istanze formulate dalle parti (es. domande principali, eccezioni, richieste istruttorie) e rivolte al giudice.",
             "available": [
-                "Ricorso",
-                "Comparsa di Costituzione e Risposta",
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello"
+                "ricorso",
+                "comparsa di costituzione e risposta",
+                "sentenza di tribunale",
+                "sentenza di corte d'appello"
             ],
             "relative_command": [
                 "estrai semantico"

@@ -122,7 +122,7 @@ class Storage:
     # --- Authentication ---
     # ----------------------
     
-    def register_user(self, username, email, password, role = "Altro") -> Tuple[bool, Any]:
+    def register_user(self, username: str, email: str, password: str, role = "Altro") -> Tuple[bool, Any]:
         """
         Creates a new user profile, enforces security policies, and prepares 
         default environment (documents/settings).
@@ -136,6 +136,9 @@ class Storage:
         Returns:
             tuple[bool, Any]: (Success status, user_dict or error_message).
         """
+        username = username.strip()
+        email = email.strip()
+        
         # Block reserved administrative keywords
         if username in ["vitali", "salomone"]:
             return False, "Username/Email non disponibili"
@@ -518,6 +521,6 @@ class Storage:
     def _get_default_language(self, username) -> dict:
         """Loads the factory default language JSON from disk. 
         DQL-Default, LDQL-Default, LDQL-Specific are users for evaluation"""
-        prefix = "default" if username.lower() not in ["dql-default", "ldql-default", "ldql-specific"] else username.lower()
+        prefix = "ldql-default" if username.lower() not in ["dql-default", "ldql-specific"] else username.lower()
         path = os.path.join(self._project_root, "documents", "language", f"{prefix}_language.json")
         return self._file_handler.read_file(path)

@@ -151,24 +151,24 @@
     ],
     "sources": [
         {
-            "name": "Sentenza di Tribunale",
+            "name": "sentenza di tribunale",
             "synonyms": ["sentenza di primo grado"],
             "description": ""
         },
         {
-            "name": "Sentenza di Corte d'Appello",
+            "name": "sentenza di corte d'appello",
             "synonyms": ["sentenza di secondo grado"],
             "description": ""
         },
 
         {
-            "name": "Ricorso",
+            "name": "ricorso",
             "synonyms": [],
             "description": ""
         },
 
         {
-            "name": "Comparsa di Costituzione e Risposta",
+            "name": "comparsa di costituzione e risposta",
             "synonyms": [],
             "description": ""
         }
@@ -178,10 +178,10 @@
             "name": "estratto",
             "definition": "Specifica porzione di testo letterale o citazione.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["cerca"]
         },
@@ -189,10 +189,10 @@
             "name": "soggetto",
             "definition": "Persone, enti, organizzazioni o attori menzionati nel testo.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["cerca"]
         },
@@ -200,10 +200,10 @@
             "name": "dati numerici",
             "definition": "Valori monetari, statistiche, date o quantità.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["cerca"]
         },
@@ -211,10 +211,10 @@
             "name": "argomentazione",
             "definition": "Sequenza di ragionamenti volti a sostenere una tesi o una conclusione.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["estrai logico"]
         },
@@ -222,10 +222,10 @@
             "name": "fatti",
             "definition": "Descrizione di eventi, azioni o circostanze oggettive.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["estrai semantico"]
         },
@@ -233,10 +233,10 @@
             "name": "conclusioni",
             "definition": "Esiti finali, decisioni o risultati derivanti dall'analisi o dal processo descritto.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["estrai semantico"]
         },
@@ -244,10 +244,10 @@
             "name": "metodologia",
             "definition": "Descrizione delle procedure, dei metodi o degli approcci utilizzati.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["estrai semantico"]
         },
@@ -255,10 +255,10 @@
             "name": "definizioni",
             "definition": "Spiegazioni di termini specifici, acronimi o concetti chiave all'interno del testo.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["cerca"]
         },
@@ -266,10 +266,10 @@
             "name": "riferimenti temporali",
             "definition": "Date, archi temporali, scadenze o sequenze cronologiche.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["cerca"]
         },
@@ -277,21 +277,21 @@
             "name": "obiettivi",
             "definition": "Finalità dichiarate, scopi o intenti dell'autore o dei soggetti coinvolti.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["estrai semantico"]
         },
         {
-            "name": "rischi e criticità",
+            "name": "rischi o criticità",
             "definition": "Segnalazione di problemi, minacce, punti deboli o elementi di incertezza.",
             "available": [
-                "Sentenza di Tribunale",
-                "Sentenza di Corte d'Appello",
-                "Comparsa di Costituzione e Risposta",
-                "Ricorso"
+                "sentenza di tribunale",
+                "sentenza di corte d'appello",
+                "comparsa di costituzione e risposta",
+                "ricorso"
             ],
             "relative_command": ["estrai semantico"]
         }
