@@ -121,15 +121,15 @@
         },
         {
             "key": "k",
-            "command": "adegua lunghezza",
-            "description": "Rimodula/Adegua/Adatta la lunghezza del documento o di una risposta precedentemente generata secondo un limite richiesto, preservando integralmente il contenuto informativo e la struttura argomentativa originale.",
+            "command": "riformula",
+            "description": "Riscrive il testo variandone la forma espositiva, il tono o la struttura sintattica, garantendo il rispetto rigoroso dei limiti dimensionali e stilistici richiesti.",
             "guidelines": [
-                "- Invarianza Semantica: Non alterare significato, fatti, date, nomi o relazioni logiche presenti nel testo.",
-                "- Controllo Dimensionale: Espandi o riduci il testo solo tramite riformulazione, accorpamento o distensione sintattica.",
-                "- Completezza: Nessuna informazione rilevante deve essere eliminata o introdotta.",
-                "- Coerenza Strutturale: Mantieni l’ordine logico e gerarchico degli argomenti.",
-                "- Neutralità: Evita interpretazioni, commenti o valutazioni non presenti nel documento originale.",
-                "- Rispetto del Limite: il limite richiesto è quasi più importante del contenuto, assicurati che venga rispettato"
+                "- Invarianza Semantica: Non alterare fatti, dati, nomi, date o relazioni logiche; il contenuto informativo deve restare integro.",
+                "- Adattamento del Registro: Modifica lo stile (es. da tecnico a formale) o il punto di vista solo se richiesto dall'utente.",
+                "- Ottimizzazione Sintattica: Migliora la fluidità e la leggibilità, eliminando ambiguità testuali senza sacrificare dettagli.",
+                "- Vincolo Dimensionale Globale: Se viene indicato un limite di lunghezza, questo si applica all'intera risposta fornita (inclusi incipit, spiegazioni, note o testo di cortesia), non solo alla parte riformulata.",
+                "- Priorità del Parametro: Il rispetto del limite di lunghezza e del tono richiesto è il criterio primario di successo dell'operazione.",
+                "- Neutralità: Evita l'inserimento di opinioni o interpretazioni che non siano presenti nel materiale di origine."
             ]
         },
         {

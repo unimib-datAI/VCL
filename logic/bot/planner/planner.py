@@ -128,7 +128,7 @@ class Planner:
             return [self._build_step(parent_id, start_idx, command, sources, [what], how)]
 
         # Case B: Final command (e.g., 'summarize') that requires a preceding data fetch
-        if self._need_decomposition(sources, what):
+        if self._need_decomposition(command, sources, what):
             self._logger.info(f"Decomposing final command '{command}' using {middle_commands[0]}")
             
             if command == "riassumi":
@@ -263,9 +263,10 @@ class Planner:
         default = self._dql_language.default_command.get("command", "cerca")
         return [default]
 
-    def _need_decomposition(self, sources: list, what: str) -> bool:
+    def _need_decomposition(self, command, sources: list, what: str) -> bool:
         """
         Heuristic to determine if a query requires multi-step decomposition.
         """
-        has_known_source = any(s in self._sources_name for s in sources)
-        return has_known_source or what != "intero documento"
+        has_dql_source = any(s in self._sources_name for s in sources)
+        command_special_case = (command == "confronta") and (len(sources) == 1)
+        return has_dql_source or what != "intero documento" or command_special_case

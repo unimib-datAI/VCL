@@ -55,22 +55,22 @@ class WhatExtractor:
         Returns:
             list[str]: A list of extracted 'what' identifiers or a default fallback list.
         """
-        # Retrieve the dictionary of valid 'what' elements specific to the active sources
-        available_what = [w.lower() for w in self._dql_language.get_available_what(sources)]
-        language_what_str = self._what_string(
-            available_what
-        )
-
-        # Prepare the input payload for the LLM injection
-        query_dict = {
-            "query": query,
-            "what": language_what_str
-        }
-
         what = []
         status = "Error"  # Default status for traceability
 
         try:
+            # Retrieve the dictionary of valid 'what' elements specific to the active sources
+            available_what = self._dql_language.get_available_what(sources)
+            language_what_str = self._what_string(
+                available_what
+            )
+
+            # Prepare the input payload for the LLM injection
+            query_dict = {
+                "query": query,
+                "what": language_what_str
+            }
+        
             # Load the system prompt specifically designed for 'what' entity extraction
             prompt = self._dql_language.prompts.get("WhatExtraction.json", None)
             
@@ -89,7 +89,8 @@ class WhatExtractor:
                 
                 # Validation: ensure every extracted term exists in the current grammar
                 for i, w in enumerate(what):
-                    if w not in available_what and w != "altro" and w != "intero documento":
+                    available_names = [str(w).lower() for w in available_what.keys()]
+                    if w not in available_names and w != "altro" and w != "intero documento":
                         self._logger.warning(f"What Extractor Validation: \"{w}\" not in available what.")
                         what[i] = "intero documento"
                 

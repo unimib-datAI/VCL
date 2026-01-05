@@ -18,7 +18,7 @@
 
    "human": [
       "Analizza la richiesta \"{query}\", considerando le seguenti CATEGORIE TARGET",
-      "- \"intero documento\": l'operazione richiesta deve essere applicata alla totalità del documento selezionato.",  
+      "- \"intero documento\": non si vuole agire su alcun elemento particolare. l'operazione richiesta deve essere applicata alla totalità del documento selezionato.",  
       "{what}",
       "- \"altro\": qualsiasi elemento non coperto dalle categorie sopra elencate."
    ],

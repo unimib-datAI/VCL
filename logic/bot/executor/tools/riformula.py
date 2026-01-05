@@ -5,8 +5,8 @@ def riformula(context, what, how, llm, language) -> tuple[str, dict]:
         "guidelines": language.get_guidelines_from_command("riformula"),
         "command": "riformula", 
         "description_command": language.get_description_from_command("riformula"),
-        "what": what[0],
-        "description_what": language.get_description_from_what(what[0])
+        "what": "intero documento",
+        "description_what": "considera l'intero contesto"
     }
     prompt = language.prompts.get("Generator.json")
 

@@ -49,6 +49,8 @@ class Executor:
         "riorganizza": riorganizza,
         "verifica": verifica
     }
+    
+    TOLERANCE = 0.20
 
     # ----------------------
     # --- Initialization ---
@@ -65,6 +67,7 @@ class Executor:
         self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Executor")
         self._language: DQLLanguage = cfg.get_DQL()
+        self.file_handler = FileHandler()
 
     # ----------------------
     # --- Public Methods ---
@@ -119,7 +122,8 @@ class Executor:
         
         # 2. Extract targets and formatted linguistic constraints
         what = structured_prompt.get("what", [""])
-        how = self._format_conditions(structured_prompt.get("how", {}))
+        how_dict = structured_prompt.get("how", {})
+        how_text = self._format_conditions(how_dict)
         
         self._logger.info(f"Invoking tool handler for command: '{command}'")
         
@@ -128,26 +132,44 @@ class Executor:
             result = altro("", context, self._cfg.get_LLM(), self._cfg.get_DQL())
         else:
             handler = self.FUNCTION_MAP.get(command)
-            result = handler(context, what, how, self._cfg.get_LLM(), self._cfg.get_DQL())
+            result = handler(context, what, how_text, self._cfg.get_LLM(), self._cfg.get_DQL())
         
         # 4. Limit enforcement loop: iterative re-generation if constraints are violated
-        if "limit" in structured_prompt.get("how", {}):
+        if "limit" in how_dict:
+            limit_cfg = how_dict.get("limit", {})
             attempt = 0
-            limit_cfg = structured_prompt["how"]["limit"]
             
-            # Allow up to 3 rephrasing attempts to satisfy the requested length/count
-            while (not self.check_limit(result, context, limit_cfg)) and (attempt < 3):
-                self._logger.info(f"Limit violation detected. Retrying with 'riformula' (Attempt {attempt+1})")
+            while attempt < 3 and limit_cfg:
+                is_valid = self.check_limit(result, context, limit_cfg)
                 
-                # Feedback loop: provide previous answer to the LLM for adjustment
-                new_context = f"[RISPOSTA PRECEDENTEMENTE GENERATA]\n\n{result}\n\n---{context}"
-                result = self.FUNCTION_MAP.get("riformula")(new_context, what, how, self._cfg.get_LLM(), self._cfg.get_DQL())
+                if is_valid:
+                    self._logger.info("Content limit successfully satisfied.")
+                    break
+                    
                 attempt += 1
                 
-            if attempt < 3 or self.check_limit(result, context, limit_cfg):
-                self._logger.info("Content limit successfully satisfied.")
+                current_val = self.file_handler.text_analysis(result, limit_cfg['unit'])
+                target_val = limit_cfg['number']
+                
+                diff = current_val - target_val
+                if diff > 0:
+                    feedback = f"ERRORE: La risposta è troppo LUNGA. Hai scritto {current_val} {limit_cfg['unit']}, ma il limite è {target_val}. Devi TAGLIARE circa {abs(diff)} {limit_cfg['unit']}."
+                else:
+                    feedback = f"ERRORE: La risposta è troppo CORTA. Hai scritto {current_val} {limit_cfg['unit']}, ma il limite è {target_val}. Devi ESPANDERE di circa {abs(diff)} {limit_cfg['unit']}."
 
-        # 5. Post-processing: transform Markdown headers into formatted Bold/Italic
+                self._logger.info(f"Limit violation ({current_val}/{target_val}). Retrying attempt {attempt}")
+
+                new_context = "\t" + "\n\t".join(context.split("\n")).strip()
+                new_context = (
+                    f"{feedback}\n\n"
+                    f"[TESTO DA CORREGGERE]\n{result}\n\n"
+                    f"[CONTESTO ORIGINALE PER RIFERIMENTO]\n{new_context}"
+                )
+                
+                # Richiamiamo il tool specifico per la lunghezza
+                result = self.FUNCTION_MAP.get("riformula")(new_context, what, how_text, self._cfg.get_LLM(), self._cfg.get_DQL())
+
+        # 5. Post-processing finale
         return re.sub(self._pattern, self._format_heading, result)
 
     # ----------------------
@@ -246,41 +268,36 @@ class Executor:
         Returns:
             bool: True if the text complies with the constraint (including tolerance).
         """
-        file_handler = FileHandler()
-        
         sign = constraint.get("sign", "")
-        number = constraint.get("number", "")
-        unit = constraint.get("unit", "")
+        number = constraint.get("number")
+        unit = constraint.get("unit", "parole")
 
-        # Immediate bypass if no constraint is defined
-        if sign == "" or number == "":
+        if sign == "" or number is None:
             return True
 
-        # Perform lexical analysis to count units (words, chars, etc.)
-        current_value = file_handler.text_analysis(text, unit)
-        
-        if sign == "*":
-            # Relative limit calculation (e.g., "half the length of the original")
-            context_value = file_handler.text_analysis(context, unit)
-            target_number = number * context_value
-            
-            # Apply a 15% fuzzy logic tolerance for natural language variation
-            tolerance = target_number * 0.15
-            self._logger.info(f"Relative Limit Check: {current_value} units found (Target: {target_number} ±{tolerance})")
-            return (target_number - tolerance) <= current_value <= (target_number + tolerance)
-        
-        self._logger.info(f"Absolute Limit Check: {current_value} {sign} {number}")
+        current_value = self.file_handler.text_analysis(text, unit)
 
-        # Basic comparison operators
-        if sign == "=":
-            return current_value == number
-        elif sign == "<=":
-            return current_value <= number
+        if sign == "*":
+            context_words = self.file_handler.text_analysis(context, unit)
+            target_number = number * context_words
+            tolerance = target_number * self.TOLERANCE
+            
+            is_valid = (target_number - tolerance) <= current_value <= (target_number + tolerance)
+            self._logger.info(f"Relative Check: {current_value} words vs Target {target_number:.1f} (±{tolerance:.1f})")
+            return is_valid
+
+        is_valid = False
+        # if sign == "=":
+        #     is_valid = current_value == number
+        if sign == "<=":
+            is_valid = current_value <= number
         elif sign == ">=":
-            return current_value >= number
-        elif sign == "~":
-            # Approximation check with 15% tolerance
-            tolerance = number * 0.15
-            return (number - tolerance) <= current_value <= (number + tolerance)
-        
-        raise ValueError(f"Constraint operator not supported: {sign}")
+            is_valid = current_value >= number
+        elif sign == "~" or sign == "=":
+            tolerance = number * self.TOLERANCE
+            is_valid = (number - tolerance) <= current_value <= (number + tolerance)
+        else:
+            raise ValueError(f"Operatore non supportato: {sign}")
+
+        self._logger.info(f"Limit Check [{unit}]: {current_value} {sign} {number} -> {'OK' if is_valid else 'FAIL'}")
+        return is_valid

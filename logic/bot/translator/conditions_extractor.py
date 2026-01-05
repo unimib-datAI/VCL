@@ -142,6 +142,10 @@ class ConditionsExtractor:
                     {"query": query},
                     True 
                 )
+                
+                sign = conditions.get("sign", "")
+                sign = "~" if sign == "=" else sign # We accept tolerance
+                
                 status = "Done"
             else:
                 raise ValueError("Empty query string.")

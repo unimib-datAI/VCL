@@ -113,13 +113,12 @@ class SourcesExtractor:
             # Filter out any lingering internal task references (starting with #)
             documents = [d for d in documents if not str(d[0]).startswith("#")]
             
-            # Strategy 4: If no documents found, use LLM to infer context from chat history
+            # Strategy 4: If no documents found, use parsing and LLM to infer context from chat history
             if not documents:
-                if chat:
+                documents = self._documents_parsing(query)
+                
+                if (not documents) and chat:
                     documents = self._implicit_documents_extraction(query, chat)
-                    
-                if not documents:
-                    documents = self._documents_parsing(query)
                     
                 if not documents:
                     raise ValueError("No Reference Found")
@@ -165,7 +164,7 @@ class SourcesExtractor:
         """
         # Get context from the previous turn
         current_doc = self.get_last_used_sources(chat)
-        
+        self._logger.info(prompt)
         if not current_doc:
             current_doc_info = ""
         else:

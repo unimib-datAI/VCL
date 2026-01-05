@@ -15,6 +15,8 @@ class FileHandler:
     ensuring safe handling of text and JSON content, with automatic
     directory creation when writing files.
     """
+    def __init__(self):
+        self.nlp = None
 
     @staticmethod
     def read_file(path: str) -> Union[str, dict, list]:
@@ -86,9 +88,17 @@ class FileHandler:
                 raise ValueError(
                     "Unsupported file type. Supported extensions are: .txt, .css, .json"
                 )
+                
+    def _load_spacy(self):
+        # Load the Italian spaCy model
+        if not self.nlp:
+            try:
+                self.nlp = spacy.load("it_core_news_sm")
+            except OSError:
+                subprocess.check_call([sys.executable, "-m", "spacy", "download", "it_core_news_sm"])
+                self.nlp = spacy.load("it_core_news_sm")
 
-    @staticmethod
-    def text_analysis(text: str, key: str = "parole") -> int:
+    def text_analysis(self, text: str, key: str = "parole") -> int:
         """
         Perform a simple text analysis using spaCy (Italian model).
 
@@ -106,13 +116,6 @@ class FileHandler:
             - Requires the `it_core_news_sm` spaCy model to be installed.
             - Returns 0 if the key is invalid.
         """
-        # Load the Italian spaCy model
-        try:
-            nlp = spacy.load("it_core_news_sm")
-        except OSError:
-            subprocess.check_call([sys.executable, "-m", "spacy", "download", "it_core_news_sm"])
-            nlp = spacy.load("it_core_news_sm")
-
         # Validate key
         if key not in ["parole", "caratteri", "frasi"]:
             return 0
@@ -122,12 +125,18 @@ class FileHandler:
             return len(text.strip())
 
         # Process text with spaCy
-        doc = nlp(text)
+        # self._load_spacy()
+        # doc = self.nlp(text)
 
         if key == "parole":
             # Count tokens that are not punctuation or spaces
-            return sum(1 for token in doc if not token.is_punct and not token.is_space)
+            return len(text.split())
+            # return sum(1 for token in doc if not token.is_punct and not token.is_space)
 
+        # Process text with spaCy
+        self._load_spacy()
+        doc = self.nlp(text)
+        
         if key == "frasi":
             # Count sentences detected by spaCy
             return len(list(doc.sents))
