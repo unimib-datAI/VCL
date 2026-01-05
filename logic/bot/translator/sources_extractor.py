@@ -119,6 +119,9 @@ class SourcesExtractor:
                     documents = self._implicit_documents_extraction(query, chat)
                     
                 if not documents:
+                    documents = self._documents_parsing(query)
+                    
+                if not documents:
                     raise ValueError("No Reference Found")
             
             status = "Done"
@@ -202,6 +205,15 @@ class SourcesExtractor:
         documents = [[msg_id, msg_id] for msg_id in ids if msg_id.lower() in query.lower()]
         
         self._logger.info(f"Message ID references found: {documents}")
+        return documents
+    
+    def _documents_parsing(self, query: str) -> list:
+        """
+        Parses Documents Label.
+        """
+        documents = [[src, src] for src in self._src_names if src.lower() in query.lower()]
+        
+        self._logger.info(f"Documents parsing: {documents}")
         return documents
     
     def _task_id_parsing(self, query: str, ids: list) -> list:
