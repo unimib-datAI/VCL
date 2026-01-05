@@ -114,7 +114,7 @@ class LLM:
     # --- Private Helpers ---
     # -----------------------
 
-    def _initialize_llm(self, api_key: str, model_name: str, provider: str):
+    def _initialize_llm(self, api_key: str, model_name: str, provider: str, temperature: float = 0.2):
         """
         Constructs the LangChain chat model after verifying authentication.
         """
@@ -128,7 +128,7 @@ class LLM:
         self._set_env_key(provider, api_key)
 
         # Initialize the dynamic LangChain chat model wrapper
-        self._llm = init_chat_model(model_name, model_provider=provider)
+        self._llm = init_chat_model(model_name, model_provider=provider, temperature=temperature)
 
     def _set_env_key(self, provider: str, api_key: str):
         """
