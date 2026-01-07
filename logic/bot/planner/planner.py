@@ -29,6 +29,7 @@ class Planner:
         self._logger = cfg.get_logger("Planner")
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
+        self._request_id = cfg.get_request_id()
         
         # Cache of valid source names to identify which 'from' items require retrieval
         self._sources_name = [
@@ -130,10 +131,6 @@ class Planner:
         # Case B: Final command (e.g., 'summarize') that requires a preceding data fetch
         if self._need_decomposition(command, sources, what):
             self._logger.info(f"Decomposing final command '{command}' using {middle_commands[0]}")
-            
-            if command == "riassumi":
-                return self._decompose_summarize(middle_commands[0], sources, what, how, parent_id, start_idx)
-            
             # Standard two-step plan: mid_cmd (retrieval) -> final_cmd (analysis/integration)
             return self._create_operations(middle_commands[0], command, sources, what, how, parent_id, start_idx)
 
@@ -162,7 +159,7 @@ class Planner:
         # Create individual retrieval steps for known database sources
         if what != "intero documento":
             for i, src in enumerate(sources, start=start_idx):
-                if src in self._sources_name:
+                if self._request_id not in src:
                     atomic_ops.append(self._build_step(p_id, i, mid_cmd, [src], [what]))
                 else:
                     # Items from previous steps (strings/IDs) are collected for the final step
@@ -174,6 +171,21 @@ class Planner:
         if len(atomic_ops) == 1 and len(not_used_sources) == 0:
             atomic_ops[-1]["structured_prompt"]["how"] = how
         else:
+            final_from_ids = [op["id"] for op in atomic_ops] + not_used_sources
+            
+            if final_op == "riassumi":
+                final_step_id = f"{p_id}_{len(atomic_ops) + start_idx}"
+                atomic_ops.append(
+                    {
+                        "id": final_step_id,
+                        "structured_prompt": {
+                            "command": "integra",
+                            "from": final_from_ids
+                        }
+                    }
+                )
+                final_from_ids = [final_step_id]
+                
             # Final aggregation step links back to the IDs of the atomic operations
             final_step_id = f"{p_id}_{len(atomic_ops) + start_idx}"
             final_op = [
@@ -181,39 +193,13 @@ class Planner:
                     "id": final_step_id,
                     "structured_prompt": {
                         "command": final_cmd,
-                        "from": [op["id"] for op in atomic_ops] + not_used_sources,
+                        "from": final_from_ids,
                         "how": how
                     }
                 }
             ]
         
         return atomic_ops + final_op
-
-    def _decompose_summarize(self, mid_cmd: str, sources: list, what: str, 
-                            how: dict, p_id: str, start_idx: int) -> List[Dict]:
-        """
-        Specialized pipeline for 'summarize': Retrieve data -> Integrate -> Summarize.
-        """
-        # Optimize: if only one source exists and not any particular what, middle ops are useless
-        if what == "intero documento" and len(sources) == 1:
-            ops = []
-            op_id = sources[0]
-        else:
-            # Generate retrieval and integration steps
-            ops = self._create_operations(mid_cmd, "integra", sources, what, {}, p_id, start_idx)
-            
-            # Optimize: if only one source exists, 'integra' is redundant
-            if len(ops) == 2:
-                ops.pop(-1)
-            
-            op_id = ops[-1]["id"]
-
-        # Append the final summarization command referencing the previous results
-        summarize_step = self._build_step(
-            p_id, start_idx + len(ops), "riassumi", [op_id], how=how
-        )
-        ops.append(summarize_step)
-        return ops
 
     def _finalize_integration(self, ops: List[Dict], last_ids: List[str], p_id: str) -> List[Dict]:
         """
@@ -267,6 +253,6 @@ class Planner:
         """
         Heuristic to determine if a query requires multi-step decomposition.
         """
-        has_dql_source = any(s in self._sources_name for s in sources)
+        all_is_task_source = all(self._request_id in s for s in sources)
         command_special_case = (command == "confronta") and (len(sources) == 1)
-        return has_dql_source or what != "intero documento" or command_special_case
+        return (not all_is_task_source) or what != "intero documento" or command_special_case
