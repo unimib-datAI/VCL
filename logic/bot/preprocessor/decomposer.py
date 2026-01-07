@@ -102,7 +102,8 @@ class Decomposer():
             result = [
                 {
                     "id": "1",
-                    "prompt": query
+                    "prompt": query,
+                    "structured_prompt": {}
                 }
             ]
             
@@ -113,13 +114,12 @@ class Decomposer():
             {
                 "id": f"{self._cfg.get_request_id()}_{str(q.get('id', str(i)))}",
                 "prompt": q.get("prompt", ""),
-                "structured_prompt": {}
+                "structured_prompt": q.get("structured_prompt", {})
             }
             for i, q in enumerate(result, start=1)
         ]
         
-    @staticmethod
-    def order_tasks(tasks: list) -> list:
+    def order_tasks(self, tasks: list) -> list:
         """
         Builds a Directed Acyclic Graph (DAG) to sort tasks based on their dependencies.
         
@@ -142,7 +142,8 @@ class Decomposer():
                 task_id, 
                 data={
                     "id": task_id, 
-                    "prompt": task.get('prompt', '')
+                    "prompt": task.get('prompt', ''),
+                    "structured_prompt": {}
                 }
             )
             
@@ -164,7 +165,12 @@ class Decomposer():
             
             new_task_data = {
                 "id": new_id, 
-                "prompt": f"Integra in un'unica risposta i testi delle risposte {sink_nodes_str}"
+                "prompt": f"Integra in un'unica risposta i testi delle risposte {sink_nodes_str}",
+                "structured_prompt": {
+                    "command": "integra",
+                    "from": [[f"{self._cfg.get_request_id()}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],
+                    "what": ["intero documento"]
+                }
             }
             
             # Connect all sink nodes to the final integration node

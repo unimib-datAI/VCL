@@ -164,11 +164,13 @@ class Translator:
 
     def _command(self, tasks: list, result_queue: queue.Queue):
         """Thread target: executes intent classification for all tasks."""
+        result = []
         try:
-            result = [
-                self._command_classifier_class.classify(t.get('prompt', ''))
-                for t in tasks
-            ]
+            for t in tasks:
+                if "command" not in t.get("structured_prompt", {}):
+                    result.append(self._command_classifier_class.classify(t.get('prompt', '')))
+                else:
+                    result.append(t["structured_prompt"]["command"])
         except Exception as e:
             self._logger.error(f"Thread Error (Command): {e}")
             result = ["altro"] * len(tasks) # Fallback to generic command
@@ -177,33 +179,36 @@ class Translator:
         
     def _from(self, tasks: list, result_queue: queue.Queue):
         """Thread target: executes source/document identification for all tasks."""
+        result = []
         try:
             ids = sorted([t.get('id', '') for t in tasks])
-            result_sources = [
-                self._sources_extractor_class.extract(
-                    t.get("prompt", ''),
-                    ids
-                )
-                for t in tasks
-            ]
+            
+            for t in tasks:
+                if "from" not in t.get("structured_prompt", {}):
+                    result.append(self._sources_extractor_class.extract(t.get("prompt", ''), ids))
+                else:
+                    result.append(t["structured_prompt"]["from"])
         except Exception as e:
             self._logger.error(f"Thread Error (Sources): {e}")
-            result_sources = [[]] * len(tasks)
+            result = [[]] * len(tasks)
             
-        result_queue.put(result_sources)
+        result_queue.put(result)
 
     def _what(self, tasks: list, result_queue: queue.Queue):
         """Thread target: identifies the specific content target ('what') for all tasks."""
+        result = []
+        
         try:
-            result_what = [
-                self._what_extractor_class.extract(t.get("prompt", ''), t.get("from", []))
-                for t in tasks
-            ]
+            for t in tasks:
+                if "what" not in t.get("structured_prompt", {}):
+                    result.append(self._what_extractor_class.extract(t.get("prompt", ''), t.get("from", [])))
+                else:
+                    result.append(t["structured_prompt"]["what"])
         except Exception as e:
             self._logger.error(f"Thread Error (What): {e}")
-            result_what = ["intero documento"] * len(tasks) # Safe fallback
+            result = ["intero documento"] * len(tasks) # Safe fallback
             
-        result_queue.put(result_what)
+        result_queue.put(result)
         
     def _how(self, tasks: list, result_queue: queue.Queue):
         """Thread target: extracts constraints and logical filters ('how') for all tasks."""
