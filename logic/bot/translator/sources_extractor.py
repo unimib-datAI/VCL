@@ -38,7 +38,10 @@ class SourcesExtractor:
         self._dql_language: DQLLanguage = cfg.get_DQL()
         
         # Cache of valid source names defined in the DQL language
-        self._src_names = [src["name"] for src in self._dql_language.get_sources()]
+        self._src_info = {}
+        
+        for src in self._dql_language.get_sources():
+            self._src_info[src["name"]] = src["synonyms"]
         
         self.get_chat_history = cfg.get_chat_history
 
@@ -73,7 +76,7 @@ class SourcesExtractor:
             
             # Intersection: ensure inferred sources are valid within the current DQL schema
             matching_sources = [
-                src for src in self._src_names if src in used_source_names
+                src for src in self._src_info.keys() if src in used_source_names
             ]
 
             if matching_sources:
@@ -128,7 +131,7 @@ class SourcesExtractor:
         except Exception as e:
             # Fallback Logic: Return all available sources to prevent pipeline failure
             self._logger.error(f"Sources extraction failed: {e}")
-            documents = [[src, src] for src in self._src_names]
+            documents = [[src, src] for src in self._src_info.keys()]
             
         # Audit log for the extraction outcome
         self._logger.info(f"Final Source Selection: \"{query}\" -> {documents} ({status})")
@@ -210,7 +213,12 @@ class SourcesExtractor:
         """
         Parses Documents Label.
         """
-        documents = [[src, src] for src in self._src_names if src.lower() in query.lower()]
+        documents = [[src, src] for src in self._src_info.keys() if src.lower() in query.lower()]
+        
+        for name, syn in self._src_info.items():
+            for s in syn:
+                if s in query:
+                    documents.append([name, s])
         
         self._logger.info(f"Documents parsing: {documents}")
         return documents
