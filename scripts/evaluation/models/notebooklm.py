@@ -7,7 +7,7 @@ class NotebookLMModel():
         return "NotebookLM"
 
     def initialize(self, paths):
-        pass
+        return
 
     def query(self, question: str) -> str:
-        pass
+        return ""

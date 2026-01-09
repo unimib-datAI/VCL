@@ -15,6 +15,7 @@ langchain-google-genai
 
 # Required for 'openai' (GPT Models)
 langchain-openai
+openai
 
 # Required for 'huggingface'
 langchain-huggingface
@@ -50,3 +51,6 @@ markdown
 numpy==1.26.4
 spacy
 tomlkit
+
+# For evaluation
+ragas
