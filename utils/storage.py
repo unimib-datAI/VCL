@@ -186,20 +186,75 @@ class Storage:
         Helper method to initialize the 'documents' collection for a user.
         Injects relevant files from the project static directory.
         """
-        if self._documents.find_one({"username": username}):
-            return
+        if not self._documents.find_one({"username": username}):
+            try:
+                new_doc_entry = {
+                    "_id": ObjectId(),
+                    "username": username,
+                    "data": {"persisted_docs": []}
+                }
+                self._documents.insert_one(new_doc_entry)
+                self._invalidate_cache(username, self._docs_cache, self._docs_cache_lock)
+            except Exception:
+                pass
         
         persisted_doc = [doc for doc in self._get_default_docs() if doc.get("owner", "") == username]
         
+        for doc in persisted_doc:
+            self.upload_document(username, doc)
+        
+    def upload_document(self, username: str, persisted_doc, file_name=None) -> bool:
+        """
+        Inserts a document into the user's document collection.
+        Returns True if successful, False otherwise.
+        """
+        if not isinstance(persisted_doc, dict):
+            persisted_doc = {"text": str(persisted_doc)}
+        elif "text" not in persisted_doc:
+            persisted_doc["text"] = str(persisted_doc)
+
+        if "_id" not in persisted_doc:
+            persisted_doc["_id"] = str(ObjectId())
+
+        if "type_doc" not in persisted_doc:
+            persisted_doc["type_doc"] = "UNKNOWN"
+
+        if "name" not in persisted_doc and file_name:
+            persisted_doc["name"] = file_name
+
+        if "owner" not in persisted_doc:
+            persisted_doc["owner"] = username
+
         try:
-            new_doc_entry = {
-                "_id": ObjectId(),
-                "username": username,
-                "data": {"persisted_docs": persisted_doc}
-            }
-            self._documents.insert_one(new_doc_entry)
-        except Exception:
-            pass # Silent failure to allow partial registration
+            result = self._documents.update_one(
+                {"username": username},
+                {"$push": {"data.persisted_docs": persisted_doc}}
+            )
+
+            self._invalidate_cache(username, self._docs_cache, self._docs_cache_lock)
+
+            return result.modified_count == 1
+        except Exception as e:
+            print(f"Upload document failed: {e}")
+            return False
+
+        
+    def delete_document(self, username: str, doc_id: str) -> bool:
+        """
+        Removes a document from the user's document collection by its unique ID.
+        """
+        try:
+            result = self._documents.update_one(
+                {"username": username},
+                {"$pull": {"data.persisted_docs": {"_id": doc_id}}}
+            )
+            
+            self._invalidate_cache(username, self._docs_cache, self._docs_cache_lock)
+    
+            return result.modified_count > 0
+        except Exception as e:
+            print(f"Delete document failed: {e}")
+            return False
 
     def login_user(self, username, password) -> Tuple[bool, Optional[dict]]:
         """

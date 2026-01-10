@@ -914,7 +914,6 @@ def _show_expander(message: Dict) -> None:
         )
 
         # 2. Operations
-        print(tasks)
         _display_task(tasks)
         
         # 3. Logs

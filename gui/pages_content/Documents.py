@@ -1,3 +1,4 @@
+import json
 import markdown
 import streamlit as st
 
@@ -20,7 +21,6 @@ def _display_header():
     col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
-        # Recupero ID attuale dalla configurazione
         c_source = st.session_state.config.get_sources_id()
         current_source = "user" if c_source not in ["salomone", "vitali"] else c_source
         
@@ -34,8 +34,7 @@ def _display_header():
             default=current_source if current_source in options else "user",
             key="source_pill_widget"
         )
-        
-        # Rilevamento cambio fonte
+
         if selected_source != current_source:
             selected_source = st.session_state.username if selected_source not in ["salomone", "vitali"] else selected_source
             st.session_state.config.set_sources_id(selected_source)
@@ -44,11 +43,57 @@ def _display_header():
     
     with col2:
         if st.button("Carica Documenti", use_container_width=True):
-            pass
+            st.session_state.show_uploader = True
+
+        files = None
+        if st.session_state.show_uploader:
+            files = st.file_uploader(
+                "Carica i tuoi documenti giudiziari (TXT, JSON).",
+                type=["txt", "json"],
+                accept_multiple_files=True,
+                key="doc_uploader",
+            )
+            
+        if st.session_state.show_uploader and st.button("Conferma upload"):
+            if not files:
+                st.warning("Seleziona almeno un file.")
+                st.stop()
+
+            with st.spinner("Caricamento documenti in corso..."):
+                for file in files:
+                    raw = file.read().decode("utf-8", errors="ignore")
+
+                    if file.name.lower().endswith(".json"):
+                        file_content = json.loads(raw)
+                    else:
+                        file_content = raw
+
+                    st.session_state.storage.upload_document(
+                        st.session_state.username,
+                        file_content,
+                        file.name
+                    )
+
+            st.success("Documenti caricati con successo.")
+            _initialize_docs(st.session_state.config.get_sources_id())
+            st.session_state.show_uploader = False
+            st.rerun()
         
     with col3:
-        if st.button("Elimina Documenti", use_container_width=True):
-            pass
+        if st.session_state.get("current_doc") and st.session_state.username == st.session_state.config.get_sources_id():
+            doc_to_del = st.session_state.current_doc.get("_id", None)
+            if doc_to_del:
+                if st.button("🗑️ Elimina Documento Corrente", use_container_width=True, type="secondary"):
+                    if st.session_state.storage.delete_document(st.session_state.username, doc_to_del):
+                        st.success("Documento eliminato con successo.")
+                        _initialize_docs(st.session_state.config.get_sources_id())
+                        st.rerun()
+                    else:
+                        st.error("Errore durante l'eliminazione del documento.")
+            else:
+                st.button("🗑️ Elimina Documento Corrente", use_container_width=True, disabled=True)
+        else:
+            st.button("🗑️ Elimina Documento Corrente", use_container_width=True, disabled=True)
 
 def _display_buttons():
     """
@@ -58,7 +103,6 @@ def _display_buttons():
         st.info("Nessun documento disponibile.")
         return
 
-    # CSS per lo scroll orizzontale
     st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] {
@@ -108,24 +152,23 @@ def _display_text():
     )
 
 def show_documents():
-    # 1. Verifica prerequisiti
     required_keys = ["config", "username", "storage"]
     if not all(hasattr(st.session_state, k) for k in required_keys):
         return 
 
     st.title(PAGE_TITLE)
-    
-    # 2. Inizializzazione dati se non presenti
+
     if "docs" not in st.session_state:
         _initialize_docs(st.session_state.config.get_sources_id())
-    
-    # 3. Header sempre visibile
+        
+    if "show_uploader" not in st.session_state:
+        st.session_state.show_uploader = False
+
     _display_header()
 
-    # 4. Logica Condizionale: Visualizza i contenuti SOLO se ci sono documenti
     if st.session_state.get("docs") and len(st.session_state.docs) > 0:
         _display_buttons()
         _display_text()
     else:
-        # Se la lista è vuota (es. dopo aver selezionato 'user' senza file)
+        
         st.info("📂 Nessun documento disponibile per questa fonte.")
