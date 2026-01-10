@@ -1,117 +1,131 @@
 import markdown
 import streamlit as st
 
-# Application constant for the page header
 PAGE_TITLE = "Visualizza i tuoi documenti giudiziari"
 
-def _initialize_docs():
-    """
-    Initializes the documents in the session state by fetching them from storage.
-    Sets the first document as the default selected document if available.
-    """
-    if "docs" not in st.session_state:
-        # Fetch all documents associated with the current user from the storage backend
-        st.session_state.docs = st.session_state.storage.get_all_documents(st.session_state.username)
-        # Set the initial current document to the first item in the list
-        st.session_state.current_doc = st.session_state.docs[0] if st.session_state.docs else {}
+def _initialize_docs(username_input):
+    """Sincronizza i documenti basandosi sull'utente selezionato."""
+    if username_input in ["vitali", "salomone"]:
+        user_id = username_input
+    else:
+        user_id = st.session_state.get("username", "user")
+                
+    if hasattr(st.session_state, 'storage'):
+        docs = st.session_state.storage.get_all_documents(user_id)
+        
+        st.session_state.docs = docs
+        st.session_state.current_doc = docs[0] if docs else None
+
+def _display_header():
+    col1, col2, col3 = st.columns([2, 1, 1])
+    
+    with col1:
+        # Recupero ID attuale dalla configurazione
+        c_source = st.session_state.config.get_sources_id()
+        current_source = "user" if c_source not in ["salomone", "vitali"] else c_source
+        
+        options = ["salomone", "vitali", "user"]
+        
+        selected_source = st.pills(
+            "Seleziona la fonte",
+            options=options,
+            format_func=lambda option: option.capitalize(),
+            selection_mode="single",
+            default=current_source if current_source in options else "user",
+            key="source_pill_widget"
+        )
+        
+        # Rilevamento cambio fonte
+        if selected_source != current_source:
+            selected_source = st.session_state.username if selected_source not in ["salomone", "vitali"] else selected_source
+            st.session_state.config.set_sources_id(selected_source)
+            _initialize_docs(selected_source)
+            st.rerun()
+    
+    with col2:
+        if st.button("Carica Documenti", use_container_width=True):
+            pass
+        
+    with col3:
+        if st.button("Elimina Documenti", use_container_width=True):
+            pass
 
 def _display_buttons():
     """
-    Renders a horizontal navigation bar of buttons for each document.
-    Uses CSS injection to enable horizontal scrolling for the button container.
+    Initializes the documents in the session state by fetching them from storage.
     """
-    if not st.session_state.docs:
+    if "docs" not in st.session_state or not st.session_state.docs:
         st.info("Nessun documento disponibile.")
         return
 
-    # CSS injection to force the horizontal block to scroll instead of wrapping
+    # CSS per lo scroll orizzontale
     st.markdown("""
         <style>
-        /* Container styling to enable horizontal scrolling */
         div[data-testid="stHorizontalBlock"] {
             flex-wrap: nowrap;
             overflow-x: auto;
             padding-bottom: 10px;
             gap: 10px;
         }
-        
-        /* Column styling to prevent shrinking and maintain minimum width */
         div[data-testid="column"] {
             flex: 0 0 auto;
             min-width: 200px;
-            width: auto;
-        }
-        
-        /* Custom scrollbar styling for better UX in the document list */
-        div[data-testid="stHorizontalBlock"]::-webkit-scrollbar {
-            height: 6px;
-        }
-        
-        div[data-testid="stHorizontalBlock"]::-webkit-scrollbar-thumb {
-            background-color: #ccc;
-            border-radius: 4px;
         }
         </style>
     """, unsafe_allow_html=True)
 
-    # Dynamically create columns based on the number of available documents
     cols = st.columns(len(st.session_state.docs))
 
     for i, doc in enumerate(st.session_state.docs):
         with cols[i]:
-            # Check if the current document in the loop is the one currently selected
-            is_selected = (st.session_state.current_doc.get("_id") == doc.get("_id")) if st.session_state.current_doc else False
+            current_id = st.session_state.current_doc.get("_id") if st.session_state.current_doc else None
+            is_selected = (current_id == doc.get("_id"))
             
-            # Use 'primary' color for the selected document to provide visual feedback
             btn_type = "primary" if is_selected else "secondary"
-            label = f"{doc.get('type_doc', '')}\n({doc.get('name', '')})"
+            label = f"{doc.get('type_doc', 'Doc')}\n({doc.get('name', 'N/A')})"
 
-            # If button is clicked, update the session state and trigger a rerun to refresh text
-            if st.button(label, key=f"btn_{i}", type=btn_type, width='stretch'):
+            if st.button(label, key=f"btn_{i}", type=btn_type, use_container_width=True):
                 st.session_state.current_doc = doc
                 st.rerun()
 
 def _display_text():
-    """
-    Renders the content of the selected document. 
-    Converts Markdown text to HTML and displays it inside a styled container.
-    """
-    if not st.session_state.current_doc:
+    """Visualizza il contenuto del documento selezionato."""
+    if not st.session_state.get("current_doc"):
         return
 
     st.divider()
+    doc = st.session_state.current_doc
+    st.subheader(f"{doc.get('type_doc', '')} ({doc.get('name', '')})")
     
-    # Display the type and name of the active document
-    st.subheader(f"{st.session_state.current_doc.get('type_doc', '')} ({st.session_state.current_doc.get('name', '')})")
-    
-    # Convert the document content from Markdown to HTML
-    text = markdown.markdown(st.session_state.current_doc.get("text", "Nessun testo disponibile."))
+    content = doc.get("text", "Nessun testo disponibile.")
+    html_text = markdown.markdown(content)
 
-    # Display the HTML content inside a bordered box for better readability
     st.markdown(
-        f"""
-            <div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">
-                {text}
-            </div>
-        """,
+        f"""<div style="margin:10px; padding:15px; border:1px solid #ccc; border-radius:8px; background-color: #f9f9f9; color: black;">
+            {html_text}
+        </div>""",
         unsafe_allow_html=True,
     )
-            
+
 def show_documents():
-    """
-    Entry point for the document viewer page. 
-    Checks for required session state keys and coordinates initialization and rendering.
-    """
-    # Guard clause: verify that necessary session components are present before proceeding
+    # 1. Verifica prerequisiti
     required_keys = ["config", "username", "storage"]
-    
-    # Check if all keys exist in session_state or if a chat-specific parameter is present
-    if not all(hasattr(st.session_state, k) for k in required_keys) and not st.query_params.get("chat"):
+    if not all(hasattr(st.session_state, k) for k in required_keys):
         return 
 
     st.title(PAGE_TITLE)
     
-    # Initialize document data, then render the UI components
-    _initialize_docs()
-    _display_buttons()
-    _display_text()
+    # 2. Inizializzazione dati se non presenti
+    if "docs" not in st.session_state:
+        _initialize_docs(st.session_state.config.get_sources_id())
+    
+    # 3. Header sempre visibile
+    _display_header()
+
+    # 4. Logica Condizionale: Visualizza i contenuti SOLO se ci sono documenti
+    if st.session_state.get("docs") and len(st.session_state.docs) > 0:
+        _display_buttons()
+        _display_text()
+    else:
+        # Se la lista è vuota (es. dopo aver selezionato 'user' senza file)
+        st.info("📂 Nessun documento disponibile per questa fonte.")
