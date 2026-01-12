@@ -167,7 +167,7 @@ class SourcesExtractor:
         """
         # Get context from the previous turn
         current_doc = self.get_last_used_sources(chat)
-        self._logger.info(prompt)
+        
         if not current_doc:
             current_doc_info = ""
         else:

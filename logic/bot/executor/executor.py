@@ -197,10 +197,22 @@ class Executor:
                 if key == "limit":
                     # Specialized formatting for numerical constraints (words, characters, paragraphs)
                     sign = value['sign']
+                    unit = value['unit']
+                    number = value['number']
+                    
                     if sign == "*":
-                        sign = f"tale per cui il prodotto con il numero di {value['unit']} sia pari a"
-                        
-                    conditions.append(f"- È obbligatorio che la risposta abbia un numero di {value['unit']} {sign} {value['number']}")
+                        sign = ""#"tale per cui il prodotto con il numero di {value['unit']} sia pari a"
+                    elif sign == "<=":
+                        sign = "meno di "
+                    elif sign == ">=":
+                        sign = "più di"
+                    elif sign == "~":
+                        sign = "circa"
+                    else:
+                        sign = None
+                    
+                    if sign and unit and number >= 0:    
+                        conditions.append(f"- È obbligatorio che la risposta abbia {sign} {number} {unit}.")
                 else:
                     # General descriptive conditions
                     conditions.append(f"- Condizione \"{key}\": {value}")

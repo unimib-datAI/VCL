@@ -25,73 +25,33 @@
 
    "examples": [
       {
-         "input": ["estrai il sillogismo della sentenza s2 con meno di 100 parole"],
-         "reasoning": "",
-         "output": ["sillogismo"]
-      },
-      {
-         "input": ["cosa è successo per arrivare alla causa?"],
-         "reasoning": "",
-         "output": ["fatto"]
-      },
-      {
-         "input": ["estrai dalla sentenza s1 i valori economici espressi in euro"],
-         "reasoning": "",
-         "output": ["denaro"]
-      },
-      {
-         "input": ["estrai dalla sentenza s1 il denaro e le persone"],
-         "reasoning": "",
-         "output": ["denaro", "persone"]
-      },
-      {
-         "input": ["riassumi in 50 parole la memoria m2"],
-         "reasoning": "",
+         "input": ["Riassumi brevemente l'intera sentenza s1."],
+         "reasoning": "L'azione (riassunto) è rivolta all'unità documentale nel suo complesso, non a una parte specifica.",
          "output": ["intero documento"]
       },
       {
-         "input": ["trova precedenti su persona mario rossi"],
-         "reasoning": "",
-         "output": ["precedente"]
+         "input": ["Quali sono i fatti che hanno dato origine alla lite?"],
+         "reasoning": "Domanda diretta sulla ricostruzione degli eventi storici e processuali.",
+         "output": ["fatto"]
       },
       {
-         "input": ["quali sono gli step che hanno condotto alla scelta del giudice?"],
-         "reasoning": "",
-         "output": ["percorso logico"]
+         "input": ["Perché il giudice ha rigettato il ricorso? Quali somme sono state liquidate?"],
+         "reasoning": "Cerca la ratio decidendi (motivi) e i valori economici (denaro).",
+         "output": ["motivi", "denaro"]
       },
       {
-         "input": ["perchè questa decisione da parte del giudice?"],
-         "reasoning": "",
-         "output": ["motivi"]
-      },
-      {
-         "input": ["cosa ha scelto il giudice?"],
-         "reasoning": "",
-         "output": ["decisioni"]
-      },
-      {
-         "input": ["cosa ha scelto il giudice? Perchè?"],
-         "reasoning": "",
+         "input": ["Cosa ha deciso alla fine il tribunale? Perché?"],
+         "reasoning": "Domanda colloquiale che punta all'esito finale e alla statuizione del giudice.",
          "output": ["decisioni", "motivi"]
       },
       {
-         "input": ["elenca tra le seguenti frasi quelle che rispettano la condizione if x allora y ..."],
-         "reasoning": "",
-         "output": ["frase"]
-      },
-      {
-         "input": ["chi è coinvolto nel caso?"],
-         "reasoning": "",
+         "input": ["Chi sono i soggetti citati?"],
+         "reasoning": "Identificazione degli attori (persone).",
          "output": ["persona"]
       },
       {
-         "input": ["quale organizzazione è coinvolta nel caso?"],
-         "reasoning": "",
-         "output": ["organizzazione"]
-      },
-      {
-         "input": ["cosa vuole ottenere la parte ricorrente?"],
-         "reasoning": "",
+         "input": ["Cosa vogliono le parti?"],
+         "reasoning": "Riferimento alle pretese e alle domande delle parti coinvolte.",
          "output": ["richieste"]
       }
    ],
