@@ -37,11 +37,6 @@ class ConditionsExtractor:
         
         # Helper function to serialize document lists for prompt injection
         self.docs_in_string = cfg.docs_in_string
-        
-        # Mapping of detected triggers to specialized extraction methods
-        self.CONDITIONS_MAP = {
-            "LimitExtraction": self.limit_extraction
-        }
 
     # ------------------------------
     # --- Main Extraction Method ---
@@ -69,7 +64,7 @@ class ConditionsExtractor:
         structured_query["how"] = {}
         
         # Step 1: Detect which specialized extractors should be triggered
-        conditions_router = self.conditions_router(query)
+        conditions_router = self.extraction(query)
         
         for key, value in conditions_router.items():
             # Check if the router explicitly identified a specific condition type
@@ -77,7 +72,7 @@ class ConditionsExtractor:
                 continue
 
             # Invoke the specialized extraction method from the map
-            specific_conditions = self.CONDITIONS_MAP[key](query)
+            specific_conditions = self.extraction(query, key)
 
             # Filter out empty or invalid results
             if isinstance(specific_conditions, dict) and not all(v != "" for v in specific_conditions.values()):
@@ -92,48 +87,15 @@ class ConditionsExtractor:
         structured_query["how"].update(additional_conditions)
         
         return structured_query["how"]
-        
-    def conditions_router(self, query: str):
-        """
-        Classification step that determines which specialized extraction prompts 
-        are relevant for the given query.
-        """
+
+    def extraction(self, query: str, name = "ConditionsRouter") -> dict:
         status = "Error"
 
         try:
-            prompt = self._dql_language.prompts.get("ConditionsRouter.json", None)
+            prompt = self._dql_language.prompts.get(f"{name}.json", None)
             
             if not prompt:
-                raise ValueError("ConditionsRouter.json prompt template missing.")
-            
-            if query.strip():
-                # Call LLM to categorize the types of conditions present
-                conditions = self._llm.invoke(
-                    prompt,
-                    {"query": query}
-                )
-                status = "Done"
-            else:
-                raise ValueError("Received empty query.")
-
-        except Exception as e:
-            self._logger.error(f"Conditions Router execution failed: {e}")
-            conditions = {}
-
-        self._logger.info(f"Router Conditions -> {conditions} ({status})")
-        return conditions
-        
-    def limit_extraction(self, query: str) -> dict:
-        """
-        Specialized extractor for numerical or boundary constraints (e.g., 'only the first 5').
-        """
-        status = "Error"
-
-        try:
-            prompt = self._dql_language.prompts.get("LimitExtraction.json", None)
-            
-            if not prompt:
-                raise ValueError("LimitExtraction.json prompt template missing.")
+                raise ValueError(f"{name}.json prompt template missing.")
             
             if query.strip():
                 # Perform extraction with JSON mode enabled (True)
@@ -143,18 +105,20 @@ class ConditionsExtractor:
                     True 
                 )
                 
-                sign = conditions.get("sign", "")
-                sign = "~" if sign == "=" else sign # We accept tolerance
+                if name == "LimitExtraction":
+                    # Normalize the sign representation
+                    sign = conditions.get("sign", "")
+                    conditions["sign"] = "~" if sign == "=" else sign # We accept tolerance
                 
                 status = "Done"
             else:
                 raise ValueError("Empty query string.")
 
         except Exception as e:
-            self._logger.error(f"Limit extraction failed: {e}")
+            self._logger.error(f"{name} failed: {e}")
             conditions = {}
 
-        self._logger.info(f"Limit Extraction -> {conditions} ({status})")
+        self._logger.info(f"{name} -> {conditions} ({status})")
         return conditions
 
     def additional_conditions(self, query: str, structured_query: dict, docs: list) -> dict:

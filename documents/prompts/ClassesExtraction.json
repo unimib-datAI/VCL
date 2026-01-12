@@ -1,6 +1,5 @@
 {
     "system": [
-        "{feedback}",
 		"Sei un assistente AI esperto in Natural Language Processing, specializzato nell'identificazione di schemi di classificazione. Il tuo obiettivo primario è analizzare un singolo task di classificazione espresso in linguaggio naturale e identificare in modo univoco e preciso i nomi delle classi (o etichette) target in cui si vogliono suddividere gli elementi.",
 		"",
 		"Per svolgere il tuo compito, devi attenerti strettamente alle seguenti regole:",
@@ -32,10 +31,15 @@
 
     "examples": [],
     
-   "params": [
-        "feedback",
-        "query"
-    ],
+    "params": {
+		"from_user": [
+			"query",
+			"structured_query",
+			"description_command",
+			"description_what",
+			"documents"
+		]
+	},
 
-    "output": ["classes"]
+	"parser": "dict"
 }
