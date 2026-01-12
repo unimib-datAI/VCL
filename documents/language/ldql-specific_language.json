@@ -62,7 +62,7 @@
         {
             "key": "f",
             "command": "integra",
-            "description": "Genera un testo unico consolidato fondendo più fonti, risolvendo le sovrapposizioni e mantenendo ogni singolo dettaglio informativo unico presente nelle fonti.",
+            "description": "Dati una serie di documenti/task, viene generato un unico testo consolidato fondendo più fonti, risolvendo le sovrapposizioni e mantenendo ogni dettaglio informativo unico. Questo comando viene spesso usato per fornire un'unica risposta all'utente",
             "guidelines": [
                 "- Conservazione dell'Informazione: Se un dettaglio è presente in un solo documento, DEVE essere presente nel testo finale.",
                 "- Gestione Conflitti: In caso di dati inconciliabili (es. due date diverse per lo stesso evento), riportali entrambi segnalando l'incongruenza.",
@@ -98,7 +98,7 @@
         {
             "key": "i",
             "command": "riorganizza",
-            "description": "Ristruttura le informazioni esistenti secondo un nuovo criterio logico o cronologico, senza alterare, riassumere o perdere alcun contenuto originale.",
+            "description": "Supponendo sia data una serie di dati in input, l'operazione consiste nel riordinare questi dati secondo un nuovo criterio (cronologico, tematico, etc.) senza perdere contenuto. Non opera sulle risposte, ma sui dati.",
             "guidelines": [
                 "- Criterio Rigido: Attieniti strettamente al criterio di ordinamento richiesto (es. cronologico, per materia).",
                 "- Integrità dei Dati: Ogni singola informazione del testo originale deve essere ricollocata nel nuovo ordine. Non tagliare nulla.",
@@ -122,7 +122,7 @@
         {
             "key": "k",
             "command": "riformula",
-            "description": "Riscrive il testo variandone la forma espositiva, il tono o la struttura sintattica, garantendo il rispetto rigoroso dei limiti dimensionali e stilistici richiesti.",
+            "description": "Dato un singolo testo, esso deve essere riscritto il testo variandone la forma espositiva, il tono o la struttura sintattica, garantendo il rispetto rigoroso dei limiti dimensionali e stilistici richiesti. Quindi da un testo si ottiene un testo riformulato che rispecchia meglio le condizioni imposte.",
             "guidelines": [
                 "- Invarianza Semantica: Non alterare fatti, dati, nomi, date o relazioni logiche; il contenuto informativo deve restare integro.",
                 "- Adattamento del Registro: Modifica lo stile (es. da tecnico a formale) o il punto di vista solo se richiesto dall'utente.",

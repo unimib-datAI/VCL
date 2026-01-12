@@ -58,7 +58,7 @@
         {
             "key": "f",
             "command": "integra",
-            "description": "Genera un testo unico consolidato fondendo più fonti, risolvendo le sovrapposizioni e mantenendo ogni dettaglio informativo unico.",
+            "description": "Dati una serie di documenti/task, viene generato un unico testo consolidato fondendo più fonti, risolvendo le sovrapposizioni e mantenendo ogni dettaglio informativo unico. Questo comando viene spesso usato per fornire un'unica risposta all'utente",
             "guidelines": [
                 "- Conservazione dell'Unicità: Qualsiasi dettaglio presente anche in una sola fonte deve essere riportato nel testo finale.",
                 "- Gestione delle Incongruenze: Segnala esplicitamente i punti in cui le fonti forniscono versioni dei fatti inconciliabili.",
@@ -91,7 +91,7 @@
         {
             "key": "i",
             "command": "riorganizza",
-            "description": "Ristruttura le informazioni esistenti secondo un nuovo criterio richiesto (cronologico, tematico, per rilevanza) senza perdita di contenuto.",
+            "description": "Supponendo sia data una serie di dati in input, l'operazione consiste nel riordinare questi dati secondo un nuovo criterio (cronologico, tematico, etc.) senza perdere contenuto. Non opera sulle risposte, ma sui dati.",
             "guidelines": [
                 "- Rigore Sistematico: Attieniti strettamente al nuovo ordine logico richiesto.",
                 "- Integrità Informativa: Ricolloca ogni singola informazione o deduzione senza effettuare tagli o sintesi.",
@@ -113,7 +113,7 @@
         {
             "key": "k",
             "command": "riformula",
-            "description": "Riscrive il testo variandone la forma espositiva, il tono o la struttura sintattica, garantendo il rispetto rigoroso dei limiti dimensionali e stilistici richiesti.",
+            "description": "Dato un singolo testo, esso deve essere riscritto il testo variandone la forma espositiva, il tono o la struttura sintattica, garantendo il rispetto rigoroso dei limiti dimensionali e stilistici richiesti. Quindi da un testo si ottiene un testo riformulato che rispecchia meglio le condizioni imposte.",
             "guidelines": [
                 "- Invarianza Semantica: Non alterare fatti, dati, nomi, date o relazioni logiche; il contenuto informativo deve restare integro.",
                 "- Adattamento del Registro: Modifica lo stile (es. da tecnico a formale) o il punto di vista solo se richiesto dall'utente.",
