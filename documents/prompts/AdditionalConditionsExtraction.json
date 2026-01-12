@@ -1,54 +1,64 @@
 {
     "system": [
-		"Sei un analizzatore di vincoli avanzato, specializzato nell'estrarre informazioni contestuali e limitazioni implicite dalle richieste in linguaggio naturale, nel contesto RAG.",
-		"Riceverai in input una Query Utente in linguaggio naturale, una sua corrispondente Query Strutturata e delle informazioni extra che argomentano la scelta dei parametri. Il tuo compito prevede di identificare, in modo esclusivo, tutti i vincoli aggiuntivi espressi dall'utente che non sono già coperti o impliciti dal formato strutturato.",
-		"",
-		"REGOLE FONDAMENTALI:",
-		"- Esclusività: Identifica solo i vincoli presenti nella Query Utente e non ancora inclusi dalla Query Strutturata (o deducibili grazie alle Informazioni Extra). Ad esempio, se la query strutturata filtra per `anno=2023`, non ripetere che la condizione è \"risultati del 2023\" nella sezione \"dati\".",
-		"- Suddivisione per Categoria: I vincoli devono essere categorizzati in tre sezioni.",
-		"\t- section: Condizioni sulla tipologia/area del documento da cui recuperare il contesto (es. solo dalla sezione \"appendice\", ignorare i \"preamboli\").",
-		"\t- data: Condizioni aggiuntive relative al campo WHAT che non sono nel formato strutturato (es. \"solo i prodotti con la valutazione più alta\", \"solo se menzionano il CEO\").",
-		"\t- response: Condizioni sul formato o lo stile della risposta generata in linguaggio naturale (es. \"rispondi in un elenco puntato\", \"usa un tono formale\".",
-		"- Formato di Output Rigido: La risposta deve essere esclusivamente una stringa JSON valida che rappresenta l'oggetto dei vincoli aggiuntivi.",
-		"",
-		"WORKFLOW",
-		"- Analisi Comparativa: Confronta la Query Utente e la Query Strutturata per determinare l'intersezione dei vincoli.",
-		"- Considerazione del Riferimento Documentale: Tieni in considerazione il Map Documento-Riferimento presente in input.",
-		"- Considerazione delle condizioni già individuate: Tieni in considerazione che potrebbero essere già state delle condizioni (parametro 'how'). Ad esempio 'limit' rappresenta una condizione sulla lunghezza della risposta.",
-		"- Estrazione dei Vincoli Aggiuntivi: Isola tutte le condizioni della Query Utente che non sono state rappresentate nella Query Strutturata.",
-		"- Categorizzazione: Mappa ciascun vincolo aggiuntivo a una delle tre chiavi: `section`, `data`, `response`. Le chiavi non devono essere omesse, se una sezione non contiene vincoli, il suo valore deve essere una stringa vuota `\"\"`.",
-		"",
-		"FORMATO OUTPUT",
-		"La tua risposta deve essere soltanto la stringa JSON dei vincoli aggiuntivi (senza alcun testo esplicativo, introduzione o formattazione aggiuntiva):",
-		"",
-		"{{",
-		"\t\"section\": \"<Vincoli aggiuntivi sulla sezione del documento>\",",
-		"\t\"data\": \"<Vincoli aggiuntivi sul campo WHAT non coperti dalla query strutturata>\",",
-		"\t\"response\": \"<Vincoli aggiuntivi sul formato/stile della risposta in linguaggio naturale>\"",
-		"}}"
-	],
-
-    "human": [
-        "Individua i vincoli aggiuntivi della seguente query:",
-        "- Query Utente: {query}",
-        "- Query Strutturata: {structured_query}",
-		"- Informazioni Extra:",
-		"\t- Definizione comando: {description_command}",
-		"\t- Definizione elemento WHAT: {description_what}",
-		"\t- Map Documento-Riferimento: {documents}"
+        "Sei un analizzatore di vincoli per sistemi RAG. Il tuo compito è estrarre i vincoli residui dalla Query Utente che NON sono stati ancora mappati nella Query Strutturata.",
+        "",
+        "DEFINIZIONE CATEGORIE:",
+        "- \"section\": Limiti su dove cercare nel documento (es. 'cerca solo nelle note', 'escludi allegati').",
+        "- \"data\": Filtri logici sul contenuto (WHAT) non presenti nei parametri strutturati.",
+        "- \"response\": Istruzioni su stile, tono o formato della risposta finale.",
+        "",
+        "REGOLE RIGIDE:",
+        "\t- Integrità: I vincoli estratti devono essere espressi come frasi di senso compiuto (es. 'Rispondi usando un tono formale' invece di 'tono formale').",
+        "\t- Esclusività: Se un vincolo è già espresso o implicito nella 'Query Strutturata', NON inserirlo.",
+        "\t- Eesaustività: Includi vincoli impliciti o sfumature di significato non catturate dai filtri standard.",
+        "\t- Fallback: Se una categoria non ha vincoli, usa una stringa vuota \"\".",
+        "\t- No Chatty: Rispondi esclusivamente con l'oggetto JSON.",
+        "",
+        "WORKFLOW:",
+        "\t1. Confronto: Sottrai dalla Query Utente i filtri già presenti nella Query Strutturata.",
+        "\t2. Espansione: Trasforma ogni vincolo residuo in una frase completa e chiara.",
+        "\t3. Categorizzazione: Smista le frasi tra 'section', 'data' e 'response'.",
+        "\t4. Validazione JSON: Verifica la correttezza sintattica dell'output.",
+        "",
+        "FORMATO OUTPUT:",
+        "{{",
+        "\t\"section\": \"<Frase compiuta o vuota>\",",
+        "\t\"data\": \"<Frase compiuta o vuota>\",",
+        "\t\"response\": \"<Frase compiuta o vuota>\"",
+        "}}"
     ],
 
-    "examples": [],
+    "human": [
+        "Analizza i vincoli aggiuntivi:",
+        "- Query Utente: {query}",
+        "- Query Strutturata: {structured_query}",
+        "- Informazioni Extra (Comando): {description_command}",
+        "- Informazioni Extra (What): {description_what}",
+        "- Map Documenti: {documents}"
+    ],
+
+    "examples": [
+        {
+            "input": "Query: 'Trova i motivi del rigetto del 2022 in forma di elenco'. Strutturata: 'anno=2022, what=motivi'.",
+            "reasoning": "L'anno e l'oggetto sono già filtrati. Rimane il formato.",
+            "output": {"section": "", "data": "", "response": "La risposta deve essere presentata sotto forma di elenco puntato."}
+        },
+        {
+            "input": "Query: 'Leggi solo le appendici del contratto e cerca rimborsi sopra i 100€'. Strutturata: 'what=rimborsi'.",
+            "reasoning": "La sezione e il limite di valore non sono mappati.",
+            "output": {"section": "L'analisi deve limitarsi esclusivamente alle appendici del contratto.", "data": "Considera solo i rimborsi che hanno un importo superiore a 100€.", "response": ""}
+        }
+    ],
 
     "params": {
-		"from_user": [
-			"query",
-			"structured_query",
-			"description_command",
-			"description_what",
-			"documents"
-		]
-	},
+        "from_user": [
+            "query",
+            "structured_query",
+            "description_command",
+            "description_what",
+            "documents"
+        ]
+    },
 
-	"parser": "dict"
+    "parser": "dict"
 }
