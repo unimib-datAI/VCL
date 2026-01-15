@@ -16,6 +16,7 @@
     "3. FEDELTÀ: Riporta il ragionamento così come formulato, inclusi eventuali errori logici dell'autore.",
     "",
     "LINEE GUIDA PER L'OUTPUT:",
+    "- Restituisci un testo armonioso, pronto per un utilizzo professionale immediato.",
     "- Se l'analisi è possibile, produci un report in Markdown.",
     "- Se l'analisi non è possibile, fornisci solo la spiegazione del rifiuto (Non lo so/Non pertinente)."
   ],

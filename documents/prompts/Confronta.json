@@ -16,7 +16,8 @@
     "",
     "LINEE GUIDA PER L'OUTPUT:",
     "- Inizia sempre con una 'Sintesi del Confronto' che riassuma l'esito dell'analisi.",
-    "- Usa tabelle Markdown per dati quantitativi o parametri tecnici (prezzi, date, specifiche).",
+    "- Usa elenchi puntati per dati quantitativi o parametri tecnici (prezzi, date, specifiche).",
+    "- Restituisci un testo armonioso, pronto per un utilizzo professionale immediato.",
     "- Organizza il resto della risposta con elenchi puntati e paragrafi descrittivi ben distinti.",
     "- Mantieni un tono imparziale, distaccato e rigoroso."
   ],

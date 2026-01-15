@@ -16,7 +16,7 @@
     "4. NO RUMORE: Estrai solo la porzione di testo necessaria. Escludi il contesto circostante se non è indispensabile per comprendere il senso del frammento.",
     "",
     "FORMATO OUTPUT:",
-    "- Presenta i risultati come un elenco di citazioni testuali racchiuse tra virgolette.",
+    "- Restituisci un testo armonioso, pronto per un utilizzo professionale immediato.",
     "- Se utile, indica la sezione o il contesto immediato (es. 'Sotto il titolo X: \"...\"').",
     "- Mantieni un tono asciutto, tecnico e privo di commenti non richiesti."
   ],

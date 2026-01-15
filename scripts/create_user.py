@@ -67,11 +67,21 @@ def main() -> None:
     
     storage = Storage.get_instance()
     
-    result, user = storage.register_user(opts.username, opts.email, opts.password, opts.role)
+    username = opts.username
+    
+    if not username:
+        print("Error: Username is required.")
+        return
+    
+    email = opts.email if opts.email else f"{username}@example.com"
+    password = opts.password if opts.password else f"{username.lower().capitalize()}123!"
+    role = opts.role
+
+    result, user = storage.register_user(username, email, password, role)
     if result and user:
-        print(f"User '{opts.username}' created successfully with role '{opts.role}'.")
+        print(f"User '{username}' created successfully with password '{password}', email '{email}' and role '{role}'.")
     else:
-        print(f"Error: Could not create user '{opts.username}'.")
+        print(f"Error: Could not create user '{username}'.")
         if isinstance(user, str) and user:
             print(f"Reason: {user}")
 

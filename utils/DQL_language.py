@@ -206,7 +206,7 @@ class DQLLanguage:
         for cmd in self._commands:
             command_name = cmd.get("command", "altro")
             self._key_command_map[cmd.get("key")] = command_name
-            self._command_description_map[command_name] = cmd.get("description")
+            self._command_description_map[command_name] = cmd.get("description", "")
             self._command_guidelines_map[command_name] = "\n".join(cmd.get("guidelines", [])).strip()
 
     def get_command_from_key(self, key: str) -> str:

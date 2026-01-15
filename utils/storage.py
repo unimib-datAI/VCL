@@ -575,7 +575,7 @@ class Storage:
 
     def _get_default_language(self, username) -> dict:
         """Loads the factory default language JSON from disk. 
-        DQL-Default, LDQL-Default, LDQL-Specific are users for evaluation"""
-        prefix = "ldql-default" if username.lower() not in ["dql-default", "ldql-specific"] else username.lower()
+        DQL-Default, LDQL-Default, LDQL-U are users for evaluation"""
+        prefix = "ldql-default" if username.lower() not in ["dql-default", "ldql-u"] else username.lower()
         path = os.path.join(self._project_root, "documents", "language", f"{prefix}_language.json")
         return self._file_handler.read_file(path)

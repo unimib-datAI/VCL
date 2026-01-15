@@ -60,7 +60,7 @@ def evaluation():
     registry = ModelRegistry()
     #registry.register(DQLModel("DQL-Default"))
     #registry.register(DQLModel("LDQL-Default"))
-    #registry.register(DQLModel("LDQL-Specific"))
+    #registry.register(DQLModel("LDQL-U"))
     registry.register(GPTModel(GENERATION_OPENAI_MODEL))
     registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     registry.register(CopilotModel())
