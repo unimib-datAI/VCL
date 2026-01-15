@@ -60,7 +60,7 @@ def evaluation():
     registry = ModelRegistry()
     #registry.register(DQLModel("DQL-Default"))
     #registry.register(DQLModel("LDQL-Default"))
-    #registry.register(DQLModel("LDQL-Specific"))
+    #registry.register(DQLModel("LDQL-U"))
     registry.register(GPTModel(GENERATION_OPENAI_MODEL))
     registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     registry.register(CopilotModel())
@@ -73,9 +73,10 @@ def evaluation():
 
     judge = GPTJudge(EVALUATION_OPENAI_MODEL)
     judge.initialize(documents)
+    asyncio.run(judge.start_prompt())
     print("[INFO] Judge initialized")
 
-    for question_file in os.listdir(input_dir):
+    for question_file in sorted(os.listdir(input_dir)):
         try:
             if question_file.endswith(".json"):
                 question_path = os.path.join(input_dir, question_file)
@@ -129,7 +130,7 @@ def evaluation():
                                 print(f"[INFO] Answer generation for {model.name}: Done")
                             except Exception as e:
                                 final_results[model.name]["answers"][str(i)] = ""
-                                print(f"[INFO] Answer generation for {model.name}: Error")
+                                print(f"[INFO] Answer generation for {model.name}: Error {e}")
                     
                     for i in range(1, K + 1):
                         if str(i) in question_data.get(model.name, {}).get("claims", {}).get("answers", {}):
@@ -141,7 +142,7 @@ def evaluation():
                                 print(f"[INFO] Claims generation for {model.name}: Done")
                             except Exception as e:
                                 final_results[model.name]["claims"]["answers"][str(i)] = []
-                                print(f"[INFO] Claims generation for {model.name}: Error")
+                                print(f"[INFO] Claims generation for {model.name}: Error {e}")
                             
                     model_response_time = datetime.now()
                     final_results[model.name]["time"]["generation_time"] = {
@@ -158,12 +159,14 @@ def evaluation():
                 for annotator in ground_truth_dict:
                     print(f"[INFO] Annotator {annotator}: Start")
                     ground_truth = ground_truth_dict.get(annotator, None)
-                    ground_truth = ground_truth[-1] if ground_truth else None
+                    #ground_truth = ground_truth[-1] if ground_truth else None
 
                     if not ground_truth:
                         print(f"[INFO] {id_question} - Skipped")
                         continue
                     
+                    ground_truth = str(ground_truth)
+
                     ground_truth_claim = asyncio.run(judge.extract_claims(ground_truth))
                     
                     for model in registry.all():

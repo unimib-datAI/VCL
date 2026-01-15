@@ -12,7 +12,7 @@ class GPTJudge:
     CHUNK_SIZE = 800
     K = 5
 
-    def __init__(self, model: str):
+    def __init__(self, model: str, atomicity: str ="low", coverage: str = "low"):
         if "gpt" not in model:
             raise ValueError("Model not supported!")
 
@@ -22,7 +22,17 @@ class GPTJudge:
         self.client = AsyncOpenAI()
         self.llm_default = llm_factory(self.model, client=self.client)
         self.llm_long = llm_factory(
-            self.model, client=self.client, max_tokens=4096
+            self.model, client=self.client, max_tokens=16384
+        )
+
+        self.faithfulness = Faithfulness(
+            llm=self.llm_long
+        )
+
+        self.factualcorrectness = FactualCorrectness(
+            llm=self.llm_long,
+            atomicity=atomicity,
+            coverage=coverage
         )
 
         self.context = []
@@ -38,17 +48,36 @@ class GPTJudge:
                     dict(json.load(f)).get("text", "")
                 )
 
+    async def start_prompt(self):
+        self.faithfulness.statement_generator_prompt = await self.faithfulness.statement_generator_prompt.adapt(
+            target_language="italian",
+            llm=self.llm_default,
+            adapt_instruction=True
+        )
+
+        self.faithfulness.nli_statement_prompt  = await self.faithfulness.nli_statement_prompt.adapt(
+            target_language="italian",
+            llm=self.llm_default,
+            adapt_instruction=True
+        )
+
+        self.factualcorrectness.prompt = await self.factualcorrectness.prompt.adapt(
+            target_language="italian",
+            llm=self.llm_default,
+            adapt_instruction=True
+        )
+
+        self.factualcorrectness.nli_prompt = await self.factualcorrectness.nli_prompt.adapt(
+            target_language="italian",
+            llm=self.llm_default,
+            adapt_instruction=True
+        )
+
     # -------------------------
     # Claims extraction
     # -------------------------
     async def extract_claims(self, text, atomicity="low", coverage="low"):
-        scorer = FactualCorrectness(
-            llm=self.llm_default,
-            atomicity=atomicity,
-            coverage=coverage,
-            language="it"
-        )
-        return await scorer._decompose_claims(text)
+        return await self.factualcorrectness._decompose_claims(text)
 
     # -------------------------
     # Precision / Recall / F1
@@ -60,20 +89,15 @@ class GPTJudge:
         response_text,
         reference_text,
     ):
-        scorer = FactualCorrectness(
-            llm=self.llm_long,
-            language="it"
-        )
-
         # Precision: response → reference
-        resp_ref = await scorer._verify_claims(
+        resp_ref = await self.factualcorrectness._verify_claims(
             response_claims, reference_text
         )
         tp = sum(v.verdict for v in resp_ref.statements) if resp_ref else 0
         fp = len(resp_ref.statements) - tp if resp_ref else 0
 
         # Recall: reference → response
-        ref_resp = await scorer._verify_claims(
+        ref_resp = await self.factualcorrectness._verify_claims(
             reference_claims, response_text
         )
         fn = sum(not v.verdict for v in ref_resp.statements) if ref_resp else 0
@@ -128,16 +152,11 @@ class GPTJudge:
     # Faithfulness (single corpus)
     # -------------------------
     async def evaluate_faithfulness(self, statements):
-        scorer = Faithfulness(
-            llm=self.llm_long,
-            language="it"
-        )
-
         context_str = "\n".join(self.context)
-        verdicts = await scorer._create_verdicts(
+        verdicts = await self.faithfulness._create_verdicts(
             statements, context_str
         )
-        score = scorer._compute_score(verdicts)
+        score = self.faithfulness._compute_score(verdicts)
 
         return {
             "faithfulness": {
@@ -161,11 +180,10 @@ class GPTJudge:
     # Faithfulness (multi-doc)
     # -------------------------
     async def evaluate_faithfulness_multi(self, statements):
-        scorer = Faithfulness(llm=self.llm_long)
         per_statement = defaultdict(list)
 
         for doc in self.context:
-            verdicts = await scorer._create_verdicts(statements, doc)
+            verdicts = await self.faithfulness._create_verdicts(statements, doc)
 
             for v in verdicts.statements:
                 per_statement[v.statement].append(
