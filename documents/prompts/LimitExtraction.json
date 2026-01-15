@@ -5,7 +5,7 @@
         "REGOLE RIGIDE 'sign':",
         "\t- \"<=\": Limite massimo (es. \"massimo\", \"entro\", \"fino a\").",
         "\t- \">=\": Limite minimo (es. \"almeno\", \"minimo\", \"non meno di\").",
-        "\t- \"*\": Rapporto/Moltiplicatore (es. \"metà\", \"doppio\", \"triplicando\").",
+        "\t- \"%\": Rapporto con il testo originario (es. \"metà\", \"doppio\", \"%\").",
         "\t- \"~\": Valore approssimativo o numero secco (es. \"circa\", \"di 200 parole\", \"esattamente\").",
         "\t- \"\": Nessun vincolo numerico identificabile.",
         "",
@@ -20,7 +20,7 @@
         "\t4. Validazione: Se non ci sono dati numerici o moltiplicatori, azzera tutti i campi.",
         "",
         "FORMATO OUTPUT:",
-        "Restituisci esclusivamente un dizionario Python: {\"sign\": \"...\", \"number\": ..., \"unit\": \"...\"}"
+        "Restituisci esclusivamente un dizionario Python: {{\"sign\": \"...\", \"number\": ..., \"unit\": \"...\"}}"
     ],
 
     "human": [
@@ -45,8 +45,13 @@
         },
         {
             "input": "Dimezza il numero delle parole.",
-            "reasoning": "Rapporto matematico (metà = 0.5).",
-            "output": {"sign": "*", "number": 0.5, "unit": "parole"}
+            "reasoning": "Rapporto matematico (metà -> 50%).",
+            "output": {"sign": "%", "number": 50, "unit": "parole"}
+        },
+        {
+            "input": "Raddoppia il numero delle parole.",
+            "reasoning": "Rapporto matematico (raddoppia -> 200%).",
+            "output": {"sign": "%", "number": 200, "unit": "parole"}
         },
         {
             "input": "Un testo breve.",

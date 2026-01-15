@@ -23,7 +23,7 @@
         "- Se 'Testo seguente': Copia il testo tra virgolette \" \".",
         "- Se 'come hai fatto con': Recupera le stesse condizioni del turno menzionato.",
         "- Se 'allo stesso modo di': Recupera le stesse condizioni del turno menzionato.",
-        "- Se 'il concetto Z': Recupera l'ID della risposta che menziona Z.",
+        "- Se 'il concetto Z/cosa intendi con Z': Recupera l'ID della risposta che menziona Z.",
         "",
         "LINEE GUIDA OPERATIVE:",
         "- Se la query è completa, restituiscila invariata.",

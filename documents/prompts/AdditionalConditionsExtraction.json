@@ -9,7 +9,7 @@
         "",
         "REGOLE RIGIDE:",
         "\t- Integrità: I vincoli estratti devono essere espressi come frasi di senso compiuto (es. 'Rispondi usando un tono formale' invece di 'tono formale').",
-        "\t- Esclusività: Se un vincolo è già espresso o implicito nella 'Query Strutturata', NON inserirlo.",
+        "\t- Esclusività: Se un vincolo è già espresso o implicito nella 'Query Strutturata' o nelle informazioni extra, NON inserirlo.",
         "\t- Eesaustività: Includi vincoli impliciti o sfumature di significato non catturate dai filtri standard.",
         "\t- Fallback: Se una categoria non ha vincoli, usa una stringa vuota \"\".",
         "\t- No Chatty: Rispondi esclusivamente con l'oggetto JSON.",
@@ -33,22 +33,12 @@
         "- Query Utente: {query}",
         "- Query Strutturata: {structured_query}",
         "- Informazioni Extra (Comando): {description_command}",
-        "- Informazioni Extra (What): {description_what}",
-        "- Map Documenti: {documents}"
+        "- Informazioni Extra (What):",
+        "{description_what}",
+        "- Informazioni Extra (Documenti): {documents}"
     ],
 
-    "examples": [
-        {
-            "input": "Query: 'Trova i motivi del rigetto del 2022 in forma di elenco'. Strutturata: 'anno=2022, what=motivi'.",
-            "reasoning": "L'anno e l'oggetto sono già filtrati. Rimane il formato.",
-            "output": {"section": "", "data": "", "response": "La risposta deve essere presentata sotto forma di elenco puntato."}
-        },
-        {
-            "input": "Query: 'Leggi solo le appendici del contratto e cerca rimborsi sopra i 100€'. Strutturata: 'what=rimborsi'.",
-            "reasoning": "La sezione e il limite di valore non sono mappati.",
-            "output": {"section": "L'analisi deve limitarsi esclusivamente alle appendici del contratto.", "data": "Considera solo i rimborsi che hanno un importo superiore a 100€.", "response": ""}
-        }
-    ],
+    "examples": [],
 
     "params": {
         "from_user": [

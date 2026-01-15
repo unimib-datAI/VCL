@@ -1,16 +1,36 @@
-def estrai_logico(context, what, how, llm, language) -> tuple[str, dict]:
+from logic.bot.executor.tools.converters import check_limit_result, format_conditions, format_context
+
+def estrai_logico(context: list, query: dict, llm, language) -> str:
+    if not context:
+        return "Non è stato possibile rispondere alla tua richiesta perché non ho trovato i documenti richiesti."
+    
+    command = query.get("command")
+    if command != "estrai logico":
+        raise ValueError("Error: The command provided does not match 'estrai logico'.")
+    
+    try:
+        what = query.get("what", [])[0]
+    except Exception:
+        what = ""
+    
+    if not what:
+        return "Non è stato possibile rispondere alla tua richiesta perché non ho capito cosa cercare."
+
+    if what == "intero documento":
+        return str(context)
+    
     state = {
-        "how": how,
-        "context": context,
-        "guidelines": language.get_guidelines_from_command("estrai logico"),
-        "command": "estrai logico", 
-        "description_command": language.get_description_from_command("estrai logico"),
-        "what": what[0],
-        "description_what": language.get_description_from_what(what[0])
+        "how": format_conditions(query.get("how", {}), command),
+        "context": format_context(context),
+        "what": what,
+        "description_what": language.get_description_from_what(what)
     }
-    prompt = language.prompts.get("Generator.json")
+    
+    prompt = language.prompts.get("EstraiLogico.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")
         
-    return llm.invoke(prompt, state)
+    result = llm.invoke(prompt, state)
+    
+    return check_limit_result(result, context, query, llm, language)

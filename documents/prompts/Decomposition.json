@@ -24,7 +24,7 @@
         "- Elementi conversazionali come 'risposta precedente' o 'penultima risposta', 'documenti correnti', 'risposta X' sono considerati fonti valide.",
         "",
         "FORMATO OUTPUT:",
-        "Restituisci ESCLUSIVAMENTE una lista di dizionari: [{\"id\": \"1\", \"prompt\": \"...\", \"dependences\": []}]"
+        "Restituisci ESCLUSIVAMENTE una lista di dizionari: [{{\"id\": \"1\", \"prompt\": \"...\", \"dependences\": []}}]"
     ],
 
     "human": [
@@ -39,6 +39,17 @@
                 {
                     "id": "1",
                     "prompt": "Estrai i nomi, le date dalla sentenza di primo grado.",
+                    "dependences": []
+                }
+            ]
+        },
+        {
+            "input": "cerca nella sentenza di primo grado il testo citato tra virgolette della sentenza di cassazione cass. 17 ottobre 2018, n. 26017.",
+            "reasoning": "Azione singola (Cerca) su un oggetto (testo citato) da una fonte specifica (sentenza di primo grado). È un task atomico.",
+            "output": [
+                {
+                    "id": "1",
+                    "prompt": "Cerca nella sentenza di primo grado il testo citato tra virgolette della sentenza di cassazione cass. 17 ottobre 2018, n. 26017.",
                     "dependences": []
                 }
             ]

@@ -3,20 +3,21 @@
         "Sei un assistente AI esperto in NLP, specializzato nell'estrazione di intenti di ordinamento (Sorting Intent).",
         "",
         "MAPPATURA DIREZIONE:",
-        "\t- \"ASC\" (Crescente): 'dalla A alla Z', 'dal più piccolo/basso', 'meno costoso', 'più vecchio/meno recente', 'ascendente'.",
-        "\t- \"DESC\" (Decrescente): 'dalla Z alla A', 'dal più grande/alto', 'più caro/costoso', 'più recente/nuovo', 'discendente'.",
+        "\t- \"Crescente\": 'dalla A alla Z', 'dal più piccolo/basso', 'meno costoso', 'più vecchio/meno recente', 'ascendente'.",
+        "\t- \"Decrescente\": 'dalla Z alla A', 'dal più grande/alto', 'più caro/costoso', 'più recente/nuovo', 'discendente'.",
+        "\t- \"\": Nessuna direzione specificata o non inferibile.",
         "",
         "REGOLE DI ESTRAZIONE:",
-        "\t- Criteria: Estrai l'attributo base (es. 'alfabetico', 'temporale', 'numerico'). Se assente, restituisci None.",
-        "\t- Direction: Restituisci 'ASC' o 'DESC'. Se non specificata, prova a inferirla (es. 'i più cari' -> DESC). Se impossibile da determinare, restituisci 'ASC'.",
+        "\t- Criteria: Estrai l'attributo base (es. 'alfabetico', 'temporale', 'numerico'). Se assente, restituisci la stringa vuota \"\".",
+        "\t- Direction: Restituisci 'Crescente' o 'Decrescente'. Se non specificata, prova a inferirla (es. 'i più cari' -> Decrescente). Se impossibile da determinare, restituisci \"\".",
         "",
         "WORKFLOW:",
         "\t1. Identifica l'attributo di ordinamento (Criteria).",
         "\t2. Analizza modificatori o aggettivi per determinare il verso (Direction).",
-        "\t3. Normalizza i valori: il criteria deve essere una singola stringa, la direzione solo 'ASC', 'DESC' o None.",
+        "\t3. Normalizza i valori: il criteria deve essere una singola stringa (eventualmente vuota), la direzione solo 'Crescente', 'Decrescente' o ''.",
         "",
         "FORMATO OUTPUT:",
-        "Restituisci esclusivamente un dizionario Python: {\"criteria\": \"...\", \"direction\": \"...\"}"
+        "Restituisci esclusivamente un dizionario Python: {{\"criteria\": \"...\", \"direction\": \"...\"}}"
     ],
 
     "human": [
@@ -26,18 +27,23 @@
     "examples": [
         {
             "input": "Ordina i prodotti dal più economico.",
-            "reasoning": "Il criteria è il prezzo e 'più economico' implica un ordine crescente (ASC).",
-            "output": {"criteria": "prezzo", "direction": "ASC"}
+            "reasoning": "Il criteria è il prezzo e 'più economico' implica un ordine crescente (Crescente).",
+            "output": {"criteria": "prezzo", "direction": "Crescente"}
         },
         {
             "input": "Mostrami le email più recenti.",
-            "reasoning": "Il criteria è la data/tempo e 'più recenti' implica un ordine decrescente (DESC).",
-            "output": {"criteria": "temporale", "direction": "DESC"}
+            "reasoning": "Il criteria è la data/tempo e 'più recenti' implica un ordine decrescente (Decrescente).",
+            "output": {"criteria": "temporale", "direction": "Decrescente"}
         },
         {
             "input": "Elenca i nomi in ordine alfabetico inverso.",
-            "reasoning": "Il criteria è alfabetico (nome) e 'inverso' indica DESC.",
-            "output": {"criteria": "nome", "direction": "DESC"}
+            "reasoning": "Il criteria è alfabetico (nome) e 'inverso' indica Decrescente.",
+            "output": {"criteria": "nome", "direction": "Decrescente"}
+        },
+        {
+            "input": "Ordina i risultati.",
+            "reasoning": "Nessun criteria o direzione specificata.",
+            "output": {"criteria": "", "direction": ""}
         }
     ],
 

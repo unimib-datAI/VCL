@@ -114,7 +114,7 @@ class SourcesExtractor:
                 documents += self._task_id_parsing(query, tasks_id)
             
             # Filter out any lingering internal task references (starting with #)
-            documents = [d for d in documents if not str(d[0]).startswith("#")]
+            documents = [d for d in documents if not str(d[0]).startswith("#") and str(d[0]) != "altro"]
             
             # Strategy 4: If no documents found, use parsing and LLM to infer context from chat history
             if not documents:

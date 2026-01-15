@@ -1,16 +1,23 @@
-def verifica(context, what, how, llm, language) -> tuple[str, dict]:
+from logic.bot.executor.tools.converters import check_limit_result, format_conditions, format_context
+
+def verifica(context: list, query: dict, llm, language) -> str:
+    if not context:
+        return "Non è stato possibile rispondere alla tua richiesta perché non ho trovato i documenti richiesti."
+    
+    command = query.get("command")
+    if command != "verifica":
+        raise ValueError("Error: The command provided does not match 'verifica'.")
+    
     state = {
-        "how": how,
-        "context": context,
-        "guidelines": language.get_guidelines_from_command("verifica"),
-        "command": "verifica", 
-        "description_command": language.get_description_from_command("verifica"),
-        "what": what[0],
-        "description_what": language.get_description_from_what(what[0])
+        "how": format_conditions(query.get("how", {}), command),
+        "context": format_context(context)
     }
-    prompt = language.prompts.get("Generator.json")
+    
+    prompt = language.prompts.get("Verifica.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")
         
-    return llm.invoke(prompt, state)
+    result = llm.invoke(prompt, state)
+    
+    return check_limit_result(result, context, query, llm, language)

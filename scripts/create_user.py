@@ -32,7 +32,7 @@ def parse_args() -> argparse.Namespace:
         "-email",
         action="store",
         dest="email",
-        required=True,
+        required=False,
         help="Email for the new user.",
     )
 
@@ -40,7 +40,7 @@ def parse_args() -> argparse.Namespace:
         "-password",
         action="store",
         dest="password",
-        required=True,
+        required=False,
         help="Password for the new user.",
     )
 
@@ -48,7 +48,7 @@ def parse_args() -> argparse.Namespace:
         "-role",
         action="store",
         dest="role",
-        required=True,
+        required=False,
         default="Altro",
         help="Role for the new user (default: Altro).",
     )

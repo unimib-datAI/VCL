@@ -406,7 +406,7 @@ class DQLLanguage:
         """Encapsulates few-shot examples into a structured prompt component."""
         formatted_examples = [
             {
-                "input": "\n".join(ex["input"]).strip(),
+                "input": "\n".join(ex["input"]).strip() if isinstance(ex["input"], list) else str(ex["input"]).strip(),
                 "reasoning": str(ex["reasoning"]).strip(),
                 "output": str(ex["output"]).strip(),
             } for ex in examples

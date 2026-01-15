@@ -173,7 +173,7 @@ class Planner:
         else:
             final_from_ids = [op["id"] for op in atomic_ops] + not_used_sources
             
-            if final_cmd == "riassumi" and final_from_ids > 1:
+            if final_cmd == "riassumi" and len(final_from_ids) > 1:
                 final_step_id = len(atomic_ops) + start_idx
                 atomic_ops.append(
                     self._build_step(p_id, final_step_id, "integra", final_from_ids)

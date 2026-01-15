@@ -23,7 +23,33 @@
         "Estrai le classi dalla seguente query: \"{query}\""
     ],
 
-    "examples": [],
+    "examples": [
+        {
+            "input": "Dividi i messaggi in 'spam', 'promozioni' e 'social'.",
+            "reasoning": "Il task richiede tre categorie distinte.",
+            "output": ["spam", "promozioni", "social"]
+        },
+        {
+            "input": "Classifica le recensioni come positive o negative.",
+            "reasoning": "Due classi di sentiment richieste.",
+            "output": ["positive", "negative"]
+        },
+        {
+            "input": "Organizza i file in base al tipo di documento: PDF, Word, Excel.",
+            "reasoning": "Tre tipi di documenti specificati.",
+            "output": ["PDF", "Word", "Excel"]
+        },
+        {
+            "input": "Segmenta i clienti in gruppi in base al loro comportamento di acquisto.",
+            "reasoning": "Nessuna classe specifica menzionata.",
+            "output": []
+        },
+        {
+            "input": "Classifica i documenti in base al loro argomento principale.",
+            "reasoning": "Nessuna classe specifica menzionata.",
+            "output": []
+        }
+    ],
     
     "params": {
         "from_user": [
