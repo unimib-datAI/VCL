@@ -1,7 +1,6 @@
 import re
 
 from logic.bot.executor.tools.retrieval import Retrieval
-from logic.bot.executor.tools.altro import altro
 from logic.bot.executor.tools.analizza import analizza
 from logic.bot.executor.tools.cerca import cerca
 from logic.bot.executor.tools.classifica import classifica
@@ -10,7 +9,6 @@ from logic.bot.executor.tools.estrai_logico import estrai_logico
 from logic.bot.executor.tools.estrai_semantico import estrai_semantico
 from logic.bot.executor.tools.integra import integra
 from logic.bot.executor.tools.riassumi import riassumi
-from logic.bot.executor.tools.riformula import riformula
 from logic.bot.executor.tools.riorganizza import riorganizza
 from logic.bot.executor.tools.verifica import verifica
 
@@ -45,7 +43,6 @@ class Executor:
         "estrai semantico": estrai_semantico,
         "integra": integra,
         "riassumi": riassumi,
-        "riformula": riformula,
         "riorganizza": riorganizza,
         "verifica": verifica
     }
@@ -118,116 +115,53 @@ class Executor:
         
         # 1. Gather all necessary document context
         docs = self._retrieval.execute(structured_prompt)
-        context = self._build_context(docs)
         
-        # 2. Extract targets and formatted linguistic constraints
-        what = structured_prompt.get("what", [""])
-        how_dict = structured_prompt.get("how", {})
-        how_text = self._format_conditions(how_dict)
-        
+        if "limit" in structured_prompt.get("how", {}):
+            structured_prompt.get("how", {})["limit"] = self._disamgiguate_percent_limit(structured_prompt.get("how", {}).get("limit", {}), str(docs))
+
         self._logger.info(f"Invoking tool handler for command: '{command}'")
         
         # 3. Dynamic dispatch to the appropriate tool function
-        if command == "altro":
-            result = altro("", context, self._cfg.get_LLM(), self._cfg.get_DQL())
-        else:
-            handler = self.FUNCTION_MAP.get(command)
-            result = handler(context, what, how_text, self._cfg.get_LLM(), self._cfg.get_DQL())
+        try:
+            result = self.FUNCTION_MAP.get(command, None)(
+                docs,
+                structured_prompt,
+                self._llm,
+                self._language
+            )
+        except Exception as e:
+            self._logger.error(f"Error during execution of command '{command}': {str(e)}")
+            raise ValueError(f"Execution failed for command '{command}': {str(e)}")
+
+        # 4. Post-processing finale
+        return result
         
-        # 4. Limit enforcement loop: iterative re-generation if constraints are violated
-        if "limit" in how_dict:
-            limit_cfg = how_dict.get("limit", {})
-            attempt = 0
-            
-            while attempt < 3 and limit_cfg:
-                is_valid = self.check_limit(result, context, limit_cfg)
-                
-                if is_valid:
-                    self._logger.info("Content limit successfully satisfied.")
-                    break
-                    
-                attempt += 1
-                
-                current_val = self.file_handler.text_analysis(result, limit_cfg['unit'])
-                target_val = limit_cfg['number']
-                
-                diff = current_val - target_val
-                if diff > 0:
-                    feedback = f"ERRORE: La risposta è troppo LUNGA. Hai scritto {current_val} {limit_cfg['unit']}, ma il limite è {target_val}. Devi TAGLIARE circa {abs(diff)} {limit_cfg['unit']}."
-                else:
-                    feedback = f"ERRORE: La risposta è troppo CORTA. Hai scritto {current_val} {limit_cfg['unit']}, ma il limite è {target_val}. Devi ESPANDERE di circa {abs(diff)} {limit_cfg['unit']}."
-
-                self._logger.info(f"Limit violation ({current_val}/{target_val}). Retrying attempt {attempt}")
-
-                new_context = "\t" + "\n\t".join(context.split("\n")).strip()
-                new_context = (
-                    f"{feedback}\n\n"
-                    f"[TESTO DA CORREGGERE]\n{result}\n\n"
-                    f"[CONTESTO ORIGINALE PER RIFERIMENTO]\n{new_context}"
-                )
-                
-                # Richiamiamo il tool specifico per la lunghezza
-                result = self.FUNCTION_MAP.get("riformula")(new_context, what, how_text, self._cfg.get_LLM(), self._cfg.get_DQL())
-
-        # 5. Post-processing finale
-        return re.sub(self._pattern, self._format_heading, result)
-
-    # ----------------------
-    # --- Input Context  ---
-    # ----------------------
+        #return re.sub(self._pattern, self._format_heading, result)
     
-    def _format_conditions(self, how: dict) -> str:
+    
+    def _disamgiguate_percent_limit(self, limit_cfg: dict, context: str) -> dict:
         """
-        Serializes 'how' constraints into natural language instructions for the LLM.
+        Converts percentage-based limits into absolute numerical values.
 
         Args:
-            how (dict): Dictionary of extracted constraints (e.g., limit, language).
-
+            limit_cfg (dict): The original limit configuration with '%' sign.
+            context (str): The text context to base the calculation on.
         Returns:
-            str: A formatted string block to be appended to the prompt.
+            dict: Updated limit configuration with absolute number.
         """
-        if not how:
-            return ""
-
-        # Block introduction
-        conditions = ["Tuttavia, l'utente ha posto esplicitamente che la risposta debba soddisfare le seguenti condizioni:"]
+        if limit_cfg.get("sign", "") != "%":
+            return limit_cfg
         
-        for key, value in how.items():
-            if value:
-                if key == "limit":
-                    # Specialized formatting for numerical constraints (words, characters, paragraphs)
-                    sign = value['sign']
-                    if sign == "*":
-                        sign = f"tale per cui il prodotto con il numero di {value['unit']} sia pari a"
-                        
-                    conditions.append(f"- È obbligatorio che la risposta abbia un numero di {value['unit']} {sign} {value['number']}")
-                else:
-                    # General descriptive conditions
-                    conditions.append(f"- Condizione \"{key}\": {value}")
-
-        return "\n".join(conditions) if len(conditions) > 1 else ""
-
-    @staticmethod
-    def _build_context(docs: list[dict]) -> str:
-        """
-        Concatenates multiple retrieved documents into a labeled context block.
-
-        Args:
-            docs (list[dict]): List of documents with 'type' and 'text'.
-
-        Returns:
-            str: Structured text block for RAG (Retrieval-Augmented Generation).
-        """
-        if not docs:
-            return ""
+        number = limit_cfg.get("number", 0)
+        unit = limit_cfg.get("unit", "parole")
+        context_value = self.file_handler.text_analysis(context, unit)
         
-        context_lines = []
-        for doc in docs:
-            # Labeled headers help the LLM distinguish between different source materials
-            context_lines.append(f"[D. \"{doc['type']}\"]\n\n{doc['text']}\n\n---")
-        
-        context_str = "\n\n".join(context_lines).strip()
-        return f"Context:\n{context_str}"
+        absolute_number = (number / 100) * context_value
+        return {
+            "sign": "~",
+            "number": round(absolute_number),
+            "unit": unit
+        }
     
     # -------------------------
     # --- Output Formatting ---
@@ -251,53 +185,3 @@ class Executor:
             return f"*{content}*"    # Italic for subsection
         
         return content 
-    
-    # -----------------------------
-    # --- Check Limit Condition ---
-    # -----------------------------
-    
-    def check_limit(self, text: str, context: str, constraint: dict) -> bool:
-        """
-        Validates the generated output against numerical constraints.
-
-        Args:
-            text (str): The newly generated response text.
-            context (str): The input context (for relative '*' limits).
-            constraint (dict): The limit parameters (number, sign, unit).
-
-        Returns:
-            bool: True if the text complies with the constraint (including tolerance).
-        """
-        sign = constraint.get("sign", "")
-        number = constraint.get("number")
-        unit = constraint.get("unit", "parole")
-
-        if sign == "" or number is None:
-            return True
-
-        current_value = self.file_handler.text_analysis(text, unit)
-
-        if sign == "*":
-            context_words = self.file_handler.text_analysis(context, unit)
-            target_number = number * context_words
-            tolerance = target_number * self.TOLERANCE
-            
-            is_valid = (target_number - tolerance) <= current_value <= (target_number + tolerance)
-            self._logger.info(f"Relative Check: {current_value} words vs Target {target_number:.1f} (±{tolerance:.1f})")
-            return is_valid
-
-        is_valid = False
-        # if sign == "=":
-        #     is_valid = current_value == number
-        if sign == "<=":
-            is_valid = current_value <= number
-        elif sign == ">=":
-            is_valid = current_value >= number
-        elif sign == "~" or sign == "=":
-            tolerance = number * self.TOLERANCE
-            is_valid = (number - tolerance) <= current_value <= (number + tolerance)
-        else:
-            raise ValueError(f"Operatore non supportato: {sign}")
-
-        self._logger.info(f"Limit Check [{unit}]: {current_value} {sign} {number} -> {'OK' if is_valid else 'FAIL'}")
-        return is_valid

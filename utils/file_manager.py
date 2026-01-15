@@ -132,11 +132,11 @@ class FileHandler:
             # Count tokens that are not punctuation or spaces
             return len(text.split())
             # return sum(1 for token in doc if not token.is_punct and not token.is_space)
-
-        # Process text with spaCy
-        self._load_spacy()
-        doc = self.nlp(text)
         
         if key == "frasi":
+            # Process text with spaCy
+            self._load_spacy()
+            doc = self.nlp(text)
+        
             # Count sentences detected by spaCy
             return len(list(doc.sents))

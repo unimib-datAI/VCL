@@ -30,11 +30,6 @@ class Planner:
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
         self._request_id = cfg.get_request_id()
-        
-        # Cache of valid source names to identify which 'from' items require retrieval
-        self._sources_name = [
-            src.get("name", "") for src in self._dql_language.get_sources()
-        ]
 
     # -------------------------------------------------------------------------
     # Public Methods
@@ -78,8 +73,12 @@ class Planner:
         Main routing logic for a single operation decomposition.
         Iterates over 'what' elements to build specific retrieval/analysis steps.
         """
-        op_id = op.get("id", "unknown")
-        prompt = op.get("structured_prompt", {})
+        op_id = op.get("id", None)
+        prompt = op.get("structured_prompt", None)
+        
+        if not prompt or not op_id:
+            self._logger.warning("Operation missing 'structured_prompt' or 'id'.")
+            raise ValueError("Invalid operation structure.")
         
         self._logger.info(f"Decomposing operation ID: {op_id}")
 
@@ -90,6 +89,7 @@ class Planner:
 
         # 'altro' command bypasses decomposition
         if command == "altro":
+            self._logger.info("Bypassing decomposition for 'altro' command.")
             return [op]
 
         sub_operations = []
@@ -157,7 +157,7 @@ class Planner:
         not_used_sources = []
 
         # Create individual retrieval steps for known database sources
-        if what != "intero documento":
+        if what not in ["intero documento", "altro"]:
             for i, src in enumerate(sources, start=start_idx):
                 if self._request_id not in src:
                     atomic_ops.append(self._build_step(p_id, i, mid_cmd, [src], [what]))
@@ -167,39 +167,25 @@ class Planner:
         else:
             not_used_sources = sources
         
-        final_op = []
         if len(atomic_ops) == 1 and len(not_used_sources) == 0:
-            atomic_ops[-1]["structured_prompt"]["how"] = how
+            if how:
+                atomic_ops[-1]["structured_prompt"]["how"] = how
         else:
             final_from_ids = [op["id"] for op in atomic_ops] + not_used_sources
             
-            if final_op == "riassumi":
-                final_step_id = f"{p_id}_{len(atomic_ops) + start_idx}"
+            if final_cmd == "riassumi" and len(final_from_ids) > 1:
+                final_step_id = len(atomic_ops) + start_idx
                 atomic_ops.append(
-                    {
-                        "id": final_step_id,
-                        "structured_prompt": {
-                            "command": "integra",
-                            "from": final_from_ids
-                        }
-                    }
+                    self._build_step(p_id, final_step_id, "integra", final_from_ids)
                 )
-                final_from_ids = [final_step_id]
+                final_from_ids = [f"{p_id}_{final_step_id}"]
                 
             # Final aggregation step links back to the IDs of the atomic operations
-            final_step_id = f"{p_id}_{len(atomic_ops) + start_idx}"
-            final_op = [
-                {
-                    "id": final_step_id,
-                    "structured_prompt": {
-                        "command": final_cmd,
-                        "from": final_from_ids,
-                        "how": how
-                    }
-                }
-            ]
+            atomic_ops.append(
+                self._build_step(p_id, len(atomic_ops) + start_idx, final_cmd, final_from_ids, how=how)
+            )
         
-        return atomic_ops + final_op
+        return atomic_ops
 
     def _finalize_integration(self, ops: List[Dict], last_ids: List[str], p_id: str) -> List[Dict]:
         """
@@ -226,7 +212,7 @@ class Planner:
         Factory method for standard operation dictionaries.
         """
         prompt = {"command": cmd, "from": src}
-        if what: prompt["what"] = what
+        if what and (what not in ["intero documento", "altro"]): prompt["what"] = what
         if how: prompt["how"] = how
         return {"id": f"{p_id}_{idx}", "structured_prompt": prompt}
 

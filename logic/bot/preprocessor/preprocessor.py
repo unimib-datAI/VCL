@@ -71,7 +71,7 @@ class Preprocessor:
         chat = self.get_chat_history()
         
         if not chat:
-            chat = ["EMPTY CHAT"]
+            chat = None
         
         # PHASE 1: Contextual expansion for ongoing conversations
         self._logger.info("Initiating contextual rephrasing.")

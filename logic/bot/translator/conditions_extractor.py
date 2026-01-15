@@ -38,9 +38,17 @@ class ConditionsExtractor:
         # Helper function to serialize document lists for prompt injection
         self.docs_in_string = cfg.docs_in_string
         
-        # Mapping of detected triggers to specialized extraction methods
-        self.CONDITIONS_MAP = {
-            "LimitExtraction": self.limit_extraction
+        self._force_conditions = {
+            "LimitExtraction": "riassumi",
+            "OrderExtraction": "riorganizza",
+            "ClassesExtraction": "classifica"
+        }
+        
+        self._default_conditions = {
+            "ConditionsRouter": {"LimitExtraction": "no", "OrderExtraction": "no", "ClassesExtraction": "no"},
+            "LimitExtraction": {"sign": "%", "number": 80, "unit": "parole"},
+            "OrderExtraction": {"criteria": "Alfanumerico", "direction": "Crescente"},
+            "ClassesExtraction": []
         }
 
     # ------------------------------
@@ -69,92 +77,85 @@ class ConditionsExtractor:
         structured_query["how"] = {}
         
         # Step 1: Detect which specialized extractors should be triggered
-        conditions_router = self.conditions_router(query)
+        conditions_router = self.extraction(query)
         
         for key, value in conditions_router.items():
             # Check if the router explicitly identified a specific condition type
-            if not isinstance(value, str) or value.lower() != "yes":
-                continue
+            force_by_command = self._force_conditions.get(key, "") == structured_query.get("command", "").lower()
+            
+            if force_by_command or (isinstance(value, str) and value.lower() == "yes"):
+                # Invoke the specialized extraction method from the map
+                specific_conditions = self.extraction(query, key)
+                
+                if force_by_command and self.is_empty_conditions(specific_conditions):
+                    specific_conditions = self._default_conditions.get(key, {})
 
-            # Invoke the specialized extraction method from the map
-            specific_conditions = self.CONDITIONS_MAP[key](query)
+                # Filter out empty or invalid results
+                if self.is_empty_conditions(specific_conditions):
+                    continue
 
-            # Filter out empty or invalid results
-            if isinstance(specific_conditions, dict) and not all(v != "" for v in specific_conditions.values()):
-                continue
-
-            # Format the key (e.g., 'LimitExtraction' -> 'limit') and store result
-            new_key = key.replace("Extraction", "").lower()
-            structured_query["how"][new_key] = specific_conditions
+                # Format the key (e.g., 'LimitExtraction' -> 'limit') and store result
+                new_key = key.replace("Extraction", "").lower()
+                structured_query["how"][new_key] = specific_conditions
         
         # Step 2: Extract broad/general conditions that might not match specialized triggers
         additional_conditions = self.additional_conditions(query, structured_query, docs)
-        structured_query["how"].update(additional_conditions)
+        
+        if additional_conditions:
+            structured_query["how"].update({"others": additional_conditions})
         
         return structured_query["how"]
-        
-    def conditions_router(self, query: str):
+    
+    def is_empty_conditions(self, conditions: dict) -> bool:
         """
-        Classification step that determines which specialized extraction prompts 
-        are relevant for the given query.
+        Check if the extracted conditions dictionary is empty or contains only empty values.
+
+        Args:
+            conditions (dict): The conditions dictionary to check.
+        Returns:
+            bool: True if empty or all values are empty, False otherwise.
         """
+        return not conditions or all(v == "" for v in conditions.values())
+
+    def extraction(self, query: str, name = "ConditionsRouter") -> dict:
         status = "Error"
 
         try:
-            prompt = self._dql_language.prompts.get("ConditionsRouter.json", None)
+            prompt = self._dql_language.prompts.get(f"{name}.json", None)
             
             if not prompt:
-                raise ValueError("ConditionsRouter.json prompt template missing.")
+                raise ValueError(f"{name}.json prompt template missing.")
             
             if query.strip():
-                # Call LLM to categorize the types of conditions present
                 conditions = self._llm.invoke(
                     prompt,
-                    {"query": query}
-                )
-                status = "Done"
-            else:
-                raise ValueError("Received empty query.")
-
-        except Exception as e:
-            self._logger.error(f"Conditions Router execution failed: {e}")
-            conditions = {}
-
-        self._logger.info(f"Router Conditions -> {conditions} ({status})")
-        return conditions
-        
-    def limit_extraction(self, query: str) -> dict:
-        """
-        Specialized extractor for numerical or boundary constraints (e.g., 'only the first 5').
-        """
-        status = "Error"
-
-        try:
-            prompt = self._dql_language.prompts.get("LimitExtraction.json", None)
-            
-            if not prompt:
-                raise ValueError("LimitExtraction.json prompt template missing.")
-            
-            if query.strip():
-                # Perform extraction with JSON mode enabled (True)
-                conditions = self._llm.invoke(
-                    prompt,
-                    {"query": query},
-                    True 
+                    {"query": query}, 
                 )
                 
-                sign = conditions.get("sign", "")
-                sign = "~" if sign == "=" else sign # We accept tolerance
+                if name == "LimitExtraction":
+                    # Normalize the sign representation
+                    sign = conditions.get("sign", "")
+                    conditions["sign"] = "~" if sign == "=" else sign # We accept tolerance
+                
+                if not isinstance(conditions, list):
+                    # Cleanup: ensure we return a dict    
+                    if conditions is None or (not isinstance(conditions, dict)):
+                        conditions = {}
+                        
+                    for k, v in deepcopy(conditions).items():
+                        # Cleanup: remove keys with empty or null values
+                        if v is None or (isinstance(v, str) and not v.strip()):
+                            conditions[k] = self._default_conditions.get(name, {}).get(k, v)
                 
                 status = "Done"
             else:
                 raise ValueError("Empty query string.")
 
         except Exception as e:
-            self._logger.error(f"Limit extraction failed: {e}")
+            self._logger.error(f"{name} failed: {e}")
             conditions = {}
 
-        self._logger.info(f"Limit Extraction -> {conditions} ({status})")
+        self._logger.info(f"{name} -> {conditions} ({status})")
         return conditions
 
     def additional_conditions(self, query: str, structured_query: dict, docs: list) -> dict:
@@ -162,17 +163,19 @@ class ConditionsExtractor:
         Final broad-sweep extraction to capture any qualifying language 
         not captured by specialized routers.
         """
-        # Prepare context-rich input for the LLM
-        query_dict = {
-            "query": query,
-            "structured_query": str(structured_query),
-            "documents": self.docs_in_string(docs)
-        }
-
         conditions = {}
         status = "Error"
 
         try:
+            # Prepare context-rich input for the LLM
+            query_dict = {
+                "query": query,
+                "structured_query": str(structured_query),
+                "documents": self.docs_in_string(docs),
+                "description_command": self._dql_language.get_description_from_command(structured_query.get("command")),
+                "description_what": "\n".join(f"\t- {w}: \"{self._dql_language.get_description_from_what(w)}\"" for w in structured_query.get("what", [])),
+            }
+        
             prompt = self._dql_language.prompts.get("AdditionalConditionsExtraction.json", None)
             
             if not prompt:

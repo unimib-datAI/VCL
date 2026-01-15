@@ -32,7 +32,7 @@ class Orchestrator:
     """
 
     # Default error message for UI fallback
-    error_msg = "Si è verificato un errore. Riprova."
+    error_msg = "Non sono in grado di rispondere alla tua richiesta in questo momento."
     
     def __init__(self, cfg: Config):
         """

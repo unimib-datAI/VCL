@@ -206,7 +206,7 @@ class DQLLanguage:
         for cmd in self._commands:
             command_name = cmd.get("command", "altro")
             self._key_command_map[cmd.get("key")] = command_name
-            self._command_description_map[command_name] = cmd.get("description")
+            self._command_description_map[command_name] = cmd.get("description", "")
             self._command_guidelines_map[command_name] = "\n".join(cmd.get("guidelines", [])).strip()
 
     def get_command_from_key(self, key: str) -> str:
@@ -406,7 +406,7 @@ class DQLLanguage:
         """Encapsulates few-shot examples into a structured prompt component."""
         formatted_examples = [
             {
-                "input": "\n".join(ex["input"]).strip(),
+                "input": "\n".join(ex["input"]).strip() if isinstance(ex["input"], list) else str(ex["input"]).strip(),
                 "reasoning": str(ex["reasoning"]).strip(),
                 "output": str(ex["output"]).strip(),
             } for ex in examples

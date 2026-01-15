@@ -161,12 +161,16 @@ def _handle_suggestions_and_controls() -> Optional[str]:
         )'''
         
     with col3:
+        current_source = st.session_state.config.get_sources_id()
+        options = ["salomone", "vitali", "user"]
+        
         source_pill = st.pills(
             "Seleziona la fonte",
-            options=["salomone", "vitali", "user"],
+            options=options,
             format_func=lambda option: option.capitalize(),
             selection_mode="single",
-            default="vitali"
+            default=current_source if current_source in options else "user",
+            key="source_pill_widget"
         )
         
         if source_pill:
@@ -910,7 +914,6 @@ def _show_expander(message: Dict) -> None:
         )
 
         # 2. Operations
-        print(tasks)
         _display_task(tasks)
         
         # 3. Logs

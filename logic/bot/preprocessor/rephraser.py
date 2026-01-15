@@ -78,12 +78,14 @@ class Rephraser():
             if not prompt:
                 raise ValueError("RephraseQuery prompt template not found in language config.")
             
+            chat = "\n".join([str(c) for c in chat]) if chat else "Non ci sono messaggi precedenti."
+            
             if query.strip():
                 # Step 2: Invoke the LLM to process the query within the chat context
                 # Setting result format to True to ensure structured/clean text output
                 result = self._llm.invoke(
                     prompt,
-                    { "query": query, "chat": "\n".join(chat) },
+                    { "query": query, "chat": chat },
                     True
                 )
                 
