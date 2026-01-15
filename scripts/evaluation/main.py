@@ -60,11 +60,11 @@ def evaluation():
     registry = ModelRegistry()
     #registry.register(DQLModel("DQL-Default"))
     #registry.register(DQLModel("LDQL-Default"))
-    #registry.register(DQLModel("LDQL-U"))
-    registry.register(GPTModel(GENERATION_OPENAI_MODEL))
-    registry.register(RAGModel(GENERATION_OPENAI_MODEL))
-    registry.register(CopilotModel())
-    registry.register(NotebookLMModel())
+    registry.register(DQLModel("LDQL-U"))
+    #registry.register(GPTModel(GENERATION_OPENAI_MODEL))
+    #registry.register(RAGModel(GENERATION_OPENAI_MODEL))
+    #registry.register(CopilotModel())
+    #registry.register(NotebookLMModel())
 
     for m in registry.all():
         print(f"[INFO] Initializing model: {m.name}")
@@ -124,6 +124,7 @@ def evaluation():
                                 result = model.query(question)
                                 if isinstance(result, dict):
                                     final_results[model.name]["answers"][str(i)] = result["content"] if "content" in result else ""
+                                    final_results[model.name]["details"] = {}
                                     final_results[model.name]["details"][str(i)] = result
                                 else:
                                     final_results[model.name]["answers"][str(i)] = result
@@ -158,6 +159,7 @@ def evaluation():
                 ground_truth_dict = question_data.get("ground_truth", {})
                 for annotator in ground_truth_dict:
                     print(f"[INFO] Annotator {annotator}: Start")
+                    
                     ground_truth = ground_truth_dict.get(annotator, None)
                     #ground_truth = ground_truth[-1] if ground_truth else None
 
@@ -167,7 +169,16 @@ def evaluation():
                     
                     ground_truth = str(ground_truth)
 
-                    ground_truth_claim = asyncio.run(judge.extract_claims(ground_truth))
+                    ground_truth_claim = None
+                    for model in registry.all():
+                        if annotator in question_data.get(model.name, {}).get("claims", {}).get("ground_truth", {}):
+                            c = question_data[model.name]["claims"]["ground_truth"][annotator]
+                            if isinstance(c, list):
+                                ground_truth_claim = c
+                                break
+                    
+                    if not ground_truth_claim:
+                        ground_truth_claim = asyncio.run(judge.extract_claims(ground_truth))
                     
                     for model in registry.all():
                         final_results[model.name]["claims"]["ground_truth"][annotator] = ground_truth_claim
@@ -195,7 +206,7 @@ def evaluation():
                             "delta": (model_evaluation_end_time - model_evaluation_start_time).total_seconds()
                         }
                         
-                        time.sleep(40)
+                        time.sleep(10)
                         
                     print(f"[INFO] Annotator {annotator}: End")
                 

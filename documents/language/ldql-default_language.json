@@ -83,7 +83,7 @@
     "what": [
         {
             "name": "sillogismo",
-            "definition": "Operazione di sussunzione del caso concreto nella fattispecie astratta; identifica la 'maior propositio' (norma), la 'minor propositio' (fatto accertato) e la conseguente 'conclusio' (effetto giuridico).",
+            "definition": "La struttura logica che collega Norma (premessa maggiore), Fatto (premessa minore) e Decisione.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["estrai logico"]
         },

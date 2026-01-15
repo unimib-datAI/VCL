@@ -150,7 +150,7 @@ def check_limit_result(result: str, context: str, query, llm, dql) -> str:
         else:
             feedback = f"ERRORE: La risposta è troppo CORTA. Hai scritto {current_val} {limit_cfg['unit']}, ma il limite è {target_val}. Devi ESPANDERE di circa {abs(diff)} {limit_cfg['unit']}."
 
-        new_context = "\t" + "\n\t".join(context.split("\n")).strip()
+        new_context = "\t" + "\n\t".join(format_context(context).split("\n")).strip()
         new_context = (
             f"{feedback}\n\n"
             f"[TESTO DA CORREGGERE]\n{result}\n\n"
@@ -167,8 +167,6 @@ def riformula(context: list, query: dict, llm, language) -> str:
         return "Non è stato possibile rispondere alla tua richiesta perché non ho trovato i documenti richiesti."
     
     command = query.get("command")
-    if command != "riformula":
-        raise ValueError("Error: The command provided does not match 'riformula'.")
     
     limit = query.get("how", {}).get("limit", {})
     if not limit:

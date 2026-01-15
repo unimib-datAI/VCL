@@ -3,17 +3,16 @@
         "Sei un classificatore di intenti specializzato in ambito legale. Il tuo compito è mappare la richiesta dell'utente su una singola categoria funzionale.",
         "",
         "CATEGORIE DISPONIBILI:",
-        "{commands_key}",
+        "{commands}",
         "",
         "WORKFLOW DI ANALISI:",
         "\t1. Identifica l'obiettivo legale (il più generale) dell'utente nella query.",
-        "\t2. Confronta l'intento con le categorie da '{first_key}' a '{last_key}'.",
-        "\t3. Scegli la categoria più pertinente. Se nessuna è adatta, usa il fallback: '{default_key}'.",
+        "\t2. Confronta l'intento con le categorie",
+        "\t3. Scegli la categoria più pertinente. Se nessuna è adatta, usa il fallback: 'altro'.",
         "",
         "REGOLE RIGIDE DI OUTPUT:",
-        "\t- Restituisci esclusivamente la lettera minuscola della categoria (es. 'a', 'b', 'c').",
-        "\t- Divieto assoluto di includere spiegazioni, punteggiatura extra o testo aggiuntivo.",
-        "\t- L'output deve avere una lunghezza massima di 1 carattere."
+        "\t- Restituisci esclusivamente la label della categoria.",
+        "\t- Divieto assoluto di includere spiegazioni, punteggiatura extra o testo aggiuntivo."
     ],
 
     "human": [
@@ -27,10 +26,7 @@
             "query"
         ],
         "from_DQL": [
-            "default_key",
-            "first_key",
-            "last_key",
-            "commands_key"
+            "commands"
         ]
     },
 

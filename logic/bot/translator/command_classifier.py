@@ -75,14 +75,14 @@ class CommandClassifier:
             if query_dict.get("query", "").strip():
                 # Call the LLM with the formatted prompt and query data
                 # The 'True' flag indicates expected JSON or structured output processing
-                llm_result = self._llm.invoke(
+                command = self._llm.invoke(
                     prompt,
                     query_dict,
                     True
                 )
 
                 # Cross-reference LLM output with the defined DQL command set
-                command = self._dql_language.get_command_from_key(llm_result)
+                # command = self._dql_language.get_command_from_key(command)
 
                 status = "Done"
             else:
