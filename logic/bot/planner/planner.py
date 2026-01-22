@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, Dict, Any
 
 from utils.config import Config
@@ -147,7 +148,7 @@ class Planner:
         Builds a sequence of per-source retrieval steps followed by an aggregation step.
         """
         # Logic to prevent redundant searching vs extraction
-        if (mid_cmd == "cerca" and "estrai" in final_cmd) or ("estrai" in mid_cmd and "cerca" == final_cmd):
+        if (mid_cmd == "cerca" and "estrai" in final_cmd) or ("estrai" in mid_cmd and "cerca" == final_cmd) or ("estrai" in mid_cmd and "estrai" in final_cmd and mid_cmd != final_cmd):
             self._logger.warning("Conflict between 'cerca' and 'estrai' detected.")
             if len(sources) == 1:
                 return [self._build_step(p_id, start_idx, mid_cmd, sources, [what], how)]
@@ -183,6 +184,14 @@ class Planner:
             # Final aggregation step links back to the IDs of the atomic operations
             atomic_ops.append(
                 self._build_step(p_id, len(atomic_ops) + start_idx, final_cmd, final_from_ids, how=how)
+            )
+            
+        if "limit" in atomic_ops[-1]["structured_prompt"].get("how", {}) and final_cmd != "riassumi":
+            new_limit = { "limit": deepcopy(atomic_ops[-1]["structured_prompt"]["how"]["limit"]) }
+            del atomic_ops[-1]["structured_prompt"]["how"]["limit"]
+            
+            atomic_ops.append(
+                self._build_step(p_id, len(atomic_ops) + start_idx, "riassumi", [atomic_ops[-1]["id"]], how=new_limit)
             )
         
         return atomic_ops

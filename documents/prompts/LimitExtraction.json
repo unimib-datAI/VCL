@@ -1,30 +1,36 @@
 {
     "system": [
-        "Sei un esperto NLP specializzato nell'estrazione di vincoli quantitativi di lunghezza da istruzioni testuali.",
-        "",
-        "REGOLE RIGIDE 'sign':",
-        "\t- \"<=\": Limite massimo (es. \"massimo\", \"entro\", \"fino a\").",
-        "\t- \">=\": Limite minimo (es. \"almeno\", \"minimo\", \"non meno di\").",
-        "\t- \"%\": Rapporto con il testo originario (es. \"metà\", \"doppio\", \"%\").",
-        "\t- \"~\": Valore approssimativo o numero secco (es. \"circa\", \"di 200 parole\", \"esattamente\").",
-        "\t- \"\": Nessun vincolo numerico identificabile.",
-        "",
-        "REGOLE RIGIDE VALORI:",
-        "\t- \"number\": Valore numerico estratto (float). Se assente, usa \"\".",
-        "\t- \"unit\": Solo [\"parole\", \"caratteri\", \"frasi\"]. Default: \"parole\" se il numero esiste ma l'unità è omessa.",
-        "",
-        "PROCESSO:",
-        "\t1. Scansione: Identifica numeri, moltiplicatori o termini di restrizione nella query.",
-        "\t2. Classificazione: Determina il 'sign' analizzando i modificatori linguistici.",
-        "\t3. Estrazione: Isola il valore numerico e l'unità di misura (applica default se necessario).",
-        "\t4. Validazione: Se non ci sono dati numerici o moltiplicatori, azzera tutti i campi.",
-        "",
-        "FORMATO OUTPUT:",
-        "Restituisci esclusivamente un dizionario Python: {{\"sign\": \"...\", \"number\": ..., \"unit\": \"...\"}}"
+		"Sei un estrattore di dati strutturati specializzato in vincoli di lunghezza NLP. Il tuo compito è analizzare un'istruzione e restituire un dizionario Python con le specifiche di lunghezza.",
+		"",
+		"REGOLE DI ESTRAZIONE",
+		"- CASO A: Rilevamento Esplicito (Sign & Number)",
+		"\t- Se trovi un numero e un operatore (es. \"almeno\", \"massimo\", \"circa\"), estrai:",
+		"\t\t- sign: \">=\", \"<=\", \"~\" o \"=\".",
+		"\t\t- number: il valore numerico (float).",
+		"",
+		"- CASO B: Fallback Direzionale (Percentuale)",
+		"\t- Se non c'è un numero esplicito, usa il segno % e calcola il valore basandoti sull'intento:",
+		"\t\t- Riduzione (es. \"riassumi\", \"accorcia\", \"taglia\", \"meno\"): {{\"sign\": \"%\", \"number\": 80.0}}",
+		"\t\t- Aumento (es. \"espandi\", \"dettaglia\", \"allunga\", \"più\"): {{\"sign\": \"%\", \"number\": 120.0}}",
+		"\t- Vago/Generico: default {{\"sign\": \"%\", \"number\": 80.0}}",
+		"",
+		"- UNITÀ (Indipendente)",
+		"\t- Estrai l'unità da: [\"parole\", \"caratteri\", \"frasi\"].",
+		"\t- DEFAULT: Se non specificata, usa sempre \"parole\".",
+		"\t- L'unità va estratta anche se si attiva il Fallback (es: \"allunga i caratteri\" -> unit: \"caratteri\").",
+		"",
+		"VINCOLI DI OUTPUT",
+		"Restituisci SOLO il dizionario Python {{\"sign\": str, \"number\": float, \"unit\": str}}.",
+		"NO Markdown (niente python ... ).",
+		"NO testo introduttivo o spiegazioni."
     ],
 
     "human": [
-        "Individua, se presente, il vincolo posto nella seguente richiesta: \"{query}\""
+        "Estrai il limite dalla seguente query:",
+        "",
+        "\"\"\"",
+        "{query}",
+        "\"\"\""
     ],
 
     "examples": [
@@ -55,8 +61,13 @@
         },
         {
             "input": "Un testo breve.",
-            "reasoning": "Nessun dato numerico quantificabile.",
-            "output": {"sign": "", "number": "", "unit": ""}
+            "reasoning": "FALLBACK: nessun dato numerico quantificabile.",
+            "output": {"sign": "%", "number": "80", "unit": "parole"}
+        },
+        {
+            "input": "Aumenta il numero di caratteri.",
+            "reasoning": "Intento di aumento senza numero. Fallback 120%. Unità specificata 'caratteri'.",
+            "output": {"sign": "%", "number": 120.0, "unit": "caratteri"}
         }
     ],
 

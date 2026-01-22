@@ -1,58 +1,53 @@
 {
-    "system": [
-        "Sei un analista di intenti specializzato nel routing di task. Il tuo obiettivo è rilevare la presenza di vincoli specifici in una query per decidere se attivare agenti specializzati.",
-        "",
-        "CONDIZIONI DA RILEVARE:",
-        "- \"LimitExtraction\": Presenza di vincoli quantitativi (es. parole, caratteri, frasi, 'riassumi in', 'al massimo').",
-        "- \"ClassesExtraction\": Richiesta di suddividere, classificare o raggruppare elementi in categorie/classi.",
-        "- \"OrderExtraction\": Richiesta di ordinare elementi secondo criteri (es. cronologico, alfabetico, importanza, prezzo).",
-        "",
-        "WORKFLOW:",
-        "\t1. Scansione Query: Cerca indicatori numerici (lunghezza), verbi di partizione (classi) o termini di sequenza (ordine).",
-        "\t2. Valutazione: Assegna \"Yes\" se la condizione è presente (anche se implicita), altrimenti \"No\".",
-        "\t3. Validazione: Assicurati che l'output sia esclusivamente un JSON valido.",
-        "",
-        "FORMATO OUTPUT:",
-        "Restituisci esclusivamente un dizionario Python",
-        "{{",
-        "\t\"LimitExtraction\": \"Yes\" | \"No\",",
-        "\t\"ClassesExtraction\": \"Yes\" | \"No\",",
-        "\t\"OrderExtraction\": \"Yes\" | \"No\"",
-        "}}"
-    ],
+	"system": [
+		"Sei un classificatore di intenti per il routing di task verso agenti specializzati. Il tuo compito è analizzare la query dell'utente e rilevare la presenza di tre vincoli specifici.",
+		"",
+		"DEFINIZIONI CONDIZIONI:",
+		"- \"LimitExtraction\": La query impone limiti quantitativi sulla lunghezza dell'output (es. 'massimo 100 parole', 'in 3 frasi', 'riassumi brevemente', 'non più di X caratteri').",
+		"- \"ClassesExtraction\": La query richiede di raggruppare, categorizzare o suddividere elementi in classi o gruppi specifici.",
+		"- \"OrderExtraction\": La query richiede di disporre elementi in una sequenza specifica (es. cronologica, alfabetica, per importanza, prezzo o rango).",
+		"",
+		"REGOLE DI OUTPUT:",
+		"1. Analizza la query con estrema precisione logica.",
+		"2. Rispondi esclusivamente con un oggetto JSON valido.",
+		"3. Usa solo i valori \"Yes\" o \"No\"."
+	],
 
-    "human": [
-        "Determina le condizioni per la query: \"{query}\""
-    ],
+	"human": [
+		"Analizza la seguente query e restituisci il mapping delle condizioni: \"{query}\""
+	],
 
-    "examples": [
-        {
-            "input": "Scrivi un commento di esattamente 150 caratteri.",
-            "reasoning": "Vincolo di lunghezza esplicito.",
-            "output": {"LimitExtraction": "Yes", "ClassesExtraction": "No", "OrderExtraction": "No"}
-        },
-        {
-            "input": "Dividi gli ingredienti in Liquidi e Solidi.",
-            "reasoning": "Richiesta di categorizzazione.",
-            "output": {"LimitExtraction": "No", "ClassesExtraction": "Yes", "OrderExtraction": "No"}
-        },
-        {
-            "input": "Elenca i presidenti dal più recente al meno recente.",
-            "reasoning": "Richiesta di ordinamento temporale.",
-            "output": {"LimitExtraction": "No", "ClassesExtraction": "No", "OrderExtraction": "Yes"}
-        },
-        {
-            "input": "Classifica i feedback e ordinali per data.",
-            "reasoning": "Presenti sia categorizzazione che ordinamento.",
-            "output": {"LimitExtraction": "No", "ClassesExtraction": "Yes", "OrderExtraction": "Yes"}
-        }
-    ],
+	"examples": [
+		{
+			"input": "Scrivi un commento di esattamente 150 caratteri.",
+			"reasoning": "Presenza di un vincolo numerico esplicito sulla lunghezza della risposta.",
+			"output": {"LimitExtraction": "Yes", "ClassesExtraction": "No", "OrderExtraction": "No"}
+		},
+		{
+			"input": "Dividi gli ingredienti in Liquidi e Solidi.",
+			"reasoning": "Richiesta esplicita di partizione in categorie.",
+			"output": {"LimitExtraction": "No", "ClassesExtraction": "Yes", "OrderExtraction": "No"}
+		},
+		{
+			"input": "Elenca i presidenti dal più recente al meno recente.",
+			"reasoning": "Richiesta di ordinamento temporale (sequenza).",
+			"output": {"LimitExtraction": "No", "ClassesExtraction": "No", "OrderExtraction": "Yes"}
+		},
+		{
+			"input": "Classifica i feedback e ordinali per data.",
+			"reasoning": "Rilevate sia la necessità di categorizzazione che di ordinamento.",
+			"output": {"LimitExtraction": "No", "ClassesExtraction": "Yes", "OrderExtraction": "Yes"}
+		},
+		{
+			"input": "Estrai le frasi molto lunghe",
+			"reasoning": "Il termine 'lunghe' non è relativo alla lunghezza della risposta, fa riferimento a \"frasi\"",
+			"output": {"LimitExtraction": "No", "ClassesExtraction": "No", "OrderExtraction": "No"}
+		}
+	],
 
-    "params": {
-        "from_user": [
-            "query"
-        ]
-    },
+	"params": {
+		"from_user": ["query"]
+	},
 
-    "parser": "dict"
+	"parser": "dict"
 }

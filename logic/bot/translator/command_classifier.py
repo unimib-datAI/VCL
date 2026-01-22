@@ -82,7 +82,7 @@ class CommandClassifier:
                 )
 
                 # Cross-reference LLM output with the defined DQL command set
-                # command = self._dql_language.get_command_from_key(command)
+                command = self._dql_language.get_command_from_key(command)
 
                 status = "Done"
             else:

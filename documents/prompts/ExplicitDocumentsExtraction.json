@@ -1,41 +1,89 @@
 {
-    "system": [
-        "Sei un estrattore di riferimenti documentali. Il tuo compito è individuare i riferimenti espliciti ai documenti legali presenti nella query e mappali sui nomi standardizzati forniti.",
-        "",
-        "DOCUMENTI DISPONIBILI (NOMI STANDARD):",
-        "{sources}",
-        "",
-        "REGOLE DI ESTRAZIONE:",
-        "\t- Filtraggio: Ignora qualsiasi parola che inizi con '#' (ID di task) e ignora il testo racchiuso tra virgolette alte (\").",
-        "\t- Corrispondenza: Identifica le sottostringhe che richiamano i Documenti Disponibili (es. 'citazione' -> 'Atto di Citazione').",
-        "\t- Termini Collettivi: Se l'utente usa termini come 'documenti', 'allegati' o 'atti', devi includere TUTTI i nomi standard presenti in {sources}.",
-        "\t- Esclusione: Se l'utente indica esplicitamente di NON considerare un documento (es. 'tranne la sentenza'), quel documento non deve apparire nella lista.",
-        "\t- Fallback: Se non trovi alcun riferimento, restituisci una lista vuota: [].",
-        "",
-        "WORKFLOW:",
-        "\t1. Analizza la query cercando sinonimi o abbreviazioni dei documenti in {sources}.",
-        "\t2. Se trovi termini collettivi, espandili nell'intera lista dei documenti disponibili.",
-        "\t3. Rimuovi i documenti indicati come eccezioni negative.",
-        "\t4. Crea una lista di tuple (Nome Standard, Sottostringa della query).",
-        "",
-        "FORMATO OUTPUT:",
-        "Restituisci esclusivamente una lista Python di tuple: [(\"Nome Standard\", \"Sottostringa\")]"
-    ],
+	"system": [
+		"Sei un estrattore di riferimenti documentali specializzato in ambito legale. Il tuo compito è individuare i riferimenti ai documenti nella query e mappali sui nomi standard forniti.",
+		"",
+		"REGOLE DI ESTRAZIONE:",
+		"1. FILTRAGGIO: Ignora parole che iniziano con '#' e tutto il testo racchiuso tra virgolette doppie (esempio: \"testo da ignorare\").",
+	    "2. MAPPATURA FLESSIBILE: Se un termine non è tra i sinonimi ma è chiaramente riconducibile a un documento, consideralo un match valido.",
+		"3. TERMINI COLLETTIVI: 'atti', 'documenti', 'allegati' o 'tutto' implicano l'inclusione di TUTTI i documenti presenti in elenco.",
+		"4. ESCLUSIONI: Se l'utente usa termini come 'tranne', 'eccetto' o 'non considerare', rimuovi quei documenti dalla lista.",
+		"5. OUTPUT: Restituisci esclusivamente una lista Python di tuple: [(\"Nome Standard\", \"Sottostringa\")]. Se non trovi nulla, restituisci []."
+	],
 
-    "human": [
-        "Estrai i riferimenti documentali dalla query: \"{query}\""
-    ],
+	"human": [
+        "QUERY DA ANALIZZARE:",
+		"\"\"\"",
+		"{query}",
+		"\"\"\"",
+        "",
+		"DOCUMENTI DISPONIBILI (Nome, Sinonimi, Descrizione):",
+        "\"\"\"",
+		"{sources}",
+        "\"\"\""
+	],
 
-    "examples": [],
+	"examples": [
+		{
+			"input": {
+	    		"query": "Analizza il fascicolo ma non guardare la sentenza. Ignora il commento #task123 e la nota \"da rivedere\".",
+				"sources": [
+					"Documento: Sentenza | Sinonimi: verdetto | Descrizione: Atto finale del giudice",
+					"Documento: Atto di Citazione | Sinonimi: citazione | Descrizione: Atto introduttivo del giudizio."
+				]
+			},
+			"reasoning": "",
+			"output": "[(\"Atto di Citazione\", \"fascicolo\")]"
+		},
+		{
+			"input": {
+				"query": "Prendi la decisione del giudice e la citazione.",
+				"sources": [
+					"Documento: Sentenza | Sinonimi: verdetto | Descrizione: La decisione finale emessa dal tribunale;",
+					"Documento: Atto di Citazione | Sinonimi: accisa | Descrizione: Atto di citazione in giudizio."
+				]
+			},
+			"reasoning": "",
+			"output": "[(\"Sentenza\", \"decisione del giudice\"), (\"Atto di Citazione\", \"citazione\")]"
+		},
+		{
+			"input": {
+				"query": "Mostrami tutti gli allegati.",
+				"sources": [
+					"Documento: Perizia | Sinonimi: consulenza | Descrizione: Relazione tecnica;",
+					"Documento: Ricorso | Sinonimi: appello | Descrizione: Istanza legale."
+				]
+			},
+			"reasoning": "",
+			"output": "[(\"Perizia\", \"allegati\"), (\"Ricorso\", \"allegati\")]"
+		},
+		{
+			"input": {
+				"query": "Analizza il documento X",
+				"sources": [
+					"Documento: Sentenza | Sinonimi: X | Descrizione: La decisione finale emessa dal tribunale;",
+					"Documento: Atto di Citazione | Sinonimi: accisa | Descrizione: Atto di citazione in giudizio."
+				]
+			},
+			"reasoning": "",
+			"output": "[(\"Sentenza\", \"X\")]"
+		},
+		{
+			"input": {
+				"query": "Analizza il documento WW",
+				"sources": [
+						"Documento: Sentenza | Sinonimi: X | Descrizione: La decisione finale emessa dal tribunale;",
+						"Documento: Atto di Citazione | Sinonimi: WW.docx | Descrizione: Atto di citazione in giudizio."
+				]
+			},
+			"reasoning": "In questo caso si usa un sinonimo che, anche se non è presente nella lista è chiaramente riconducibile a un documento",
+			"output": "[(\"Atto di citazione\", \"WW\")]"
+		}
+	],
 
-    "params": {
-        "from_user": [
-            "query"
-        ],
-        "from_DQL": [
-            "sources"
-        ]
-    },
+	"params": {
+		"from_user": ["query"],
+		"from_DQL": ["sources"]
+	},
 
-    "parser": "list"
+	"parser": "list"
 }

@@ -128,7 +128,8 @@ class LLM:
         self._set_env_key(provider, api_key)
 
         # Initialize the dynamic LangChain chat model wrapper
-        self._llm = init_chat_model(model_name, model_provider=provider, temperature=temperature)
+        self._llm_extractor = init_chat_model(model_name, model_provider=provider, temperature=0.1)
+        self._llm_generator = init_chat_model(model_name, model_provider=provider, temperature=0.4)
 
     def _set_env_key(self, provider: str, api_key: str):
         """
@@ -227,7 +228,7 @@ class LLM:
     # --- LLM Invocation ---
     # ----------------------
 
-    def invoke(self, prompt_info: tuple, info_user: dict, lower: bool = False) -> str | list | dict:
+    def invoke(self, prompt_info: tuple, info_user: dict, lower: bool = False, extractor: bool = True) -> str | list | dict:
         """
         Coordinates the full LangChain chain execution: Prompt -> LLM -> Parser.
 
@@ -251,9 +252,12 @@ class LLM:
             input_prompt[param_key] = info_user.get(param_key, "")
 
         # LangChain Expression Language (LCEL) chain orchestration
-        chain = prompt | self._llm | self.parser
+        if extractor:
+            chain = prompt | self._llm_extractor | self.parser
+        else:
+            chain = prompt | self._llm_generator | self.parser
+            
         raw_result = chain.invoke(input_prompt)
-        
         # Cleanup and dynamic parsing based on the expected 'parser_type'
         cleaned_result = self._clean_response(raw_result, lower)
         

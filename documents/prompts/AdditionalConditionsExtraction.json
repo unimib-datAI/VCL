@@ -1,56 +1,65 @@
 {
-    "system": [
-        "Sei un analizzatore di vincoli per sistemi RAG. Il tuo compito è estrarre i vincoli residui dalla Query Utente che NON sono stati ancora mappati nella Query Strutturata.",
-        "",
-        "DEFINIZIONE CATEGORIE:",
-        "- \"section\": Limiti su dove cercare nel documento (es. 'cerca solo nelle note', 'escludi allegati').",
-        "- \"data\": Filtri logici sul contenuto (WHAT) non presenti nei parametri strutturati.",
-        "- \"response\": Istruzioni su stile, tono o formato della risposta finale.",
-        "",
-        "REGOLE RIGIDE:",
-        "\t- Integrità: I vincoli estratti devono essere espressi come frasi di senso compiuto.",
-        "\t- Esclusività:",
-        "\t\t- Se un vincolo è già espresso o implicito nella 'Query Strutturata', NON inserirlo.",
-        "\t\t- Le condizioni 'limit', 'order', 'classes' implicano rispettivamente un limite sulla lunghezza della risposta, un ordine specifico di presentazione, un sistema di categorizzazione. Se presenti NON inserirli nuovamente.",
-        "\t\t- NON inserire frasi riconducibili alle Informazioni Extra.",
-        "\t- NON INVENTARE: Non aggiungere vincoli non presenti nella Query Utente. Se non ci sono vincoli residui, restituisci frasi vuote.",
-        "\t- No Chatty: Rispondi esclusivamente con l'oggetto JSON.",
-        "",
-        "WORKFLOW:",
-        "\t1. Confronto: Sottrai dalla Query Utente i filtri già presenti nella Query Strutturata o nelle Informazioni Extra.",
-        "\t2. Espansione: Trasforma ogni vincolo residuo in una frase completa e chiara.",
-        "\t3. Categorizzazione: Smista le frasi tra 'section', 'data' e 'response'.",
-        "\t4. Validazione JSON: Verifica la correttezza sintattica dell'output.",
-        "",
-        "FORMATO OUTPUT:",
-        "{{",
-        "\t\"section\": \"<Frase compiuta o vuota>\",",
-        "\t\"data\": \"<Frase compiuta o vuota>\",",
-        "\t\"response\": \"<Frase compiuta o vuota>\"",
-        "}}"
-    ],
+	"system": [
+		"Sei un Analizzatore di Vincoli specializzato in sistemi RAG. Il tuo obiettivo è identificare e isolare i vincoli residui presenti nella Query Utente che non sono stati ancora catturati nella Query Strutturata o nelle Informazioni Extra.",
+		"",
+		"1. CATEGORIE DI VINCOLI",
+		"- section: Restrizioni sul perimetro di ricerca (es. 'solo appendici', 'escludi capitolo 4', 'cerca solo nelle tabelle').",
+		"- data: Filtri logici o di contenuto (es. 'solo se il prezzo è sopra 100', 'escludi menzioni di brand X') non mappati nei parametri.",
+		"- response: Preferenze di stile, tono, lingua o formattazione (es. 'rispondi in inglese', 'usa un tono formale', 'fai un elenco puntato').",
+		"",
+		"2. LOGICA DI ESTRAZIONE (SOTTRAZIONE)",
+		"Il tuo compito è puramente sottrattivo:",
+		"\t1. Analizza la `Query Utente`.",
+		"\t2. Confrontala con la `Query Strutturata` e le `Informazioni Extra`.",
+		"\t3. Se un'informazione è già presente (es. un limite 'limit: 5' o una categoria 'class: A'), DEVI ignorarla.",
+		"\t4. Estrai solo ciò che rimane 'scoperto'.",
+		"",
+		"3. REGOLE RIGIDE",
+		"- Frasi Compiute: Scrivi ogni vincolo come una frase grammaticalmente corretta e autonoma.",
+		"- Nessuna Invenzione: Se non trovi vincoli residui per una categoria, restituisci una stringa vuota (\"\").",
+		"- Nessuna Duplicazione: Non ripetere concetti impliciti nei parametri `limit`, `order` o `classes`.",
+		"- Output Puro: Rispondi esclusivamente in formato JSON, senza commenti o spiegazioni extra.",
+		"",
+		"4. FORMATO OUTPUT",
+		"```json",
+		"{{",
+		"  \"section\": \"<Frase o vuoto>\",",
+		"  \"data\": \"<Frase o vuoto>\",",
+		"  \"response\": \"<Frase o vuoto>\"",
+		"}}",
+		"```"
+	],
 
-    "human": [
-        "Analizza i vincoli aggiuntivi:",
-        "- Query Utente: {query}",
-        "- Query Strutturata: {structured_query}",
-        "- Informazioni Extra (Comando): {description_command}",
-        "- Informazioni Extra (What):",
-        "{description_what}",
-        "- Informazioni Extra (Documenti): {documents}"
-    ],
+	"human": [ 
+		"Analizza i seguenti dati per estrarre i vincoli residui:",
+		"",
+		"QUERY",
+		"\"\"\"",
+		"{query}",
+		"\"\"\"",
+		"",
+		"QUERY STRUTTURATA",
+		"\"\"\"",
+		"{structured_query}",
+		"\"\"\"",
+		"",
+		"INFORMAZIONI EXTRA:",
+		"\"\"\"",
+		"- Comando: {description_command}",
+		"- Contenuto: {description_what}",
+		"- Documenti: {documents}",
+		"\"\"\""
+	],
 
-    "examples": [],
+	"params": {
+		"from_user": [
+			"query",
+			"structured_query",
+			"description_command",
+			"description_what",
+			"documents"
+		]
+	},
 
-    "params": {
-        "from_user": [
-            "query",
-            "structured_query",
-            "description_command",
-            "description_what",
-            "documents"
-        ]
-    },
-
-    "parser": "dict"
+	"parser": "dict"
 }

@@ -390,7 +390,10 @@ class DQLLanguage:
                 role_file = f"{self._role}.txt" if self._role in ["Giudice", "Avvocato"] else "Altro.txt"
                 resolved[param] = FileHandler().read_file(os.path.join(header_folder, role_file))
             elif "commands" in param:
-                resolved[param] = str(len(self._commands)) if "|" in param else self.commands_string(self._commands, 'command')
+                if "key" in param:
+                    resolved[param] = self.commands_string(self._commands, 'key')
+                else:
+                    resolved[param] = str(len(self._commands)) if "|" in param else self.commands_string(self._commands, 'command')
             elif "key" in param:
                 if "default" in param: 
                     resolved[param] = self._default_command.get("key", "")
@@ -407,7 +410,7 @@ class DQLLanguage:
         formatted_examples = [
             {
                 "input": "\n".join(ex["input"]).strip() if isinstance(ex["input"], list) else str(ex["input"]).strip(),
-                "reasoning": str(ex["reasoning"]).strip(),
+                "reasoning": str(ex.get("reasoning", "")).strip(),
                 "output": str(ex["output"]).strip(),
             } for ex in examples
         ]

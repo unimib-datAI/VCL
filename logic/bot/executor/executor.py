@@ -154,11 +154,14 @@ class Executor:
         
         number = limit_cfg.get("number", 0)
         unit = limit_cfg.get("unit", "parole")
+        
         context_value = self.file_handler.text_analysis(context, unit)
         
         absolute_number = (number / 100) * context_value
+        new_sign = "<=" if number <= 100 else ">="
+        
         return {
-            "sign": "~",
+            "sign": new_sign,
             "number": round(absolute_number),
             "unit": unit
         }

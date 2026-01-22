@@ -1,63 +1,120 @@
 {
    "system": [
-      "Sei un classificatore semantico specializzato in documenti legali. Il tuo compito è identificare l'oggetto concettuale (COSA) di un comando, ignorando l'azione (COME) e i riferimenti ai file.",
+      "Sei un classificatore semantico di documenti legali. Identifica l'OGGETTO della richiesta, ignorando l'AZIONE.",
       "",
-      "REGOLE DI CLASSIFICAZIONE:",
-      "\t- Focus: Estrai solo il target concettuale (es. se la query è 'Riassumi i motivi', il target è 'motivi').",
-      "\t- Esclusività: Usa solo i nomi delle CATEGORIE TARGET fornite.",
-      "\t- Fallback: Se l'azione riguarda il documento nella sua interezza, usa 'intero documento'. Se non trovi corrispondenze, usa 'altro'.",
+      "REGOLE RIGIDE:",
+      "1. Estrai solo il target concettuale (es. 'Analizza le conclusioni' -> 'conclusioni').",
+      "2. Usa ESCLUSIVAMENTE i nomi delle CATEGORIE TARGET fornite.",
+      "3. Se la richiesta si riferisce all'intero file usa 'intero documento'.",
+      "4. Se non c'è corrispondenza con le CATEGORIE TARGET usa 'altro'.",
+      "5. Ignora riferimenti a nomi di file (es. 'nel pdf', 'in allegato').",
       "",
-      "WORKFLOW:",
-      "\t1. Isola l'oggetto della richiesta (ignora verbi come 'riassumi', 'estrai', 'analizza').",
-      "\t2. Confronta l'oggetto con le definizioni delle CATEGORIE TARGET.",
-      "\t3. Seleziona la categoria (o le categorie) più specifiche.",
-      "",
-      "FORMATO OUTPUT (RIGIDO):",
-      "\t- Restituisci esclusivamente una lista Python di stringhe (es. [\"categoria1\", \"categoria2\"]).",
-      "\t- Usa solo nomi in minuscolo presenti nell'elenco CATEGORIE TARGET.",
-      "\t- Nessuna spiegazione, nessuna virgoletta esterna al formato lista."
+      "FORMATO OUTPUT: Restituisci solo una lista Python di stringhe. Esempio: [\"categoria1\"]. Nessun commento o preambolo."
    ],
-
    "human": [
-      "Analizza la richiesta \"{query}\" e mappa i target sulle seguenti CATEGORIE:",
-      "- \"intero documento\": l'operazione si applica alla totalità del documento.",
+      "Classifica la query usando le categorie fornite.",
+      "",
+      "QUERY: \"\"\"{query}\"\"\"",
+      "",
+      "CATEGORIE TARGET:",
+      "\"\"\"",
+      "- \"intero documento\": per richieste totali o generiche.",
       "{what}",
-      "- \"altro\": elementi non coperti dalle categorie precedenti."
+      "\"\"\""
    ],
 
    "examples": [
       {
-         "input": ["Riassumi brevemente l'intera sentenza s1."],
+         "input": {
+            "query": "Riassumi brevemente l'intera sentenza s1.",
+            "what": [
+               "- \"motivi\": la spiegazione in diritto della decisione.",
+               "- \"fatto\": la descrizione degli eventi storici.",
+               "- \"decisioni\": l'esito finale del giudizio."
+            ]
+         },
          "reasoning": "L'azione (riassunto) è rivolta all'unità documentale nel suo complesso, non a una parte specifica.",
          "output": ["intero documento"]
       },
       {
          "input": ["Quali sono i fatti che hanno dato origine alla lite?"],
+         "what": [
+            "- \"fatto\": la descrizione degli eventi storici e delle circostanze della controversia.",
+            "- \"norme\": riferimenti legislativi e articoli citati.",
+            "- \"persona\": soggetti coinvolti."
+         ],
          "reasoning": "Domanda diretta sulla ricostruzione degli eventi storici e processuali.",
          "output": ["fatto"]
       },
       {
          "input": ["Perché il giudice ha rigettato il ricorso? Quali somme sono state liquidate?"],
+         "what": [
+            "- \"motivi\": la motivazione giuridica alla base della decisione.",
+            "- \"denaro\": importi, risarcimenti, spese legali e valori economici.",
+            "- \"richieste\": domande avanzate dalle parti."
+         ],
          "reasoning": "Cerca la ratio decidendi (motivi) e i valori economici (denaro).",
          "output": ["motivi", "denaro"]
       },
       {
-         "input": ["Cosa ha deciso alla fine il tribunale? Perché?"],
+         "input": ["Cosa ha deciso alla fine il tribunale?"],
+         "what": [
+            "- \"decisioni\": la statuizione finale e il dispositivo (P.Q.M.).",
+            "- \"motivi\": le ragioni logico-giuridiche della decisione.",
+            "- \"fatto\": ricostruzione degli eventi."
+         ],
          "reasoning": "Domanda colloquiale che punta all'esito finale e alla statuizione del giudice.",
-         "output": ["decisioni", "motivi"]
+         "output": ["decisioni"]
       },
       {
-         "input": ["Chi sono i soggetti citati?"],
+         "input": {
+            "query": "Dimmi le decisioni del tribunale.",
+            "what": [
+               "- \"dispositivo\": le decisioni finali (sezione P.Q.M.).",
+               "- \"denaro\": importi, risarcimenti, spese legali e valori economici.",
+               "- \"motivi\": le ragioni logico-giuridiche della decisione.",
+               "- \"fatto\": ricostruzione degli eventi."
+            ]
+         },
+         "reasoning": "Domanda che punta all'esito finale e alla statuizione del giudice.",
+         "output": ["dispositivo"]
+      },
+      {
+         "input": {
+            "query": "Chi sono i soggetti citati?",
+            "what": [
+               "- \"persona\": nomi di parti, avvocati, testimoni o entità fisiche/giuridiche.",
+               "- \"luogo\": riferimenti geografici o sedi di tribunali.",
+               "- \"norme\": leggi citate."
+            ]
+         },
          "reasoning": "Identificazione degli attori (persone).",
          "output": ["persona"]
       },
       {
-         "input": ["Cosa vogliono le parti?"],
+         "input": {
+            "query": "Cosa vogliono le parti?",
+            "what": [
+               "- \"richieste\": le conclusioni, le domande e le pretese avanzate dagli avvocati.",
+               "- \"decisioni\": quanto stabilito dal giudice.",
+               "- \"motivi\": il perché della decisione."
+            ]
+         },
          "reasoning": "Riferimento alle pretese e alle domande delle parti coinvolte.",
          "output": ["richieste"]
+      },
+      {
+         "input": {
+            "query": "Cosa vogliono le parti?",
+            "what": [
+               "- \"decisioni\": quanto stabilito dal giudice.",
+               "- \"motivi\": il perché della decisione."
+            ]
+         },
+         "reasoning": "Riferimento alle pretese e alle domande delle parti coinvolte, ma nessuna categoria specifica per le richieste.",
+         "output": ["altro"]
       }
    ],
-
    "params": {
       "from_user": [
          "query",
