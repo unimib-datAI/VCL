@@ -24,5 +24,5 @@ def classifica(context: list, query: dict, llm, language) -> str:
         raise ValueError("Error: Could not determine how to process this request.")
         
     result = llm.invoke(prompt, state)
-    
-    return check_limit_result(result, context, query, llm, language)
+    return result
+    #return check_limit_result(result, context, query, llm, language)

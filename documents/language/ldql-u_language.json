@@ -3,57 +3,57 @@
         {
             "key": "a",
             "command": "cerca",
-            "description": "Scansiona il corpus per identificare e isolare occorrenze specifiche di termini, entità o stringhe testuali, garantendo il recupero puntuale di ogni riferimento richiesto."
+            "description": "Estrazione puntuale: identifica entità e concetti chiave. Per ogni elemento, riporta la citazione testuale esatta (verbatim) e spiega perché è rilevante."
         },
         {
             "key": "b",
             "command": "riassumi",
-            "description": "Effettua una compressione semantica del testo, eliminando le ridondanze e mantenendo esclusivamente i nodi informativi primari per ridurre la lunghezza complessiva dell'output."
+            "description": "Sintesi densa: elimina ripetizioni e dettagli minori. Mantieni solo i punti informativi essenziali e i passaggi decisivi."
         },
         {
             "key": "c",
             "command": "estrai semantico",
-            "description": "Identifica nuclei tematici omogenei e li riformula in modo analitico, privilegiando la chiarezza espositiva e la comprensione del concetto rispetto all'aderenza letterale al testo sorgente."
+            "description": "Filtro tematico: isola e raggruppa solo le parti del testo che trattano l'argomento specifico indicato."
         },
         {
             "key": "d",
             "command": "estrai logico",
-            "description": "Decodifica e ricostruisce la struttura del ragionamento, riformulando i passaggi inferenziali per esplicitare con massima chiarezza il nesso tra premesse e conclusioni."
+            "description": "Analisi strutturale: individua ed estrai le singole tesi, argomentazioni o catene di ragionamento presenti."
         },
         {
             "key": "e",
             "command": "confronta",
-            "description": "Esegue un'analisi comparativa tra due o più flussi di dati, mappando analogie, divergenze e sovrapposizioni informative in modo granulare."
+            "description": "Comparazione: analizza due o più elementi evidenziando in modo preciso somiglianze, differenze e punti di contatto."
         },
         {
             "key": "f",
             "command": "integra",
-            "description": "Aggrega molteplici unità informative in un unico output coerente, risolvendo i conflitti tra dati ridondanti e preservando l'integrità del contenuto unico."
+            "description": "Fusione dati: unisci più testi in un unico output coerente, eliminando i doppioni e risolvendo eventuali contrasti tra le informazioni."
         },
         {
             "key": "g",
             "command": "verifica",
-            "description": "Sottopone il testo a un controllo di coerenza sintattica e strutturale, rilevando eventuali contraddizioni interne o errori formali rispetto ai parametri di input."
+            "description": "Controllo qualità: valuta la logica e la coerenza. Segnala esplicitamente errori nei dati, contraddizioni o passaggi logici deboli."
         },
         {
             "key": "h",
             "command": "analizza",
-            "description": "Decompone l'input nelle sue componenti strutturali minime, valutando la densità informativa e la completezza della risposta in relazione ai requisiti impostati."
+            "description": "Reverse engineering del pensiero: spiega passo dopo passo come l'autore arriva da una premessa a una conclusione."
         },
         {
             "key": "i",
             "command": "riorganizza",
-            "description": "Applica un nuovo ordinamento sistematico ai dati (es. sequenziale, gerarchico o categoriale) senza alterare il valore informativo originario."
+            "description": "Ristrutturazione: ordina le informazioni (per tempo, importanza o categoria) senza cambiare il significato originale."
         },
         {
             "key": "j",
             "command": "classifica",
-            "description": "Assegna categorie o tag specifici a porzioni di testo sulla base di criteri funzionali e tipologici definiti nel sistema."
+            "description": "Tagging: assegna etichette specifiche ai vari blocchi di testo in base alla loro funzione o contenuto."
         },
         {
             "key": "k",
             "command": "altro",
-            "description": "Esegue operazioni non codificate seguendo principi di massima aderenza alle istruzioni dell'utente e pertinenza al contesto operativo.",
+            "description": "Task libero: esegui qualsiasi altra operazione richiesta non specificata sopra.",
             "default": true,
             "atomic": ["*"]
         }
@@ -61,65 +61,65 @@
     "sources": [
         {
             "name": "ricorso",
-            "synonyms": ["Ricorso giuridico", "R2 - AN.docx"],
-            "description": "Atto introduttivo del giudizio di impugnazione (ex art. 339 e ss. c.p.c.) con cui l'appellante espone i motivi specifici di censura contro la sentenza di primo grado, formulando istanza di riforma o cassazione."
+            "synonyms": ["r2", "appello", "ricorso giuridico"],
+            "description": "Documento di impugnazione: contiene le critiche alla sentenza precedente e la richiesta di modifica."
         },
         {
             "name": "comparsa di costituzione e risposta",
-            "synonyms": ["Comparsa di risposta", "Risposta del convenuto", "Memoria Difensiva", "memoria", "M2 - AN.docx"],
-            "description": "Atto difensivo (ex art. 167 c.p.c.) mediante il quale la parte convenuta/appellata formalizza la propria resistenza in giudizio, sollevando eccezioni di rito e di merito, e proponendo eventuali domande riconvenzionali."
+            "synonyms": ["m2", "memoria difensiva", "risposta"],
+            "description": "Documento di difesa: espone le ragioni per cui la domanda della controparte deve essere respinta."
         },
         {
             "name": "sentenza di tribunale",
-            "synonyms": ["Sentenza di primo grado", "s. trib.", "s. g.d.p.", "s. i grado", "S1 - AN.docx"],
-            "description": "Provvedimento giurisdizionale decisorio emesso dal giudice di prima istanza che definisce il giudizio, contenente l'intestazione, l'esposizione dei fatti, la motivazione in diritto e il P.Q.M. (dispositivo)."
+            "synonyms": ["s1", "primo grado", "sentenza trib"],
+            "description": "Decisione iniziale del giudice: contiene i fatti accertati, i motivi legali e il verdetto (P.Q.M.)."
         },
         {
             "name": "sentenza di corte d'appello",
-            "synonyms": ["Sentenza di secondo grado", "s. app.", "sent. ii° gr", "S2 - AN.docx"],
-            "description": "Decisione collegiale emessa in esito al gravame, avente effetto sostitutivo rispetto alla sentenza impugnata, volta a confermare, riformare o annullare il provvedimento di primo grado."
+            "synonyms": ["s2", "secondo grado", "sentenza appello"],
+            "description": "Decisione di secondo livello: conferma, riforma o annulla la decisione del primo giudice."
         }
     ],
     "what": [
         {
             "name": "sillogismo",
-            "definition": "La struttura logica che collega Norma (premessa maggiore), Fatto (premessa minore) e Decisione.",
+            "definition": "La struttura logica: Norma applicata (legge) + Fatto (cosa è successo) = Conclusione (decisione).",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["estrai logico"]
         },
         {
             "name": "importi economici",
-            "definition": "Individuazione analitica delle pretese creditorie, del quantum debeatur, delle somme liquidate a titolo di risarcimento, indennizzo o spese di lite (soccombenza).",
+            "definition": "Dati numerici e finanziari: risarcimenti, debiti, spese legali e somme liquidate.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["cerca"]
         },
         {
             "name": "passaggio logico",
-            "definition": "Isolamento degli snodi argomentativi e delle inferenze deduttive/induttive poste a fondamento della 'ratio decidendi' o della linea difensiva proposta dalle parti.",
+            "definition": "Snodi del ragionamento: le deduzioni fondamentali che giustificano la decisione o la difesa.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["estrai logico"]
         },
         {
             "name": "articoli",
-            "definition": "Riferimenti precisi a norme di legge (Codici, Leggi Speciali, Direttive) citati a supporto delle allegazioni o della decisione giurisdizionale.",
+            "definition": "Riferimenti normativi: citazioni di leggi, codici o regolamenti a supporto del testo.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["cerca"]
         },
         {
-            "name": "citazione o frase",
-            "definition": "Estratti letterali tratti da precedenti di legittimità (Cassazione), giurisprudenza di merito o dottrina scientifica richiamati per corroborare l'interpretazione normativa.",
+            "name": "citazione",
+            "definition": "Frase, Precedenti: estratti di altre sentenze (es. Cassazione) usati come esempio o prova.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["cerca"]
         },
         {
             "name": "dispositivo",
-            "definition": "Nucleo precettivo della sentenza (P.Q.M.) contenente l'ordine del giudice, o conclusionale dell'atto di parte contenente il petitum immediato e mediato.",
+            "definition": "Ordine finale (P.Q.M.): la sezione che contiene la decisione pratica del giudice o la richiesta finale della parte.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["estrai semantico"]
         },
         {
-            "name": "argomentazioni giuridiche o motivazioni",
-            "definition": "Corpo centrale dell'atto in cui vengono esposte le ragioni di fatto e di diritto (ex art. 132 c.p.c.) che giustificano l'applicazione di determinati effetti giuridici alla fattispecie.",
+            "name": "argomentazioni giuridiche",
+            "definition": "Motivazioni: la spiegazione dettagliata dei motivi di fatto e di diritto.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["estrai logico"]
         }

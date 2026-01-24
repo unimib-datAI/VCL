@@ -186,7 +186,7 @@ class Planner:
                 self._build_step(p_id, len(atomic_ops) + start_idx, final_cmd, final_from_ids, how=how)
             )
             
-        if "limit" in atomic_ops[-1]["structured_prompt"].get("how", {}) and final_cmd != "riassumi":
+        if "limit" in atomic_ops[-1]["structured_prompt"].get("how", {}) and final_cmd != "riassumi" and atomic_ops[-1]["structured_prompt"]["how"]["limit"].get("sign", {}) != ">=":
             new_limit = { "limit": deepcopy(atomic_ops[-1]["structured_prompt"]["how"]["limit"]) }
             del atomic_ops[-1]["structured_prompt"]["how"]["limit"]
             

@@ -19,19 +19,20 @@
         "- Se si fa un riferimento al contenuto di un messaggio: Riporta l'ID del messaggio avente quel contenuto.",
         "",
         "LINEE GUIDA OPERATIVE:",
+        "- Invarianza: Se la query è già completa e comprensibile autonomamente, non modificarla.",
         "- Rimuovi meta-discorso: Elimina 'Ciao', 'Grazie', 'Scusa', 'Volevo dire'.",
         "- Rimuovi verbi di visualizzazione: Elimina 'Mostrami', 'Visualizza', 'Riproduci'.",
         "- Refactoring: Correggi refusi e rendi la sintassi chiara e professionale.",
-        "- Invarianza: Se la query è già completa e comprensibile autonomamente, non modificarla.",
         "",
         "FORMATO OUTPUT:",
         "Restituisci esclusivamente la stringa raffinata. Nessun preambolo o commento."
     ],
 
     "human": [
-        "### QUERY ORIGINALE",
+        "QUERY ORIGINALE",
         "\"{query}\"",
-        "### STORICO CHAT",
+        "",
+        "STORICO CHAT",
         "{chat}"
     ],
 
@@ -90,6 +91,16 @@
             },
             "reasoning": "Correzione: ignora l'ultimo turno (msg_2), recupera azione e fonte da msg_1.",
             "output": "Estrai le date dal documento report.txt."
+        },
+        {
+            "input": {
+				"query": "Estrai le date dalla sentenza",
+				"chat": [
+                    {"id": "msg_05", "prompt": "...", "content": "...", "used_documents": ["listino.pdf"]}
+                ]
+            },
+            "reasoning": "Ho un'azione (Estrai), un documento (Senteza), un qualcosa su cui operare (date). Si tratta di una query già autonoma. La devo riportare uguale.",
+            "output": "Estrai le date dalla sentenza"
         }
     ],
 

@@ -19,7 +19,7 @@ def format_context(docs: list[dict]) -> str:
     context_lines = []
     for doc in docs:
         # Labeled headers help the LLM distinguish between different source materials
-        context_lines.append(f"[D. \"{doc['type']}\"]\n\n\t{doc['text']}\n\n---")
+        context_lines.append(f"<D. \"{doc['type']}\">\n\t{doc['text']}\n</D. \"{doc['type']}\">")
     
     context_str = "\n\n".join(context_lines).strip()
     return f"Context:\n{context_str}"
@@ -54,9 +54,9 @@ def check_limit(text: str, constraint: dict) -> bool:
     is_valid = False
     # if sign == "=":
     #     is_valid = current_value == number
-    if sign == "<=":
+    if sign == "<=" or sign == "<":
         is_valid = current_value <= number
-    elif sign == ">=":
+    elif sign == ">=" or sign == ">":
         is_valid = current_value >= number
     elif sign == "~" or sign == "=":
         tolerance = number * TOLERANCE
@@ -110,11 +110,11 @@ def format_limit_condition(limit: dict) -> str:
     unit = limit.get('unit', 'parole')
     number = limit.get('number', 50)
         
-    if sign == "<=":
+    if sign == "<=" or sign == "<":
         sign = "meno di "
-    elif sign == ">=":
+    elif sign == ">=" or sign == ">":
         sign = "più di"
-    elif sign == "~":
+    elif sign == "~" or sign == "=":
         sign = "circa"
     else:
         return None

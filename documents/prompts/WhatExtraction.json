@@ -26,7 +26,7 @@
    "examples": [
       {
          "input": {
-            "query": "Riassumi brevemente l'intera sentenza s1.",
+            "query": "Filtra #1 per avere meno di 100 parole.",
             "what": [
                "- \"motivi\": la spiegazione in diritto della decisione.",
                "- \"fatto\": la descrizione degli eventi storici.",

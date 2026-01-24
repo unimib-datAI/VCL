@@ -5,7 +5,7 @@
 		"REGOLE DI ESTRAZIONE",
 		"- CASO A: Rilevamento Esplicito (Sign & Number)",
 		"\t- Se trovi un numero e un operatore (es. \"almeno\", \"massimo\", \"circa\"), estrai:",
-		"\t\t- sign: \">=\", \"<=\", \"~\" o \"=\".",
+		"\t\t- sign: obbligatoriamente uno tra \">=\", \"<=\", \"~\" o \"=\".",
 		"\t\t- number: il valore numerico (float).",
 		"",
 		"- CASO B: Fallback Direzionale (Percentuale)",

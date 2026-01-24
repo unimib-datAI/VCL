@@ -134,9 +134,9 @@ class Executor:
             raise ValueError(f"Execution failed for command '{command}': {str(e)}")
 
         # 4. Post-processing finale
-        return result
+        #return result
         
-        #return re.sub(self._pattern, self._format_heading, result)
+        return re.sub(self._pattern, self._format_heading, result)
     
     
     def _disamgiguate_percent_limit(self, limit_cfg: dict, context: str) -> dict:

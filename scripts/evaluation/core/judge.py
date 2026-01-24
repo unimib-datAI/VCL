@@ -9,8 +9,6 @@ from ragas.metrics.collections import FactualCorrectness, Faithfulness
 from collections import defaultdict
 
 class GPTJudge:
-    CHUNK_SIZE = 800
-    K = 5
 
     def __init__(self, model: str, atomicity: str ="low", coverage: str = "low"):
         if "gpt" not in model:
