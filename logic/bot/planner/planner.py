@@ -118,7 +118,7 @@ class Planner:
         and source availability.
         """
         # Identify which intermediate commands (e.g., search, extract) support this 'what'
-        middle_commands = self._find_middle_commands(what)
+        middle_commands = self._find_middle_commands(what.get("name", ""))
         
         # Case A: User requested an intermediate command directly
         if command in middle_commands:
@@ -130,7 +130,7 @@ class Planner:
             return [self._build_step(parent_id, start_idx, command, sources, [what], how)]
 
         # Case B: Final command (e.g., 'summarize') that requires a preceding data fetch
-        if self._need_decomposition(command, sources, what):
+        if self._need_decomposition(command, sources, what.get("name")):
             self._logger.info(f"Decomposing final command '{command}' using {middle_commands[0]}")
             # Standard two-step plan: mid_cmd (retrieval) -> final_cmd (analysis/integration)
             return self._create_operations(middle_commands[0], command, sources, what, how, parent_id, start_idx)
@@ -143,7 +143,7 @@ class Planner:
     # -------------------------------------------------------------------------
 
     def _create_operations(self, mid_cmd: str, final_cmd: str, sources: list, 
-                          what: str, how: dict, p_id: str, start_idx: int) -> List[Dict]:
+                          what: dict, how: dict, p_id: str, start_idx: int) -> List[Dict]:
         """
         Builds a sequence of per-source retrieval steps followed by an aggregation step.
         """
@@ -158,7 +158,7 @@ class Planner:
         not_used_sources = []
 
         # Create individual retrieval steps for known database sources
-        if what not in ["intero documento", "altro"]:
+        if what.get("name", "") not in ["intero documento", "altro"]:
             for i, src in enumerate(sources, start=start_idx):
                 if self._request_id not in src:
                     atomic_ops.append(self._build_step(p_id, i, mid_cmd, [src], [what]))
@@ -229,7 +229,7 @@ class Planner:
         """
         Consults the DQL language grammar to find appropriate intermediate commands for a 'what'.
         """
-        if what in ["intero documento", "altro"]:
+        if what in ["intero documento", "concetto", "frase"]:
             return ["cerca"]
         
         # Search the 'what' definitions for related command mappings

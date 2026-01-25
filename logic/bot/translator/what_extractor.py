@@ -90,9 +90,16 @@ class WhatExtractor:
                 # Validation: ensure every extracted term exists in the current grammar
                 for i, w in enumerate(what):
                     available_names = [str(w).lower() for w in available_what.keys()]
-                    if w not in available_names and w != "altro" and w != "intero documento":
+                    if w not in available_names and w != "altro" and w not in ["intero documento", "concetto", "frase"]:
                         self._logger.warning(f"What Extractor Validation: \"{w}\" not in available what.")
-                        what[i] = "intero documento"
+                        what[i] = {"name": "intero documento"}
+                    else:
+                        if w == "concetto":
+                            what[i] = self._disambiguate_concept(query)
+                        elif w == "frase":
+                            what[i] = self._disambiguate_phrase(query)
+                        else:
+                            what[i] = {"name": w}
                 
                 status = "Done"
             else:
@@ -108,6 +115,86 @@ class WhatExtractor:
             f"Extraction mapping: \"{query}\" -> {what} (Status: {status})"
         )
         
+        return what
+    
+    def _disambiguate_concept(self, query: str) -> str:
+        query_dict = {
+            "query": query
+        }
+
+        what = {}
+        status = "Error"
+
+        try:
+            prompt = self._dql_language.prompts.get("ConceptDisambiguation.json", None)
+            
+            if not prompt:
+                raise ValueError("ConceptDisambiguation.json prompt template is missing from language config.")
+            
+            if query_dict.get("query", "").strip():
+                what = self._llm.invoke(
+                    prompt,
+                    query_dict,
+                    True
+                )
+                
+                if not isinstance(what, str):
+                    what = str(what)
+                
+                what = {"name": "concetto", "element": what}
+
+                status = "Done"
+            else:
+                raise ValueError("Empty query string received.")
+
+        except Exception as e:
+            self._logger.error(f"Disambiguation exception: {e}")
+            what = {"name": "concetto"}
+
+        self._logger.info(
+            f"Concept Disambiguation: \"{query}\" -> {what} (Status: {status})"
+        )
+
+        return what
+    
+    def _disambiguate_phrase(self, query: str) -> str:
+        query_dict = {
+            "query": query
+        }
+
+        what = {}
+        status = "Error"
+
+        try:
+            prompt = self._dql_language.prompts.get("PhraseDisambiguation.json", None)
+            
+            if not prompt:
+                raise ValueError("PhraseDisambiguation.json prompt template is missing from language config.")
+            
+            if query_dict.get("query", "").strip():
+                what = self._llm.invoke(
+                    prompt,
+                    query_dict,
+                    True
+                )
+                
+                if not isinstance(what, dict) or "type" not in what or "element" not in what:
+                    raise ValueError("Incompatible Type")
+                
+                what.update({"name": "frase"})
+
+                status = "Done"
+            else:
+                raise ValueError("Empty query string received.")
+
+        except Exception as e:
+            self._logger.error(f"Disambiguation exception: {e}")
+            what = {"name": "frase"}
+
+        self._logger.info(
+            f"Phrase Disambiguation: \"{query}\" -> {what} (Status: {status})"
+        )
+
         return what
 
     # ----------------------

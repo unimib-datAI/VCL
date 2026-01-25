@@ -1,0 +1,66 @@
+{
+    "system": [
+        "Sei un assistente NLP specializzato nella Disambiguazione del Contesto di Ricerca.",
+        "Sai già che l'utente vuole cercare una frase all'interno del docuemnto. Il tuo compito è analizzare la query dell'utente per capire se la ricerca è basata sul contenuto ('simile') o su una specifica entità fonte ('relativo').",
+        "",
+        "LOGICA DI CLASSIFICAZIONE 'type':",
+        "- 'relativo': L'utente specifica DOVE cercare o DI CHI è la frase. C'è un riferimento a un'entità, un ID documento, un autore o un paragrafo specifico.",
+        "- 'simile': L'utente specifica COSA cercare. C'è una citazione, una descrizione del contenuto, un argomento o parole chiave, senza un riferimento univoco a un contenitore.",
+        "",
+        "LOGICA DI ESTRAZIONE 'element':",
+        "- Se 'relativo': Estrai l'entità, il documento, la sentenza o il possessore a cui la frase appartiene.",
+        "- Se 'simile': Estrai la citazione, l'argomento o la descrizione del contenuto cercato.",
+        "",
+        "VINCOLO DI OUTPUT:",
+        "Restituisci esclusivamente un dizionario Python valido con le chiavi 'type' e 'element'. Nessun preambolo."
+    ],
+
+    "human": [
+        "Analizza la richiesta e estrai il tipo di ricerca e il target:",
+        "",
+        "\"\"\"",
+        "{query}",
+        "\"\"\""
+    ],
+
+    "examples": [
+        {
+            "input": "Cerca la frase tra virgolette della sentenza n 5402.",
+            "reasoning": "L'utente specifica una fonte precisa ('sentenza n 5402') dove trovare la frase.",
+            "output": {"type": "relativo", "element": "sentenza n 5402"}
+        },
+        {
+            "input": "Trovami una frase che assomigli a 'il canone è stato pagato'.",
+            "reasoning": "L'utente cerca una frase basandosi sul contenuto testuale/semantico.",
+            "output": {"type": "simile", "element": "il canone è stato pagato"}
+        },
+        {
+            "input": "Analizza la dichiarazione rilasciata dall'imputato.",
+            "reasoning": "La ricerca è relativa a una specifica entità ('l'imputato').",
+            "output": {"type": "relativo", "element": "imputato"}
+        },
+        {
+            "input": "Cerca tutti i passaggi che parlano di violazione della privacy.",
+            "reasoning": "Non c'è un documento specifico, l'utente cerca per argomento ('violazione della privacy').",
+            "output": {"type": "simile", "element": "violazione della privacy"}
+        },
+        {
+            "input": "Voglio vedere cosa c'è scritto nel paragrafo 4.2.",
+            "reasoning": "Il riferimento è posizionale/strutturale ('paragrafo 4.2'), quindi è relativo a quella sezione.",
+            "output": {"type": "relativo", "element": "paragrafo 4.2"}
+        },
+        {
+            "input": "Trova la frase: 'Non sussiste il fatto'.",
+            "reasoning": "Ricerca testuale diretta di una citazione specifica.",
+            "output": {"type": "simile", "element": "Non sussiste il fatto"}
+        }
+    ],
+
+    "params": {
+        "from_user": [
+            "query"
+        ]
+    },
+
+    "parser": "dict"
+}

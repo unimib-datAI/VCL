@@ -22,8 +22,8 @@ def estrai_logico(context: list, query: dict, llm, language) -> str:
     state = {
         "how": format_conditions(query.get("how", {}), command),
         "context": format_context(context),
-        "what": what,
-        "description_what": language.get_description_from_what(what)
+        "what": str(what),
+        "description_what": language.get_description_from_what(what.get("name"))
     }
     
     prompt = language.prompts.get("EstraiLogico.json")

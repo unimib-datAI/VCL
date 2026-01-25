@@ -173,7 +173,7 @@ class ConditionsExtractor:
                 "structured_query": str(structured_query),
                 "documents": self.docs_in_string(docs),
                 "description_command": self._dql_language.get_description_from_command(structured_query.get("command")),
-                "description_what": "\n".join(f"\t- {w}: \"{self._dql_language.get_description_from_what(w)}\"" for w in structured_query.get("what", [])),
+                "description_what": "\n".join(f"\t- {w.get("name", "")}: \"{self._dql_language.get_description_from_what(w.get("name", ""))}\"" for w in structured_query.get("what", [])),
             }
         
             prompt = self._dql_language.prompts.get("AdditionalConditionsExtraction.json", None)

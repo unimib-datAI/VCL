@@ -16,7 +16,7 @@ from scripts.evaluation.core.registry import ModelRegistry
 
 from scripts.evaluation.models.dql import DQLModel
 from scripts.evaluation.models.openai_filesearch import GPTModel
-from scripts.evaluation.models.rag import RAGModel
+#from scripts.evaluation.models.rag import RAGModel
 from scripts.evaluation.models.copilot import CopilotModel
 from scripts.evaluation.models.notebooklm import NotebookLMModel
 

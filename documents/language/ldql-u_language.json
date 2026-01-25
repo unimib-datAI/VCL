@@ -106,12 +106,6 @@
             "relative_command": ["cerca"]
         },
         {
-            "name": "citazione",
-            "definition": "Frase, Precedenti: estratti di altre sentenze (es. Cassazione) usati come esempio o prova.",
-            "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-            "relative_command": ["cerca"]
-        },
-        {
             "name": "dispositivo",
             "definition": "Ordine finale (P.Q.M.): la sezione che contiene la decisione pratica del giudice o la richiesta finale della parte.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],

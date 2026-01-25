@@ -169,7 +169,7 @@ class Decomposer():
                 "structured_prompt": {
                     "command": "integra",
                     "from": [[f"{self._cfg.get_request_id()}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],
-                    "what": ["intero documento"]
+                    "what": [{"name": "intero documento"}]
                 }
             }
             

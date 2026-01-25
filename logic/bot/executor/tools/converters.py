@@ -82,7 +82,7 @@ def format_conditions(how: dict, command: str) -> str:
         str: A formatted string block to be appended to the prompt.
     """
     if not how:
-        return ""
+        return "Non sono presenti condizioni aggiuntive"
 
     # Block introduction
     conditions = ["NOTE AGGIUNTIVE:\nL'utente ha posto esplicitamente che la risposta debba soddisfare le seguenti condizioni:"]
@@ -102,7 +102,7 @@ def format_conditions(how: dict, command: str) -> str:
         if limit_text:
             conditions.append(f"- {limit_text}")
 
-    return "\n".join(conditions) if len(conditions) > 1 else ""
+    return "\n".join(conditions) if len(conditions) > 1 else "Non sono presenti condizioni aggiuntive"
 
 def format_limit_condition(limit: dict) -> str:
     # Specialized formatting for numerical constraints (words, characters, paragraphs)

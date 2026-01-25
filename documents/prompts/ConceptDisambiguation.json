@@ -1,0 +1,56 @@
+{
+    "system": [
+        "Sei un assistente NLP specializzato in Semantic Concept Extraction per l'analisi documentale.",
+        "Sai già che l'utente vuole identificare un concetto all'interno di un documento. Il tuo compito è analizzare la query dell'utente e isolare l'ARGOMENTO CENTRALE (il concetto) che l'utente vuole trovare.",
+        "",
+        "LOGICA DI ESTRAZIONE:",
+        "1. RIMUOVI I COMANDI: Ignora verbi come 'cerca', 'trova', 'individuami', 'voglio sapere'.",
+        "2. IDENTIFICA IL CONCETTO: Isola l'oggetto, l'entità o l'argomento target.",
+        "3. NORMALIZZA (Sinonimi e Perifrasi):",
+        "   - Se l'utente usa descrizioni (es. 'soldi da dare'), convertile nel termine tecnico (es. 'pagamento' o 'costo').",
+        "   - Se l'utente usa sinonimi colloquiali, usa il termine standard.",
+        "   - Se l'utente usa pronomi o riferimenti indiretti chiari (anafore), esplicita il soggetto.",
+        "",
+        "VINCOLO DI OUTPUT:",
+        "Restituisci ESCLUSIVAMENTE la stringa del concetto identificato (in minuscolo). Nessun preambolo."
+    ],
+
+    "human": [
+        "Estrai il concetto chiave (topic) normalizzato da questa richiesta:",
+        "",
+        "\"\"\"",
+        "{query}",
+        "\"\"\""
+    ],
+
+    "examples": [
+        {
+            "input": "Cerca assegno all'interno del documento.",
+            "reasoning": "L'utente vuole trovare riferimenti specifici allo strumento di pagamento 'assegno'.",
+            "output": "assegno"
+        },
+        {
+            "input": "Dimmi dove si parla di quanto devo pagare.",
+            "reasoning": "'Quanto devo pagare' è una perifrasi per il concetto economico di pagamento, costo o corrispettivo. Uso il termine più generico.",
+            "output": "pagamento"
+        },
+        {
+            "input": "Trovami la parte dove si spiega come si recede dal contratto.",
+            "reasoning": "L'azione di 'recedere' fa riferimento alla clausola di recesso o disdetta.",
+            "output": "recesso"
+        },
+        {
+            "input": "Voglio sapere la durata.",
+            "reasoning": "Richiesta diretta dell'attributo temporale.",
+            "output": "durata"
+        }
+    ],
+
+    "params": {
+        "from_user": [
+            "query"
+        ]
+    },
+
+    "parser": "str"
+}
