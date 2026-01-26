@@ -71,6 +71,7 @@ def evaluation():
         m.initialize(documents)
         print(f"[INFO] Model {m.name} initialized")
 
+    print(f"[INFO] Initializing Judge")
     judge = GPTJudge(EVALUATION_OPENAI_MODEL)
     judge.initialize(documents)
     asyncio.run(judge.start_prompt())
@@ -133,6 +134,7 @@ def evaluation():
                                 final_results[model.name]["answers"][str(i)] = ""
                                 print(f"[INFO] Answer generation for {model.name}: Error {e}")
                     
+                    print(f"[INFO] Claims generation for {model.name}: Start")
                     for i in range(1, K + 1):
                         if str(i) in question_data.get(model.name, {}).get("claims", {}).get("answers", {}):
                             print(f"[INFO] Claims generation for {model.name}: In the File")

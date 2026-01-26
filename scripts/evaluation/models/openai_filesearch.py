@@ -45,14 +45,7 @@ class GPTModel():
         if hasattr(response, 'output_text'):
             content = response.output_text
         
-        used_file_ids = []
-        if hasattr(response, 'file_search_call') and response.file_search_call:
-            results = response.file_search_call.results
-            used_file_ids = [res.file_id for res in results]
-            used_file_ids = [client.files.retrieve(id).filename for id in used_file_ids]
-
-        print(used_file_ids)
         return {
             "content": content,
-            "sources": used_file_ids
+            "info": dict(response)
         }

@@ -15,7 +15,7 @@ RETRIEVE_K = 64
 FINAL_K = 10
 MAX_CONTEXT_TOKENS = 20000 
 EMBED_BATCH_SIZE = 64
-RERANK_MODEL = "rerank-multilingual-v3.0"
+RERANK_MODEL = "rerank-2.5"
 
 client = OpenAI()
 vo_client = voyageai.Client()
@@ -35,7 +35,7 @@ def chunk_text(text: str, chunk_size: int = CHUNK_SIZE, overlap: int = CHUNK_OVE
         start = end - overlap
     return chunks
 
-def embed_texts(texts: List[str], input_type: str = "document") -> np.ndarray:
+'''def embed_texts(texts: List[str], input_type: str = "document") -> np.ndarray:
     """
     Usa Voyage AI per generare embedding.
     input_type può essere "document" o "query".
@@ -53,7 +53,26 @@ def embed_texts(texts: List[str], input_type: str = "document") -> np.ndarray:
     
     # Normalizzazione per la ricerca vettoriale (Inner Product)
     vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
-    return vectors
+    return vectors'''
+
+def embed_texts(texts: List[str], input_type = None) -> np.ndarray:
+    vectors_all = []
+
+    for i in range(0, len(texts), EMBED_BATCH_SIZE):
+        batch = texts[i:i + EMBED_BATCH_SIZE]
+        resp = client.embeddings.create(
+            model=EMBED_MODEL,
+            input=batch
+        )
+        vectors = np.array(
+            [e.embedding for e in resp.data],
+            dtype=np.float32
+        )
+        
+        vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
+        vectors_all.append(vectors)
+
+    return np.vstack(vectors_all)
 
 def rerank_and_trim(docs: List[Dict], max_tokens: int = MAX_CONTEXT_TOKENS):
     docs = sorted(docs, key=lambda d: d.get("score", 0), reverse=True)
@@ -109,7 +128,7 @@ class RAGModel:
     
     @property
     def name(self):
-        return f"RAG with {self.model}!"
+        return f"RAG with {self.model}"
 
     def voyage_rerank(self, query: str, docs: List[Dict], top_k: int = 10) -> List[Dict]:
         """Esegue il reranking usando il Cross-Encoder di Voyage AI."""
