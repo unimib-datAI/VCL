@@ -1,4 +1,4 @@
-'''import json
+import json
 import faiss
 import numpy as np
 import tiktoken
@@ -55,11 +55,12 @@ def embed_texts(texts: List[str], input_type: str = "document") -> np.ndarray:
     vectors /= np.linalg.norm(vectors, axis=1, keepdims=True)
     return vectors
 
-def rerank_and_trim(docs: List[Dict], max_tokens: int = MAX_CONTEXT_TOKENS) -> str:
-    # Ordina i documenti per score decrescente (Cross-Encoder score)
+def rerank_and_trim(docs: List[Dict], max_tokens: int = MAX_CONTEXT_TOKENS):
     docs = sorted(docs, key=lambda d: d.get("score", 0), reverse=True)
     
     selected_chunks = []
+    used_sources = set()
+    
     current_tokens = 0
     separator = "\n\n---\n\n"
     separator_tokens = len(tokenizer.encode(separator))
@@ -70,11 +71,15 @@ def rerank_and_trim(docs: List[Dict], max_tokens: int = MAX_CONTEXT_TOKENS) -> s
 
         if current_tokens + costo_aggiuntivo <= max_tokens:
             selected_chunks.append(d["content"])
+            
+            if "source" in d:
+                used_sources.add(d["source"])
+                
             current_tokens += costo_aggiuntivo
         else:
-            break # Smettiamo di aggiungere se superiamo il limite
+            break 
 
-    return separator.join(selected_chunks)
+    return separator.join(selected_chunks), list(used_sources)
 
 # --- Classi Principali ---
 class RagIndex:
@@ -152,22 +157,21 @@ class RAGModel:
             vectors = embed_texts(all_chunks, input_type="document")
             self.index = RagIndex(vectors, all_docs)
 
-    def query(self, question: str) -> str:
+    def query(self, question: str):
         if self.index is None:
             raise RuntimeError("Devi inizializzare l'indice caricando i documenti prima di fare una query.")
 
-        # 1. Retrieval iniziale (Vettoriale)
+        # 1. Retrieval
         initial_docs = self.index.retrieve(question, RETRIEVE_K)
 
-        # 2. Reranking (Cross-Encoder)
+        # 2. Rerank
         reranked_docs = self.voyage_rerank(question, initial_docs, top_k=RETRIEVE_K)
 
-        # 3. Preparazione del contesto e trimming
-        # Usiamo il limite globale MAX_CONTEXT_TOKENS
-        context_text = rerank_and_trim(reranked_docs, max_tokens=MAX_CONTEXT_TOKENS)
+        # 3. Context & Source Tracking
+        context_text, used_sources = rerank_and_trim(reranked_docs, max_tokens=MAX_CONTEXT_TOKENS)
 
         if not context_text:
-            return "Non ho trovato informazioni sufficienti nei documenti per rispondere."
+            return {"answer": "Non ho trovato informazioni sufficienti.", "sources": []}
 
         # 4. Chat Completion
         response = client.chat.completions.create(
@@ -175,7 +179,7 @@ class RAGModel:
             messages=[
                 {
                     "role": "system", 
-                    "content": "Sei un assistente legale preciso. Rispondi SOLO usando il contesto fornito. Se non trovi la risposta, dillo chiaramente."
+                    "content": "Sei un assistente legale preciso. Rispondi SOLO usando il contesto fornito."
                 },
                 {
                     "role": "user", 
@@ -184,4 +188,8 @@ class RAGModel:
             ],
             temperature=0.0
         )
-        return response.choices[0].message.content.strip()'''
+        
+        return {
+            "content": response.choices[0].message.content.strip(),
+            "sources": used_sources
+        }

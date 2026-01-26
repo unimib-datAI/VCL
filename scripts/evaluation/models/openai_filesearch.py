@@ -25,7 +25,7 @@ class GPTModel():
                     file=f
                 )
 
-    def query(self, question: str) -> str:
+    def query(self, question: str):
         if not self.vector_store_id:
             raise ValueError("You must execute initialize() before.")
 
@@ -41,6 +41,18 @@ class GPTModel():
             include=["file_search_call.results"]
         )
 
-        if hasattr(response, "output_text") and response.output_text:
-            return response.output_text
-        return ""
+        content = ""
+        if hasattr(response, 'output_text'):
+            content = response.output_text
+        
+        used_file_ids = []
+        if hasattr(response, 'file_search_call') and response.file_search_call:
+            results = response.file_search_call.results
+            used_file_ids = [res.file_id for res in results]
+            used_file_ids = [client.files.retrieve(id).filename for id in used_file_ids]
+
+        print(used_file_ids)
+        return {
+            "content": content,
+            "sources": used_file_ids
+        }
