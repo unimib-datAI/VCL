@@ -1,4 +1,3 @@
-from logic.bot.preprocessor.spelling_checker import SpellingChecker
 from logic.bot.preprocessor.rephraser import Rephraser
 from logic.bot.preprocessor.decomposer import Decomposer
 from utils.config import Config
@@ -32,7 +31,6 @@ class Preprocessor:
                           storage access, and LLM handles.
         """
         self._logger = cfg.get_logger("Preprocessor")
-        self._spelling_checker_class = SpellingChecker(cfg)
         self._decomposer_class = Decomposer(cfg)
         self._rephraser_class = Rephraser(cfg)
         self._storage = cfg.get_storage()

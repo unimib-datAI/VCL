@@ -72,27 +72,29 @@ class Rephraser():
         status = "Error"
 
         try:
-            # Step 1: Fetch the specialized prompt for contextual rewriting
-            prompt = self._dql_language.prompts.get("RephraseQuery.json", None)
+            if not query.strip():
+                raise ValueError("Received an empty query string.")
+            
+            # Step 1: Fetch the specialized prompt for rewriting
+            if not chat:
+                prompt = self._dql_language.prompts.get("CorrectionQuery.json", None)
+                state = { "query": query }
+            else:
+                prompt = self._dql_language.prompts.get("RephraseQuery.json", None)
+                chat = "\n".join([str(c) for c in chat])
+                state = { "query": query, "chat": chat }
             
             if not prompt:
-                raise ValueError("RephraseQuery prompt template not found in language config.")
+                raise ValueError("Prompt template not found in language config.")
             
-            chat = "\n".join([str(c) for c in chat]) if chat else "Non ci sono messaggi precedenti."
+            # Step 2: Invoke the LLM
+            result = self._llm.invoke(
+                prompt,
+                state,
+                True
+            )
             
-            if query.strip():
-                # Step 2: Invoke the LLM to process the query within the chat context
-                # Setting result format to True to ensure structured/clean text output
-                result = self._llm.invoke(
-                    prompt,
-                    { "query": query, "chat": chat },
-                    True
-                )
-                
-                status = "Done"
-            else:
-                raise ValueError("Received an empty query string.")
-
+            status = "Done"
         except Exception as e:
             # Fallback Logic: In case of LLM failure, use the original query to avoid breaking the pipeline
             self._logger.error(f"Error during query rephrasing: {e}")

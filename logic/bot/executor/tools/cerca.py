@@ -21,6 +21,7 @@ def cerca(context: list, query: dict, llm, language) -> str:
     if what_name == "intero documento":
         return str(context)
     
+    state = {}
     if what_name == "frase":
         prompt = language.prompts.get("CercaFrase.json")
         what_name = what.get("element")
@@ -36,8 +37,7 @@ def cerca(context: list, query: dict, llm, language) -> str:
         state = {
             "how": format_conditions(query.get("how", {}), command),
             "context": format_context(context),
-            "what": what_name,
-            "description_what": language.get_description_from_what(what_name)
+            "what": what_name
         }
     else:
         prompt = language.prompts.get("Cerca.json")

@@ -165,7 +165,8 @@ class Decomposer():
             
             new_task_data = {
                 "id": new_id, 
-                "prompt": f"Integra in un'unica risposta i testi delle risposte {sink_nodes_str}",
+                "prompt": f"Integra {sink_nodes_str}",
+                "from": [[f"{self._cfg.get_request_id()}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],
                 "structured_prompt": {
                     "command": "integra",
                     "from": [[f"{self._cfg.get_request_id()}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],

@@ -403,6 +403,8 @@ class DQLLanguage:
                     resolved[param] = self._commands[0].get("key", "") if len(self._commands) > 0 else ""
             elif "sources" in param:
                 resolved[param] = str(len(self._sources)) if "|" in param else self.sources_string(self._sources)
+            elif "what" in param:
+                resolved[param] = [f"- \"{item.get("name")}\": {item.get("definition", "")}" for item in self._what]
         return resolved
 
     def _build_few_shot_prompt(self, examples: list) -> FewShotChatMessagePromptTemplate:

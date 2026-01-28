@@ -19,6 +19,7 @@
     "VINCOLO DI LUNGHEZZA:",
     "\"\"\"{limit}\"\"\"",
     "",
+    "CONDIZIONI AGGIUNTIVE",
     "{how}",
     "",
     "DOCUMENTO DA ANALIZZARE:",

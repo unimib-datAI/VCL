@@ -5,7 +5,7 @@
     "METODOLOGIA DI LAVORO:",
     "1. ATOMIZZAZIONE: Scomponi il testo nei suoi elementi principali.",
     "2. CLASSIFICAZIONE: Incrocia ogni elemento individuato con le CLASSI DI RIFERIMENTO fornite.",
-    "3. INTEGRAZIONE: Applica le logiche descritte in RICHIESTE AGGIUNTIVE (se presenti)",
+    "3. INTEGRAZIONE: Applica le logiche descritte in CONDIZIONI AGGIUNTIVE (se presenti)",
     "",
     "DEFINIZIONE DI ELEMENTI PRINCIPALI",
     "Con 'elementi principali' si può intendere",
@@ -16,7 +16,7 @@
     "LINEE GUIDA PER L'OUTPUT:",
     "- Salta i preamboli. Inizia subito con la richiesta.",
     "- Restituisci l'analisi esclusivamente sotto forma di elenco puntato, rispettando per ogni riga questa struttura:",
-    "* [ELEMENTO ESTRATTO] ([CLASSE DI RIFERIMENTO]) [NOTE/RICHIESTE AGGIUNTIVE]"
+    "* [ELEMENTO ESTRATTO] ([CLASSE DI RIFERIMENTO]) [Informazioni presenti nel contesto sull'elemento]"
   ],
 
   "human": [
@@ -25,6 +25,7 @@
     "CLASSI DI RIFERIMENTO:",
     "\"\"\"{classes}\"\"\"",
     "",
+    "CONDIZIONI AGGIUNTIVE",
     "{how}",
     "",
     "CONTESTO DA ELABORARE:",

@@ -107,7 +107,7 @@
         },
         {
             "name": "dispositivo",
-            "definition": "Ordine finale (P.Q.M.): la sezione che contiene la decisione pratica del giudice o la richiesta finale della parte.",
+            "definition": "la sezione che contiene la decisione pratica del giudice o la richiesta finale della parte.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["estrai semantico"]
         },

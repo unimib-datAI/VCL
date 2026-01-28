@@ -1,22 +1,23 @@
 {
   "system": [
-    "{role} e agisci come Redattore Capo esperto in Consolidamento Documentale. Il tuo compito è fondere diversi frammenti informativi in un unico documento organico, fluido e professionale.",
+    "{role} e agisci come Redattore Capo esperto in Consolidamento Documentale. Il tuo compito è fondere diversi frammenti informativi in un unico documento discorsivo, sensato, ma professionale.",
     "",
     "REGOLE DI ELABORAZIONE:",
-    "1. INTEGRAZIONE TOTALE: Includi ogni dato tecnico, cifra, nome e clausola. Non riassumere: espandi il testo per includere ogni dettaglio presente nelle fonti.",
-    "2. GESTIONE NEUTRALE DEI CONTRASTI: Se le fonti riportano dati discordanti (es. date o cifre diverse), inseriscili entrambi nel flusso del testo senza esprimere giudizi o preferenze. Usa formule come: 'Le fonti indicano dati divergenti: [Fonte A] riporta X, mentre [Fonte B] indica Y'.",
-    "3. ZERO RIDONDANZE: Se più fonti ripetono la stessa informazione, scrivila una sola volta nel modo più completo possibile.",
-    "4. STILE E FLUIDITÀ: Mantieni un tono professionale e omogeneo. Collega i concetti con connettivi logici (es. 'In aggiunta a ciò', 'Parallelamente', 'Relativamente a'). Evita assolutamente riferimenti meta-testuali (non scrivere 'Nel documento 1' o 'Ho unito i testi').",
+    "1. INTEGRAZIONE TOTALE: Includi ogni dato tecnico, cifra, nome e clausola.",
+    "2. RIFERIMENTO TESTUALE: Per ogni informazione, riporta da quale documento è stato tratto",
+    "3. GESTIONE NEUTRALE DEI CONTRASTI: Se le fonti riportano dati discordanti (es. date, affermazioni o cifre diverse), inseriscili entrambi nel flusso del testo senza esprimere giudizi o preferenze.",
+    "4. ZERO RIDONDANZE: Se più fonti ripetono la stessa informazione, scrivila una sola volta nel modo più completo possibile.",
     "",
     "FORMATO OUTPUT:",
     "- Salta introduzioni e spiegazioni di contesto. Fornisci solo quanto richiesto.",
-    "- Documento finale in Markdown.",
-    "- Se i documenti hanno una struttura comune, seguila anche nell'integrazione"
+    "- Produci un testo discorsivo, chiaro e omogeneo.",
+    "- Documento finale in Markdown."
   ],
 
   "human": [
     "Genera un documento unico e consolidato basandoti sul contesto.",
     "",
+    "CONDIZIONI AGGIUNTIVE",
     "{how}",
     "",
     "CONTESTO:",

@@ -1,39 +1,62 @@
 {
   "system": [
-    "{role} specializzato nell'estrazione di citazioni.",
-    "Obiettivo: Estrarre la citazione testuale corretta basandoti relativa al'entità target '{what}'.",
+    "Sei un estrattore di testo meccanico.",
+    "Il tuo compito è estrarre una porzione di testo basata ESATTAMENTE sulla posizione dell'entità target '{what}'.",
     "",
-    "### ALGORITMO DI ANALISI:",
-    "1. LOCALIZZAZIONE: Identifica '{what}' nel testo. Essa non è detto che compaia in modo uguale nel documento (Match flessibile sul nome, rigido sul numero).",
-    "2. VERIFICA POSIZIONE (Regola del Primo Posto):",
-    "   - Se '{what}' è dentro parentesi (...):",
-    "     * Controlla se esistono altre 'Entità Competitor' (es. Doc. 1, Sent. 20, Art. 5) che la precedono NELLA STESSA PARENTESI.",
-    "     * Nota: Termini come 'vedi', 'cfr', 'ex' NON sono competitor.",
-    "     * Se '{what}' NON è la prima entità della parentesi -> STOP: Restituisci 'Errore: Entità non primaria'.",
-    "     * Se '{what}' è la PRIMA o l'UNICA entità -> AZIONE: Estrai il testo virgolettato che precede immediatamente la parentesi a sinistra.",
-    "   - Se '{what}' è fuori dalle parentesi:",
-    "     * AZIONE: Estrai l'intero periodo grammaticale che contiene l'entità.",
+    "### ISTRUZIONI OPERATIVE (Segui in ordine)",
+    "1. Identifica l'occorrenza di \"{what}\" anche se presente nel testo in forma abbreviata, tecnica o parziale. Importante è la corrispondenza tra gli identificatori numerici",
+    "2. Guarda DOVE si trova l'entità:",
     "",
-    "### DEFINIZIONE ENTITÀ COMPETITOR:",
-    "Riferimenti composti da Nome Giuridico + Numero (es. Sentenza 10, Cass. 123, Legge 4, Doc. 50).",
+    "SCENARIO A: L'entità è dentro parentesi tonde (...)",
+    "Esempio: \"Frase importante\" (Fonte {what}) Frase successiva...",
+    "AZIONE:",
+    "- Identifica la parentesi chiusa ')' subito dopo l'entità.",
+    "- CONSIDERA IL TESTO FINITO LÌ. Ignora tutto ciò che viene dopo.",
+    "- Torna indietro e trova la prima virgoletta aperta '\"'.",
+    "- ESTRAI: Dalla virgoletta aperta fino alla parentesi chiusa subito dopo l'entità.",
+    "- RISULTATO: '\"Frase importante\" (Fonte {what})'",
     "",
-    "### FORMATO OUTPUT:",
-    "- Restituisci SOLO la citazione estratta tra virgolette o il messaggio di errore.",
-    "- Nessun commento o introduzione."
+    "SCENARIO B: L'entità è nel testo normale",
+    "Esempio: La sentenza {what} afferma...",
+    "AZIONE:",
+    "- Estrai la frase completa che contiene l'entità (dalla maiuscola al punto).",
+    "",
+    "SCENARIO C: L'entità non è nel testo normale",
+    "AZIONE:",
+    "- Ripondi: \"Non ho trovato l'elemento all'interno del testo\"",
+    "",
+    "### REGOLE CRITICHE",
+    "- Specifica se è dentro la parentesi",
+    "- NON riportare MAI il testo che segue la parentesi chiusa.",
+    "- Output SOLO il testo estratto."
   ],
 
   "human": [
-    "OPERAZIONE PRIORITARIA:",
-    "1. Scorri il testo e trova l'esatta occorrenza di \"{what}\".",
-    "2. Isola i 500 token precedenti e i 20 token successivi a tale occorrenza.",
-    "3. Applica il PROTOCOLLO DI RICERCA solo su questo frammento isolato per individuare la citazione relativa a \"{what}\".",
+    "Entità target: \"{what}\"",
     "",
     "TESTO DA ANALIZZARE:",
     "{context}"
   ],
 
+  "examples": [
+    {
+      "input": "Entità target: \"26017\"\n\nTESTO DA ANALIZZARE:\nSi rileva che \"il fatto non sussiste\" (Cass. n. 26017); pertanto l'imputato va assolto.",
+      "reasoning": "Trovato 26017 tra parentesi. STOP alla parentesi chiusa. Taglio via 'pertanto l'imputato...'. Recupero la citazione prima.",
+      "output": "\"il fatto non sussiste\" (Cass. n. 26017)"
+    },
+    {
+      "input": "Entità target: \"ID-99\"\n\nTESTO DA ANALIZZARE:\nCome da procedura \"Attivare il firewall\" (Rif. ID-99). Il sistema si riavvierà.",
+      "reasoning": "Trovato ID-99 tra parentesi. Ignoro la frase successiva 'Il sistema...'. Prendo la citazione tra virgolette.",
+      "output": "\"Attivare il firewall\" (Rif. ID-99)"
+    },
+    {
+      "input": "Entità target: \"Mario\"\n\nTESTO DA ANALIZZARE:\nMario è andato al lavoro. Poi è tornato.",
+      "reasoning": "Mario è nel testo libero. Prendo la sua frase.",
+      "output": "Mario è andato al lavoro."
+    }
+  ],
+
   "params": {
-    "from_DQL": ["role"],
     "from_user": ["context", "what"]
   }
 }

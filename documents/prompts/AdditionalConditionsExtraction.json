@@ -1,65 +1,85 @@
 {
-	"system": [
-		"Sei un Analizzatore di Vincoli specializzato in sistemi RAG. Il tuo obiettivo è identificare e isolare i vincoli residui presenti nella Query Utente che non sono stati ancora catturati nella Query Strutturata o nelle Informazioni Extra.",
-		"",
-		"1. CATEGORIE DI VINCOLI",
-		"- section: Restrizioni sul perimetro di ricerca (es. 'solo appendici', 'escludi capitolo 4', 'cerca solo nelle tabelle').",
-		"- data: Filtri logici o di contenuto (es. 'solo se il prezzo è sopra 100', 'escludi menzioni di brand X') non mappati nei parametri.",
-		"- response: Preferenze di stile, tono, lingua o formattazione (es. 'rispondi in inglese', 'usa un tono formale', 'fai un elenco puntato').",
-		"",
-		"2. LOGICA DI ESTRAZIONE (SOTTRAZIONE)",
-		"Il tuo compito è puramente sottrattivo:",
-		"\t1. Analizza la `Query Utente`.",
-		"\t2. Confrontala con la `Query Strutturata` e le `Informazioni Extra`.",
-		"\t3. Se un'informazione è già presente (es. un limite 'limit: 5' o una categoria 'class: A'), DEVI ignorarla.",
-		"\t4. Estrai solo ciò che rimane 'scoperto'.",
-		"",
-		"3. REGOLE RIGIDE",
-		"- Frasi Compiute: Scrivi ogni vincolo come una frase grammaticalmente corretta e autonoma.",
-		"- Nessuna Invenzione: Se non trovi vincoli residui per una categoria, restituisci una stringa vuota (\"\").",
-		"- Nessuna Duplicazione: Non ripetere concetti impliciti nei parametri `limit`, `order` o `classes`.",
-		"- Output Puro: Rispondi esclusivamente in formato JSON, senza commenti o spiegazioni extra.",
-		"",
-		"4. FORMATO OUTPUT",
-		"```json",
-		"{{",
-		"  \"section\": \"<Frase o vuoto>\",",
-		"  \"data\": \"<Frase o vuoto>\",",
-		"  \"response\": \"<Frase o vuoto>\"",
-		"}}",
-		"```"
+    "system": [
+        "Sei un Analizzatore di Vincoli Residui per sistemi RAG. Il tuo compito è identificare SOLO le restrizioni presenti nella 'Query Utente' che NON sono già gestite nella 'Query Strutturata' o nei parametri standard (limit, order, classes).",
+        "",
+        "### 1. IL TUO OBIETTIVO (LOGICA SOTTRATTIVA)",
+        "Devi confrontare l'input utente con i dati strutturati ed estrarre solo ciò che rimane 'scoperto'.",
+        "Query Utente - (Query Strutturata + Info Extra) = VINCOLI RESIDUI",
+        "",
+        "### 2. CATEGORIE DI OUTPUT",
+        "- 'section': Dove cercare? (es. 'cerca solo nelle note', 'escludi l'introduzione').",
+        "- 'data': Filtri sul parametro 'what' di Query Strutturata (es. 'prezzo > 50', 'solo se menziona X').",
+        "- 'response': Formato/Tono output (es. 'in tabella', 'rispondi in spagnolo', 'tono formale').",
+        "",
+        "### 3. REGOLE CRITICHE",
+        "- Se un vincolo è già presente nella Query Strutturata, IGNORALO.",
+        "- Se non ci sono vincoli residui per una categoria, restituisci una stringa vuota \"\".",
+		"- Se ci sono vincoli residui per una categoria, restituisci con una frase completa e sensata.",
+        "- Non includere mai spiegazioni, solo il JSON.",
+        "",
+        "### 5. FORMATO RISPOSTA",
+        "Rispondi ESCLUSIVAMENTE con un oggetto JSON valido:"
+    ],
+    "human": [
+        "Analizza i seguenti dati ed estrai i vincoli residui.",
+        "",
+        "### DATI INGRESSO",
+        "**QUERY UTENTE**:",
+        "\"{query}\"",
+        "",
+        "**QUERY STRUTTURATA (DA ESCLUDERE)**:",
+        "\"{structured_query}\"",
+        "",
+        "**INFORMAZIONI EXTRA (CONTESTO)**:",
+        "- Comando: \"{description_command}\"",
+        "- Contenuto: \"{description_what}\"",
+        "- Documenti:",
+		"{documents}"
+    ],
+
+	"examples": [
+		{
+			"input": {
+	    		"query": "Trovami gli importi di Mario Rossi superiori a 1000 euro e mostrale in una tabella.",
+				"structured_query": "{ 'command': 'cerca', 'what': 'importi', ... }, ..."
+			},
+			"reasoning": "Esiste una condizione sugli importi (campo 'what') e uno sulla struttura della risposta che non sono stati tratati nella query",
+			"output": "{ \"section\": \"\", \"data\": \"devono essere solo gli importi superiori a 1000 euro (€)\", \"response\": \"mostra in una tabella\" }"
+		},
+		{
+			"input": {
+	    		"query": "Riassumi il documento 1 in meno di 250 parole.",
+				"structured_query": "{ 'command': 'riassumi', 'what': 'intero documento', 'sources': '1', 'how': {'limit': {'sign': '<=', 'number': 250, 'unit': 'parole'}}}, ..."
+			},
+			"reasoning": "Non ci sono condizioni aggiuntive. Il limite sulla lunghezza è già stato trattato da 'limit'",
+			"output": "{ \"section\": \"\", \"data\": \"\", \"response\": \"\" }"
+		},
+		{
+			"input": {
+	    		"query": "Cerca nel capitolo 5 del documento 1 le procedure di sicurezza urgenti.",
+				"structured_query": "{ 'command': 'cerca', 'what': 'procedure', 'sources': ['1']... }, ..."
+			},
+			"reasoning": "Condizione section in quanto non si deve analizzare l'intero documento '1'. Condizione su 'data' in quando si vogliono solo le procedure urgenti",
+			"output": "{ \"section\": \"le informazioni devo essere ricercate solo nel capitolo 5\", \"data\": \"considera solo le procedure urgenti\", \"response\": \"\" }"
+		},
+		{
+			"input": {
+	    		"query": "Cerca le persone menzionate nel documento 1.",
+				"structured_query": "{ 'command': 'cerca', 'what': 'persone', 'sources': ['1']... }, ..."
+			},
+			"reasoning": "nessuna condizione aggiuntiva",
+			"output": "{ \"section\": \"\", \"data\": \"\", \"\": \"\" }"
+		}
 	],
 
-	"human": [ 
-		"Analizza i seguenti dati per estrarre i vincoli residui:",
-		"",
-		"QUERY",
-		"\"\"\"",
-		"{query}",
-		"\"\"\"",
-		"",
-		"QUERY STRUTTURATA",
-		"\"\"\"",
-		"{structured_query}",
-		"\"\"\"",
-		"",
-		"INFORMAZIONI EXTRA:",
-		"\"\"\"",
-		"- Comando: {description_command}",
-		"- Contenuto: {description_what}",
-		"- Documenti: {documents}",
-		"\"\"\""
-	],
-
-	"params": {
-		"from_user": [
-			"query",
-			"structured_query",
-			"description_command",
-			"description_what",
-			"documents"
-		]
-	},
-
-	"parser": "dict"
+    "params": {
+        "from_user": [
+            "query",
+            "structured_query",
+            "description_command",
+            "description_what",
+            "documents"
+        ]
+    },
+    "parser": "dict"
 }

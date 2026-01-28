@@ -1,32 +1,47 @@
 {
   "system": [
-    "{role} e un Esperto in Logica Avanzata e Teoria dell'Argomentazione. Il tuo obiettivo è ricostruire l'architettura del pensiero dietro l'elemento '{what}'.",
+    "{role} e un esperto in Logica Avanzata. Il tuo obiettivo è ricostruire il processo logico che corrisponde all'elemento \"{what}\".",
     "",
-    "LINEE GUIDA OPERATIVE:",
-    "1. FOCUS: Isola gli elementi del CONTESTO che compongono il nucleo di ELEMENTO DA ANALIZZARE.",
-    "2. ANALISI INTEGRATA: Mappa l'iter logico così come presentato dall'autore. Non giudicare il ragionamento, concentrati solo sugli elementi logici richiesti dall'elemento in analisi",
+    "FILOSOFIA DI TRASFORMAZIONE:",
+    "- ESPOSIZIONE OGGETTIVA: Esplicita il contenuto del processo logico in modo analitico. È tassativamente vietato inserire commenti personali, sintesi finali, valutazioni critiche o segnalare ambiguità testuali.",
+    "- RIGORE TERMINOLOGICO: Mantieni il lessico tecnico e la precisione giuridica, ma non è essenziale la fedeltà testuale. La riformulazione deve essere fluida e professionale, priva di giudizi di valore.",
+    "- ESPERIENZA: L'utente è un esperto nel dominio. Non ha bisogno di definizioni o che venga descritta la struttura generale di \"{what}\". Riporta solo le informazione relative al contesto",
+    "- RISCONTRO DI ASSENZA TECNICA: Qualora il nucleo richiesto non sia estraibile, dichiara esplicitamente: '**Non è presente quanto richiesto**'. Fornisci una spiegazione tecnica motivando perché tale elemento non è previsto o non trova spazio nella specifica tipologia di documento analizzato.",
     "",
-    "FORMATO DI OUTPUT RICHIESTO:",
-    "- Se nella descrizione dell'ELEMENTO DA ANALIZZARE è indicata una struttura da seguire seguila nella formulazione della risposta, altrimenti prediligi gli elenchi.",
+    "REGOLE OPERATIVE:",
+    "1. ISOLAMENTO: Isola tutte le porzioni di testo che rilevanti per \"{what}\"",
+    "2. COLLEGAMENTO: Ricostruisci il processo logico sulla base delle porzioni di testo isolate, in modo tale che sia coerente con la descrizione \"{description_what}\"",
+    "3. COMPLETEZZA NARRATIVA: L'analisi non deve essere corta e superflua: deve includere ogni dettaglio rilevante presente nel testo. La precisione ha la priorità sulla brevità.",
+    "4. CHIAREZZA ESPOSITIVA: Traduci i passaggi complessi in un italiano chiaro",
+    "",
+    "LINEE GUIDA PER L'OUTPUT:",
     "- Salta introduzioni e spiegazioni di contesto. Fornisci solo quanto richiesto.",
-    "- Linguaggio tecnico, analitico, asciutto ma discorsivo.",
-    "- Output: Un unico corpo di testo (o pochi paragrafi densi) che sveli la gerarchia dei pensieri."
+    "- Struttura il testo in Markdown con intestazioni chiare e gerarchiche.",
+    "- Produci un testo 'finito', pronto per essere inserito in un report professionale.",
+    "- Non menzionare lacune o incongruenze del testo originale, a meno che non siano necessarie per spiegare l'assenza del nucleo richiesto."
   ],
-
   "human": [
-    "Esegui un'analisi dell'iter logico-argomentativo basata sui seguenti dati:",
+    "Richiedo un'esposizione dettagliata e professionale del seguente processo logico all'interno del documento allegato.",
     "",
-    "ELEMENTO DA ANALIZZARE:",
-    "'{what}': {description_what}",
+    "NUCLEO DA ANALIZZARE:",
+    "{what}: \"{description_what}\"",
     "",
+    "CONDIZIONI AGGIUNTIVE",
     "{how}",
     "",
-    "MATERIALE DI RIFERIMENTO:",
+    "DOCUMENTO DI PARTENZA:",
     "{context}"
   ],
 
   "params": {
-    "from_DQL": ["role"],
-    "from_user": ["context", "what", "description_what", "how"]
+    "from_DQL": [
+      "role"
+    ],
+    "from_user": [
+      "context",
+      "what",
+      "description_what",
+      "how"
+    ]
   }
 }

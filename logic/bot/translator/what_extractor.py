@@ -92,7 +92,7 @@ class WhatExtractor:
                     available_names = [str(w).lower() for w in available_what.keys()]
                     if w not in available_names and w != "altro" and w not in ["intero documento", "concetto", "frase"]:
                         self._logger.warning(f"What Extractor Validation: \"{w}\" not in available what.")
-                        what[i] = {"name": "intero documento"}
+                        what[i] = {"name": "concetto", "element": w}
                     else:
                         if w == "concetto":
                             what[i] = self._disambiguate_concept(query)
@@ -212,4 +212,4 @@ class WhatExtractor:
         Returns:
             str: A bulleted string listing all available targets and their meanings.
         """
-        return "\n".join(f"- \"{item}\": {what_list[item]}" for item in what_list)
+        return "\n".join([f"- \"{item}\": {what_list[item]}" for item in what_list])

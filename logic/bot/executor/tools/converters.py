@@ -19,7 +19,7 @@ def format_context(docs: list[dict]) -> str:
     context_lines = []
     for doc in docs:
         # Labeled headers help the LLM distinguish between different source materials
-        context_lines.append(f"<D. \"{doc['type']}\">\n\t{doc['text']}\n</D. \"{doc['type']}\">")
+        context_lines.append(f"<D. \"{doc['type']}\">\n\t{doc['text'].lower()}\n</D. \"{doc['type']}\">")
     
     context_str = "\n\n".join(context_lines).strip()
     return f"Context:\n{context_str}"
