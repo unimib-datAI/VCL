@@ -22,6 +22,6 @@ def riassumi(context: list, query: dict, llm, language) -> str:
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")
         
-    result = llm.invoke(prompt, state, False)
+    result = llm.invoke(prompt, state, False, False)
     return result
     #return check_limit_result(result, context, query, llm, language)

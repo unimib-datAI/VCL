@@ -14,6 +14,8 @@
     "- Per CERCA ed ESTRAI: [AZIONE] <oggetto> DA <fonte> [criteri]",
     "- Per RIASSUMI, CONFRONTA, INTEGRA: [AZIONE] #ID [criteri]",
     "- Se una query chiede più oggetti (es. 'A e B'), crea due task distinti.",
+    "- Se in una query viene posto di evidenziare un elemento oltre a <oggetto> è un Criterio e anche tutte le regole di formattazione di questi elementi sono Criteri",
+    "- Se una query richiede anche le motivazioni di un'azione, NON creare un altro task. Riportare le motivazioni è una condizione implicita delle azioni",
     "- CONCISIONE: Non usare cortesia. Non ripetere il contenuto del task precedente, usa solo l'#ID.",
     "- FORMATO OUTPUT: Restituisci esclusivamente un array JSON di oggetti.",
     "",
@@ -41,22 +43,65 @@
       ]
     },
     {
-      "input": "Confronta l'articolo 12 e l'articolo 15 del contratto.",
+      "input": "Cerca Y nel testo X e spiega perchè viene citato.",
+      "reasoning": "Il fatto di indicare il perchè viene citato è intrinseco dell'operazione CERCA. Si tratta di un task atomico",
+      "output": [
+        {
+          "id": "1",
+          "prompt": "CERCA Y nel doc X",
+          "dependences": []
+        }
+      ]
+    },
+    {
+      "input": "Cerca e riproduci il testo X relativo a Z presente in Y.",
+      "reasoning": "Il fatto di riprodurre è irrilevante. Si tratta quindi di un semplice task atomico",
+      "output": [
+        {
+          "id": "1",
+          "prompt": "Cerca il testo X relativo a Z presente in Y.",
+          "dependences": []
+        }
+      ]
+    },
+    {
+      "input": "Confronta X e Y del documento Z.",
       "reasoning": "Per confrontare, occorre prima estrarre i due articoli separatamente.",
       "output": [
         {
           "id": "1",
-          "prompt": "ESTRAI articolo 12 DA contratto",
+          "prompt": "ESTRAI X DA documento Z",
           "dependences": []
         },
         {
           "id": "2",
-          "prompt": "ESTRAI articolo 15 DA contratto",
+          "prompt": "ESTRAI Y DA documento Z",
           "dependences": []
         },
         {
           "id": "3",
           "prompt": "CONFRONTA #1 e #2",
+          "dependences": ["1", "2"]
+        }
+      ]
+    },
+    {
+      "input": "Confronta con un testo di 50 parole l'elemento X dai documenti Y e Z.",
+      "reasoning": "Per confrontare, occorre prima estrarre l'elemento dai due documenti.",
+      "output": [
+        {
+          "id": "1",
+          "prompt": "ESTRAI X DA Y",
+          "dependences": []
+        },
+        {
+          "id": "2",
+          "prompt": "ESTRAI X DA Z",
+          "dependences": []
+        },
+        {
+          "id": "3",
+          "prompt": "CONFRONTA #1 e #2 in meno di 50 parole",
           "dependences": ["1", "2"]
         }
       ]
@@ -116,6 +161,22 @@
           "id": "3",
           "prompt": "CONFRONTA #1 e #2",
           "dependences": ["1", "2"]
+        }
+      ]
+    },
+    {
+      "input": "nella memoria di un procedimento civile allegata, la seconda parte riguarda le motivazioni giuridiche. focalizzati su di essa ed elenca per punti numerati i passaggi logici delle motivazioni, evidenziando anche le fonti esterne al procedimento da cui sono tratte, ad esempio una sentenza della cassazione (scrivere pc), una sentenza di merito di un tribunale (scrivere pm) o altro (scrivere al). riporta anche tra virgolette il testo relativo con le prime tre parole (ad esempio: \"il comportamento unilaterale\") seguite da puntini (ad esempio: ….) e dalle ultime tre parole (ad esempio: \"uso aziendale consolidato\")",
+      "reasoning": "'elenca per punti numerati i passaggi logici delle motivazioni' vuol dire che prima devo estrarre le motivazioni dal documento, la memoria, dopodichè da questo risultato estraggo i passaggi logici. Viene richiesto di evidenziare le fonti: evidenziare un elemento relativo all'oggetto del task, come indicato nelle istruzioni, è un Criterio, non un nuovo task. Tutte il processo di formattazione delle fonti, scrivere PC, PM e AL e riportare solo le prime e le ultime parole, sono anch'essi Criteri in quanto fanno riferimento alle fonti",
+      "output": [
+        {
+          "id": "1",
+          "prompt": "ESTRAI motivazioni giuridiche dalla memoria",
+          "dependences": []
+        },
+        {
+          "id": "2",
+          "prompt": "ESTRAI passaggi logici da #1, usando elenchi puntati ed evidenziando le fonti esterne, scrivendo PC nel caso di una sentenza della cassazione, PM nel caso di una sentenza di merito di un tribunale, o AL altrimenti. Inoltre per ogni fonte riporta solo le prime 3 parole, i puntini e le ultime 3 parole",
+          "dependences": ["1"]
         }
       ]
     }

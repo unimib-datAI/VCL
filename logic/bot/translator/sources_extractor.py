@@ -32,6 +32,7 @@ class SourcesExtractor:
                           logging, and session-specific chat history.
         """
         self._llm = cfg.get_LLM()
+        self._user_id = cfg.get_user_id()
         self._storage = cfg.get_storage()
         self._logger = cfg.get_logger("Sources Extractor")
         self._project_root = cfg.project_root
@@ -134,9 +135,20 @@ class SourcesExtractor:
             documents = [[src, src] for src in self._src_info.keys()]
             
         # Audit log for the extraction outcome
+        
+        
         self._logger.info(f"Final Source Selection: \"{query}\" -> {documents} ({status})")
         
         return documents
+    
+    def filtra_duplicati(self, couples):
+        temp_dict = {}
+        
+        for first, second in couples:
+            if second not in temp_dict or first.startswith(self._user_id):
+                temp_dict[second] = (first, second)
+                
+        return list(temp_dict.values())
     
     def _explicit_documents_extraction(self, query: str) -> list:
         """

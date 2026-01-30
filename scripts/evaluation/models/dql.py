@@ -13,9 +13,10 @@ class DQLModel():
         return self.username
 
     def initialize(self, _):
-        self.config.get_storage().register_user(self.username, f"{self.username}@gmail.com", f"Admin123!")
+        user = "LDQL-U" if "LDQL-U" in self.username else self.username
+        self.config.get_storage().register_user(user, f"{user}@gmail.com", f"Admin123!")
         
-        self.config.handle_login(self.username.lower(), "Altro")
+        self.config.handle_login(user.lower(), "Altro")
         self.config.set_sources_id("vitali")
 
     def query(self, question: str) -> str:

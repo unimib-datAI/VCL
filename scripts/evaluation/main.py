@@ -61,8 +61,9 @@ def evaluation():
     #registry.register(DQLModel("DQL-Default"))
     #registry.register(DQLModel("LDQL-Default"))
     #registry.register(DQLModel("LDQL-U"))
-    registry.register(GPTModel(GENERATION_OPENAI_MODEL))
-    registry.register(RAGModel(GENERATION_OPENAI_MODEL))
+    registry.register(DQLModel("LDQL-U (Patch 2)"))
+    #registry.register(GPTModel(GENERATION_OPENAI_MODEL))
+    #registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     #registry.register(CopilotModel())
     #registry.register(NotebookLMModel())
 
@@ -156,7 +157,7 @@ def evaluation():
                 
                 print(f"[INFO] Generation for {id_question}: End")
                 
-                print(f"[INFO] Evaluation {id_question}: Start")
+                '''print(f"[INFO] Evaluation {id_question}: Start")
                 
                 ground_truth_dict = question_data.get("ground_truth", {})
                 for annotator in ground_truth_dict:
@@ -210,7 +211,7 @@ def evaluation():
                         
                         time.sleep(10)
                         
-                    print(f"[INFO] Annotator {annotator}: End")
+                    print(f"[INFO] Annotator {annotator}: End")'''
                 
                 for model in registry.all():
                     for i in final_results[model.name]["answers"]:

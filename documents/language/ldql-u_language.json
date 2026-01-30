@@ -31,26 +31,6 @@
             "description": "Fusione dati: unisci più testi in un unico output coerente, eliminando i doppioni e risolvendo eventuali contrasti tra le informazioni."
         },
         {
-            "key": "g",
-            "command": "verifica",
-            "description": "Controllo qualità: valuta la logica e la coerenza. Segnala esplicitamente errori nei dati, contraddizioni o passaggi logici deboli."
-        },
-        {
-            "key": "h",
-            "command": "analizza",
-            "description": "Reverse engineering del pensiero: spiega passo dopo passo come l'autore arriva da una premessa a una conclusione."
-        },
-        {
-            "key": "i",
-            "command": "riorganizza",
-            "description": "Ristrutturazione: ordina le informazioni (per tempo, importanza o categoria) senza cambiare il significato originale."
-        },
-        {
-            "key": "j",
-            "command": "classifica",
-            "description": "Tagging: assegna etichette specifiche ai vari blocchi di testo in base alla loro funzione o contenuto."
-        },
-        {
             "key": "k",
             "command": "altro",
             "description": "Task libero: esegui qualsiasi altra operazione richiesta non specificata sopra.",
@@ -66,7 +46,7 @@
         },
         {
             "name": "comparsa di costituzione e risposta",
-            "synonyms": ["m2", "memoria difensiva", "risposta"],
+            "synonyms": ["m2", "memoria difensiva", "risposta", "memoria"],
             "description": "Documento di difesa: espone le ragioni per cui la domanda della controparte deve essere respinta."
         },
         {
@@ -100,13 +80,13 @@
             "relative_command": ["estrai logico"]
         },
         {
-            "name": "articoli",
-            "definition": "Riferimenti normativi: citazioni di leggi, codici o regolamenti a supporto del testo.",
+            "name": "articoli del codice civile (c.c.)",
+            "definition": "L'utente vuole tutti i riferimenti degli articoli del codice civile (c.c)",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["cerca"]
         },
         {
-            "name": "dispositivo",
+            "name": "decisioni",
             "definition": "la sezione che contiene la decisione pratica del giudice o la richiesta finale della parte.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
             "relative_command": ["estrai semantico"]
@@ -115,7 +95,7 @@
             "name": "argomentazioni giuridiche",
             "definition": "Motivazioni: la spiegazione dettagliata dei motivi di fatto e di diritto.",
             "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-            "relative_command": ["estrai logico"]
+            "relative_command": ["estrai semantico"]
         }
     ]
 }

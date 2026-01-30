@@ -103,7 +103,7 @@ class Orchestrator:
             # Critical error handling: provide a safe fallback for the UI
             prompt_process = prompt
             result = []
-            last_result = self.error_msg
+            last_result = f"{self.error_msg}: ({e})"
             self._logger.error(f"Processing failed with error: {e}")
 
         # Finalizing the response object with metadata and technical details

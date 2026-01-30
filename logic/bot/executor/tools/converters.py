@@ -85,7 +85,7 @@ def format_conditions(how: dict, command: str) -> str:
         return "Non sono presenti condizioni aggiuntive"
 
     # Block introduction
-    conditions = ["NOTE AGGIUNTIVE:\nL'utente ha posto esplicitamente che la risposta debba soddisfare le seguenti condizioni:"]
+    conditions = ["L'utente ha posto esplicitamente che la risposta debba soddisfare le seguenti condizioni:"]
     
     for key, value in how.get("others", {}).items():
         if value:

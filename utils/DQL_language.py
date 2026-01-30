@@ -248,6 +248,15 @@ class DQLLanguage:
             
     def get_description_from_what(self, key: str) -> str:
         """Resolves entity definition based on target name."""
+        if key == "intero documento":
+            return "l'utente vuole operare considerando il documento nella sua interezza"
+        
+        if key == "frase":
+            return "l'utente vuole estrarre una frase simile o relativa a un elemento nella richiesta, tendenzialmente tra \"\""
+        
+        if key == "concetto":
+            return "l'utente vuole individuare l'occorrenza di una stringa e il significato nel testo."
+        
         return self._what_description_map.get(key, "")
 
     def get_available_what(self, sources: list[str]) -> dict:

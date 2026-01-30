@@ -129,7 +129,7 @@ class LLM:
 
         # Initialize the dynamic LangChain chat model wrapper
         self._llm_extractor = init_chat_model(model_name, model_provider=provider, temperature=0, seed=42)
-        self._llm_generator = init_chat_model(model_name, model_provider=provider, temperature=0.3, seed=42)
+        self._llm_generator = init_chat_model(model_name, model_provider=provider, temperature=0.4, seed=42)
 
     def _set_env_key(self, provider: str, api_key: str):
         """

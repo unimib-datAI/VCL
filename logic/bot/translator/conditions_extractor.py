@@ -83,7 +83,7 @@ class ConditionsExtractor:
             # Check if the router explicitly identified a specific condition type
             force_by_command = self._force_conditions.get(key, "") == structured_query.get("command", "").lower()
             
-            if force_by_command or (isinstance(value, str) and value.lower() == "yes"):
+            if ((force_by_command or (isinstance(value, str) and value.lower() == "yes")) and key == "LimitExtraction") or force_by_command:
                 # Invoke the specialized extraction method from the map
                 specific_conditions = self.extraction(query, key)
                 
@@ -115,7 +115,10 @@ class ConditionsExtractor:
         Returns:
             bool: True if empty or all values are empty, False otherwise.
         """
-        return not conditions or all(v == "" for v in conditions.values())
+        if isinstance(conditions, dict):
+            return not conditions or all(v == "" for v in conditions.values())
+        else:
+            return not conditions
 
     def extraction(self, query: str, name = "ConditionsRouter") -> dict:
         status = "Error"

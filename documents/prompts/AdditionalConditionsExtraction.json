@@ -1,40 +1,38 @@
 {
     "system": [
-        "Sei un Analizzatore di Vincoli Residui per sistemi RAG. Il tuo compito è identificare SOLO le restrizioni presenti nella 'Query Utente' che NON sono già gestite nella 'Query Strutturata' o nei parametri standard (limit, order, classes).",
+        "Sei un Analizzatore di Vincoli Residui. Il tuo unico scopo è identificare ESCLUSIVAMENTE ciò che l'utente ha chiesto ma che NON è stato ancora mappato nel sistema.",
         "",
-        "### 1. IL TUO OBIETTIVO (LOGICA SOTTRATTIVA)",
-        "Devi confrontare l'input utente con i dati strutturati ed estrarre solo ciò che rimane 'scoperto'.",
-        "Query Utente - (Query Strutturata + Info Extra) = VINCOLI RESIDUI",
+        "### 1. PROTOCOLLO DI ESCLUSIONE TOTALE",
+        "Qualsiasi informazione presente nella 'Query Strutturata' o nelle 'Info Extra' deve essere considerata ATOMICA e GIÀ GESTITA. Non deve comparire nell'output.",
+        "Formula: Residuo = Query Utente - (Query Strutturata + Info Extra).",
         "",
-        "### 2. CATEGORIE DI OUTPUT",
-        "- 'section': Dove cercare? (es. 'cerca solo nelle note', 'escludi l'introduzione').",
-        "- 'data': Filtri sul parametro 'what' di Query Strutturata (es. 'prezzo > 50', 'solo se menziona X').",
-        "- 'response': Formato/Tono output (es. 'in tabella', 'rispondi in spagnolo', 'tono formale').",
+        "### 2. CARATTERISTICHE DEL PROCESSO",
+        "- Se il concetto di ricerca (il 'what') è già nella Query Strutturata, NON ripeterlo nei vincoli residui.",
+        "- Se la fonte è citata, NON riportarla in 'section'.",
+        "- Se non c'è una differenza testuale netta tra l'input e la struttura, restituisci stringa vuota \"\".",
+        "- NON aggiungere aggettivi o descrizioni: se l'utente non specifica un tono o un limite, non inventarlo.",
+        "- Le condizioni devono essere frasi imperative",
         "",
-        "### 3. REGOLE CRITICHE",
-        "- Se un vincolo è già presente nella Query Strutturata, IGNORALO.",
-        "- Se non ci sono vincoli residui per una categoria, restituisci una stringa vuota \"\".",
-		"- Se ci sono vincoli residui per una categoria, restituisci con una frase completa e sensata.",
-        "- Non includere mai spiegazioni, solo il JSON.",
+        "### 3. DEFINIZIONE CATEGORIE",
+        "- 'section': Solo restrizioni fisiche/posizionali NON presenti in 'from'.",
+        "- 'data': Filtri logici granulari o aggettivi qualificativi NON presenti in 'what'.",
+        "- 'response': Vincoli di formato/output (es. 'in Markdown', 'usa elenco puntato') NON gestiti da altri campi.",
         "",
-        "### 5. FORMATO RISPOSTA",
-        "Rispondi ESCLUSIVAMENTE con un oggetto JSON valido:"
+        "### 4. VINCOLO DI FORMATO",
+        "Rispondi SOLO con JSON. È vietata qualsiasi spiegazione, introduzione o ripetizione dei dati in ingresso."
     ],
+
     "human": [
-        "Analizza i seguenti dati ed estrai i vincoli residui.",
-        "",
-        "### DATI INGRESSO",
-        "**QUERY UTENTE**:",
-        "\"{query}\"",
-        "",
-        "**QUERY STRUTTURATA (DA ESCLUDERE)**:",
-        "\"{structured_query}\"",
-        "",
-        "**INFORMAZIONI EXTRA (CONTESTO)**:",
+        "### ASSET DI CONFRONTO",
+        "**QUERY UTENTE**: \"{query}\"",
+        "**STRUTTURA GIÀ ESISTENTE (DA ELIMINARE DAL RISULTATO)**:",
+        "- Query Strutturata: \"{structured_query}\"",
         "- Comando: \"{description_command}\"",
-        "- Contenuto: \"{description_what}\"",
-        "- Documenti:",
-		"{documents}"
+        "- Oggetto: \"{description_what}\"",
+        "- Documenti: \"{documents}\"",
+        "",
+        "### TASK",
+        "Estrai solo i vincoli residui originali. Se tutto è già coperto dalla struttura sopra, restituisci tutti i campi come stringa vuota."
     ],
 
 	"examples": [
@@ -44,12 +42,12 @@
 				"structured_query": "{ 'command': 'cerca', 'what': 'importi', ... }, ..."
 			},
 			"reasoning": "Esiste una condizione sugli importi (campo 'what') e uno sulla struttura della risposta che non sono stati tratati nella query",
-			"output": "{ \"section\": \"\", \"data\": \"devono essere solo gli importi superiori a 1000 euro (€)\", \"response\": \"mostra in una tabella\" }"
+			"output": "{ \"section\": \"\", \"data\": \"devono essere riportati solo gli importi superiori a 1000 euro (€)\", \"response\": \"mostra in una tabella\" }"
 		},
 		{
 			"input": {
 	    		"query": "Riassumi il documento 1 in meno di 250 parole.",
-				"structured_query": "{ 'command': 'riassumi', 'what': 'intero documento', 'sources': '1', 'how': {'limit': {'sign': '<=', 'number': 250, 'unit': 'parole'}}}, ..."
+				"structured_query": "{ 'command': 'riassumi', 'what': 'intero documento', 'from': '1', 'how': {'limit': {'sign': '<=', 'number': 250, 'unit': 'parole'}}}, ..."
 			},
 			"reasoning": "Non ci sono condizioni aggiuntive. Il limite sulla lunghezza è già stato trattato da 'limit'",
 			"output": "{ \"section\": \"\", \"data\": \"\", \"response\": \"\" }"
@@ -57,7 +55,7 @@
 		{
 			"input": {
 	    		"query": "Cerca nel capitolo 5 del documento 1 le procedure di sicurezza urgenti.",
-				"structured_query": "{ 'command': 'cerca', 'what': 'procedure', 'sources': ['1']... }, ..."
+				"structured_query": "{ 'command': 'cerca', 'what': 'procedure', 'from': ['1']... }, ..."
 			},
 			"reasoning": "Condizione section in quanto non si deve analizzare l'intero documento '1'. Condizione su 'data' in quando si vogliono solo le procedure urgenti",
 			"output": "{ \"section\": \"le informazioni devo essere ricercate solo nel capitolo 5\", \"data\": \"considera solo le procedure urgenti\", \"response\": \"\" }"
@@ -65,7 +63,7 @@
 		{
 			"input": {
 	    		"query": "Cerca le persone menzionate nel documento 1.",
-				"structured_query": "{ 'command': 'cerca', 'what': 'persone', 'sources': ['1']... }, ..."
+				"structured_query": "{ 'command': 'cerca', 'what': 'persone', 'from': ['1']... }, ..."
 			},
 			"reasoning": "nessuna condizione aggiuntiva",
 			"output": "{ \"section\": \"\", \"data\": \"\", \"\": \"\" }"
