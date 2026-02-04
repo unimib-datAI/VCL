@@ -1,3 +1,5 @@
+import re
+
 from openai import OpenAI
 
 client = OpenAI()
@@ -11,6 +13,12 @@ class GPTModel():
     @property
     def name(self):
         return f"{self.model} + FileSearch"
+    
+    def extract_sources(info):
+        pattern = r"filename='([^']*)'"
+        info_string = str("\n".join(info.get("info").get("output", [])))
+        used_doc = sorted([f for f in set(re.findall(pattern, info_string))])
+        return { "sources": used_doc }
 
     def initialize(self, paths):
         self.file_paths = paths
@@ -45,7 +53,7 @@ class GPTModel():
         if hasattr(response, 'output_text'):
             content = response.output_text
         
-        return {
-            "content": content,
-            "info": dict(response)
-        }
+        result = { "content": content }
+        result.update(self.extract_sources(dict(response)))
+        
+        return result

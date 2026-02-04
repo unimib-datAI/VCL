@@ -10,4 +10,7 @@ class NotebookLMModel():
         return
 
     def query(self, question: str) -> str:
-        return ""
+        return {
+            "content": "",
+            "sources": []
+        }

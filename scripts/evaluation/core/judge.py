@@ -15,22 +15,24 @@ class GPTJudge:
             raise ValueError("Model not supported!")
 
         self.model = model
-
-        # Reusable OpenAI client + LLMs
         self.client = AsyncOpenAI()
-        self.llm_default = llm_factory(self.model, client=self.client)
+        
+        self.llm_default = llm_factory(
+            self.model, client=self.client, max_tokens=4096
+        )
+        
         self.llm_long = llm_factory(
             self.model, client=self.client, max_tokens=16384
+        )
+        
+        self.factualcorrectness = FactualCorrectness(
+            llm=self.llm_default,
+            atomicity=atomicity,
+            coverage=coverage
         )
 
         self.faithfulness = Faithfulness(
             llm=self.llm_long
-        )
-
-        self.factualcorrectness = FactualCorrectness(
-            llm=self.llm_long,
-            atomicity=atomicity,
-            coverage=coverage
         )
 
         self.context = []
@@ -74,7 +76,7 @@ class GPTJudge:
     # -------------------------
     # Claims extraction
     # -------------------------
-    async def extract_claims(self, text, atomicity="low", coverage="low"):
+    async def extract_claims(self, text):
         return await self.factualcorrectness._decompose_claims(text)
 
     # -------------------------
@@ -267,6 +269,7 @@ class GPTJudge:
             response,
             reference_text,
         )
+        
         r2 = await self.evaluate_faithfulness_multi(
             response_claims
         )
@@ -308,5 +311,4 @@ class GPTJudge:
         if len(results) > 1:
             results.update(self.evaluate_consistency(results))
 
-        results["reference_claims"] = reference_claims
         return results

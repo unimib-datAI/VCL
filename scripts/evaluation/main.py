@@ -25,7 +25,7 @@ project_root = Path(__file__).resolve().parent.parent.parent
 GENERATION_OPENAI_MODEL = "gpt-4o-mini"
 EVALUATION_OPENAI_MODEL = "gpt-4o-mini"
 
-K = 1
+K = 3
 
 def serialize(obj):
     return str(obj)
@@ -58,12 +58,9 @@ def evaluation():
     print(f"[INFO] Retrieved {len(documents)} document paths")
 
     registry = ModelRegistry()
-    #registry.register(DQLModel("DQL-Default"))
-    #registry.register(DQLModel("LDQL-Default"))
     #registry.register(DQLModel("LDQL-U"))
-    registry.register(DQLModel("LDQL-U (Patch 2)"))
-    #registry.register(GPTModel(GENERATION_OPENAI_MODEL))
-    #registry.register(RAGModel(GENERATION_OPENAI_MODEL))
+    registry.register(GPTModel(GENERATION_OPENAI_MODEL))
+    registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     #registry.register(CopilotModel())
     #registry.register(NotebookLMModel())
 
@@ -101,8 +98,7 @@ def evaluation():
                     final_results[model.name] = {
                         "answers": {},
                         "claims": {
-                            "answers": {},
-                            "ground_truth": {}
+                            "answers": {}
                         },
                         "evaluation": {},
                         "time": {
@@ -115,7 +111,7 @@ def evaluation():
                     
                     for i in range(1, K + 1):
                         if str(i) in question_data.get(model.name, {}).get("answers", {}):
-                            print(f"[INFO] Answer generation for {model.name}: In the File")
+                            print(f"[INFO] Answer generation for {model.name} ({i}): In the File")
                             final_results[model.name]["answers"][str(i)] = "\n".join(question_data[model.name]["answers"][str(i)])
                             
                             if str(i) in question_data[model.name].get("details", {}):
@@ -130,23 +126,23 @@ def evaluation():
                                     final_results[model.name]["details"][str(i)] = result
                                 else:
                                     final_results[model.name]["answers"][str(i)] = result
-                                print(f"[INFO] Answer generation for {model.name}: Done")
+                                print(f"[INFO] Answer generation for {model.name} ({i}): Done")
                             except Exception as e:
                                 final_results[model.name]["answers"][str(i)] = ""
-                                print(f"[INFO] Answer generation for {model.name}: Error {e}")
+                                print(f"[INFO] Answer generation for {model.name} ({i}): Error {e}")
                     
                     print(f"[INFO] Claims generation for {model.name}: Start")
                     for i in range(1, K + 1):
                         if str(i) in question_data.get(model.name, {}).get("claims", {}).get("answers", {}):
-                            print(f"[INFO] Claims generation for {model.name}: In the File")
+                            print(f"[INFO] Claims generation for {model.name} ({i}): In the File")
                             final_results[model.name]["claims"]["answers"][str(i)] = question_data[model.name]["claims"]["answers"][str(i)]
                         else:
                             try:
                                 final_results[model.name]["claims"]["answers"][str(i)] = asyncio.run(judge.extract_claims(final_results[model.name]["answers"][str(i)]))
-                                print(f"[INFO] Claims generation for {model.name}: Done")
+                                print(f"[INFO] Claims generation for {model.name} ({i}): Done")
                             except Exception as e:
                                 final_results[model.name]["claims"]["answers"][str(i)] = []
-                                print(f"[INFO] Claims generation for {model.name}: Error {e}")
+                                print(f"[INFO] Claims generation for {model.name} ({i}): Error {e}")
                             
                     model_response_time = datetime.now()
                     final_results[model.name]["time"]["generation_time"] = {
@@ -157,50 +153,45 @@ def evaluation():
                 
                 print(f"[INFO] Generation for {id_question}: End")
                 
-                '''print(f"[INFO] Evaluation {id_question}: Start")
+                print(f"[INFO] Evaluation {id_question}: Start")
                 
                 ground_truth_dict = question_data.get("ground_truth", {})
                 for annotator in ground_truth_dict:
                     print(f"[INFO] Annotator {annotator}: Start")
                     
-                    ground_truth = ground_truth_dict.get(annotator, None)
-                    #ground_truth = ground_truth[-1] if ground_truth else None
+                    ground_truth = ground_truth_dict.get(annotator, {}).get("text", [])
 
                     if not ground_truth:
                         print(f"[INFO] {id_question} - Skipped")
                         continue
                     
                     ground_truth = str(ground_truth)
-
-                    ground_truth_claim = None
-                    for model in registry.all():
-                        if annotator in question_data.get(model.name, {}).get("claims", {}).get("ground_truth", {}):
-                            c = question_data[model.name]["claims"]["ground_truth"][annotator]
-                            if isinstance(c, list):
-                                ground_truth_claim = c
-                                break
                     
-                    if not ground_truth_claim:
-                        ground_truth_claim = asyncio.run(judge.extract_claims(ground_truth))
+                    ground_truth_claims = ground_truth_dict.get(annotator, {}).get("claims", None)
+                    if not ground_truth_claims:
+                        ground_truth_claims = asyncio.run(judge.extract_claims(ground_truth))
+                        question_data["ground_truth"][annotator]["claims"] = ground_truth_claims
                     
                     for model in registry.all():
-                        final_results[model.name]["claims"]["ground_truth"][annotator] = ground_truth_claim
-                        
                         model_evaluation_start_time = datetime.now()
                         
                         answers = final_results[model.name]["answers"]
                         answers_claims = final_results[model.name]["claims"]["answers"]
                         
                         if answers and answers_claims:
-                            try:
-                                final_results[model.name]["evaluation"][annotator] = asyncio.run(judge.judge(question, answers, ground_truth, answers_claims, ground_truth_claim))
-                                print(f"[INFO] Evaluation for {model.name}: Done")
-                            except Exception as e:
-                                final_results[model.name]["evaluation"][annotator] = {}
-                                print(f"[INFO] Evaluation for {model.name}: Error {e}")
+                            if len(question_data.get(model.name, {}).get("evaluation",  {}).get(annotator, {})) < K:
+                                try:
+                                    final_results[model.name]["evaluation"][annotator] = asyncio.run(judge.judge(question, answers, ground_truth, answers_claims, ground_truth_claims))
+                                    print(f"[INFO] Evaluation for {model.name}: Done")
+                                except Exception as e:
+                                    final_results[model.name]["evaluation"][annotator] = {}
+                                    print(f"[INFO] Evaluation for {model.name}: Error {e}")
+                            else:
+                                print(f"[INFO] Evaluation for {model.name}: Skipped")
                         else:
                             final_results[model.name]["evaluation"][annotator] = {}
                             print(f"[INFO] Evaluation for {model.name}: Skipped")
+                            
                         model_evaluation_end_time = datetime.now()
                         
                         final_results[model.name]["time"]["evaluation_time"][annotator] = {
@@ -211,7 +202,7 @@ def evaluation():
                         
                         time.sleep(10)
                         
-                    print(f"[INFO] Annotator {annotator}: End")'''
+                    print(f"[INFO] Annotator {annotator}: End")
                 
                 for model in registry.all():
                     for i in final_results[model.name]["answers"]:

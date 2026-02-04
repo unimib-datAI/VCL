@@ -190,7 +190,7 @@ class RAGModel:
         context_text, used_sources = rerank_and_trim(reranked_docs, max_tokens=MAX_CONTEXT_TOKENS)
 
         if not context_text:
-            return {"answer": "Non ho trovato informazioni sufficienti.", "sources": []}
+            return {"content": "Non ho trovato informazioni sufficienti.", "sources": []}
 
         # 4. Chat Completion
         response = client.chat.completions.create(
