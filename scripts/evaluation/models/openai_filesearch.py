@@ -14,9 +14,14 @@ class GPTModel():
     def name(self):
         return f"{self.model} + FileSearch"
     
-    def extract_sources(info):
+    def extract_sources(self, info):
         pattern = r"filename='([^']*)'"
-        info_string = str("\n".join(info.get("info").get("output", [])))
+        
+        try:
+            info_string = str("\n".join(info["info"]["output"]))
+        except Exception:
+            info_string = str(info)
+            
         used_doc = sorted([f for f in set(re.findall(pattern, info_string))])
         return { "sources": used_doc }
 

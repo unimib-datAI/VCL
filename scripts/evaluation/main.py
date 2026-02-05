@@ -59,9 +59,9 @@ def evaluation():
 
     registry = ModelRegistry()
     #registry.register(DQLModel("LDQL-U"))
-    registry.register(GPTModel(GENERATION_OPENAI_MODEL))
-    registry.register(RAGModel(GENERATION_OPENAI_MODEL))
-    #registry.register(CopilotModel())
+    #registry.register(GPTModel(GENERATION_OPENAI_MODEL))
+    #registry.register(RAGModel(GENERATION_OPENAI_MODEL))
+    registry.register(CopilotModel())
     #registry.register(NotebookLMModel())
 
     for m in registry.all():
@@ -156,7 +156,7 @@ def evaluation():
                 print(f"[INFO] Evaluation {id_question}: Start")
                 
                 ground_truth_dict = question_data.get("ground_truth", {})
-                for annotator in ground_truth_dict:
+                for annotator in ["Keita Jacopo Viganò"]: #ground_truth_dict:
                     print(f"[INFO] Annotator {annotator}: Start")
                     
                     ground_truth = ground_truth_dict.get(annotator, {}).get("text", [])
