@@ -126,6 +126,8 @@ class SourcesExtractor:
                     
                 if not documents:
                     raise ValueError("No Reference Found")
+                
+            documents = [d for d in documents if d[1] in query]
             
             status = "Done"
             

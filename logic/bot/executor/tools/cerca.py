@@ -23,13 +23,14 @@ def cerca(context: list, query: dict, llm, language) -> str:
     
     state = {}
     if what_name == "frase":
-        prompt = language.prompts.get("CercaFrase.json")
+        '''prompt = language.prompts.get("CercaFrase.json")
         what_name = what.get("element")
         
         state = {
             "context": format_context(context),
             "what": what.get("element")
-        }
+        }'''
+        return cerca_frase(what, context, language, llm)
     elif what_name == "concetto":
         prompt = language.prompts.get("CercaConcetto.json")
         what_name = what.get("element")
@@ -54,4 +55,47 @@ def cerca(context: list, query: dict, llm, language) -> str:
     
     result = llm.invoke(prompt, state)
     return result
-    #return check_limit_result(result, context, query, llm, language)
+
+def cerca_frase(what, context, language, llm):
+    what_name = what.get("element")
+    
+    f_context = format_context(context)
+    
+    if what_name not in f_context: 
+        state = {
+            "context": f_context,
+            "what": what.get("element")
+        }
+        
+        prompt = language.prompts.get("CercaFrase1.json")
+        
+        if not prompt:
+            raise ValueError("Error: Could not determine how to process this request.")
+        
+        result = llm.invoke(prompt, state)
+    else:
+        result = what_name 
+        
+    print(result)
+    if result not in f_context:
+        return f"L'elemento \"{what_name}\" non è stato trovato nel testo"
+    
+    idx_start = f_context.index(result)
+    idx_end = idx_start + len(result)
+
+    window_start = max(0, idx_start - 2000)
+    window_end = min(len(f_context), idx_end + 100)
+
+    f_context_window = f_context[window_start:window_end]
+    
+    prompt = language.prompts.get("CercaFrase2.json")
+    state = {
+        "context": f_context_window,
+        "what": what.get("element")
+    }
+    
+    if not prompt:
+        raise ValueError("Error: Could not determine how to process this request.")
+    
+    result = llm.invoke(prompt, state)
+    return result

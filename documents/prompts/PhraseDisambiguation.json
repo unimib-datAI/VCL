@@ -8,7 +8,7 @@
         "- 'simile': L'utente specifica COSA cercare. C'è una citazione, una descrizione del contenuto, un argomento o parole chiave, senza un riferimento univoco a un contenitore.",
         "",
         "LOGICA DI ESTRAZIONE 'element':",
-        "- Se 'relativo': Estrai l'entità, il documento, la sentenza o il possessore a cui la frase appartiene.",
+        "- Se 'relativo': Estrai l'entità, a cui la frase appartiene. Sii conciso: non devi specificare da quale fonte cercare la frase",
         "- Se 'simile': Estrai la citazione, l'argomento o la descrizione del contenuto cercato.",
         "",
         "VINCOLO DI OUTPUT:",
@@ -25,13 +25,18 @@
 
     "examples": [
         {
-            "input": "Cerca la frase tra virgolette della sentenza n 5402.",
-            "reasoning": "L'utente specifica una fonte precisa ('sentenza n 5402') dove trovare la frase.",
+            "input": "Cerca la frase tra virgolette della sentenza n 5402 nel documento ricorso.",
+            "reasoning": "L'utente specifica una fonte precisa ('sentenza n 5402') dove trovare la frase. Non devi specificare da quale fonte cercare la frase",
             "output": {"type": "relativo", "element": "sentenza n 5402"}
         },
         {
-            "input": "Trovami una frase che assomigli a 'il canone è stato pagato'.",
-            "reasoning": "L'utente cerca una frase basandosi sul contenuto testuale/semantico.",
+            "input": "Cerca la frase tra virgolette dalla sentenza cass. civ., sez. lav., 29 agosto 2012, n. 14689 in X.",
+            "reasoning": "L'utente specifica una fonte precisa ('cass. civ., sez. lav., 29 agosto 2012, n. 14689') dove trovare la frase. Non devi specificare da quale fonte cercare la frase",
+            "output": {"type": "relativo", "element": "cass. civ., sez. lav., 29 agosto 2012, n. 14689"}
+        },
+        {
+            "input": "Trovami una frase nella sentenza S1 che assomigli a 'il canone è stato pagato'.",
+            "reasoning": "L'utente cerca una frase basandosi sul contenuto testuale/semantico. Non devi specificare da quale fonte cercare la frase",
             "output": {"type": "simile", "element": "il canone è stato pagato"}
         },
         {
