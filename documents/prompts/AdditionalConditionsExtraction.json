@@ -10,12 +10,12 @@
         "- Se il concetto di ricerca (il 'what') è già nella Query Strutturata, NON ripeterlo nei vincoli residui.",
         "- Se la fonte è citata, NON riportarla in 'section'.",
         "- Se non c'è una differenza testuale netta tra l'input e la struttura, restituisci stringa vuota \"\".",
+        "- REGOLA D'ORO: Non restituire MAI frammenti di testo (es. 'relative a voni'). Ogni valore DEVE essere riscritto come una frase di senso compiuto che inizia con un VERBO IMPERATIVO (es. 'Considera solo...', 'Filtra per...', 'Escludi...'). Devi aggiungere le parole mancanti per rendere la frase leggibile.",
         "- NON aggiungere aggettivi o descrizioni: se l'utente non specifica un tono o un limite, non inventarlo.",
-        "- Le condizioni devono essere frasi imperative",
         "",
         "### 3. DEFINIZIONE CATEGORIE",
         "- 'section': Solo restrizioni fisiche/posizionali NON presenti in 'from'.",
-        "- 'data': Filtri logici granulari o aggettivi qualificativi NON presenti in 'what'.",
+        "- 'data': Filtri logici NON presenti in 'what'.",
         "- 'response': Vincoli di formato/output (es. 'in Markdown', 'usa elenco puntato') NON gestiti da altri campi.",
         "",
         "### 4. VINCOLO DI FORMATO",
@@ -67,7 +67,16 @@
 			},
 			"reasoning": "nessuna condizione aggiuntiva",
 			"output": "{ \"section\": \"\", \"data\": \"\", \"\": \"\" }"
-		}
+		},
+
+        {
+            "input": {
+                "query": "Dammi le fatture di Amazon del 2023",
+                "structured_query": "{ 'command': 'dammi', 'what': 'fatture', ... }"
+            },
+            "reasoning": "La query strutturata ha preso 'fatture'. Rimane il fornitore (Amazon) e l'anno. Non devo scrivere 'di Amazon del 2023' ma creare una frase completa.",
+            "output": "{ \"section\": \"\", \"data\": \"filtra solo i documenti emessi da Amazon nell'anno 2023\", \"response\": \"\" }"
+        }
 	],
 
     "params": {

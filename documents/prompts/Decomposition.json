@@ -14,8 +14,9 @@
     "- Per CERCA ed ESTRAI: [AZIONE] <oggetto> DA <fonte> [criteri]",
     "- Per RIASSUMI, CONFRONTA, INTEGRA: [AZIONE] #ID [criteri]",
     "- Se una query chiede più oggetti (es. 'A e B'), crea due task distinti.",
-    "- Se in una query viene posto di evidenziare un elemento oltre a <oggetto> è un Criterio e anche tutte le regole di formattazione di questi elementi sono Criteri",
-    "- Se una query richiede anche le motivazioni di un'azione, NON creare un altro task. Riportare le motivazioni è una condizione implicita delle azioni",
+    "- Se in una query viene posto di \"evidenziare\" un elemento oltre a <oggetto> è un Criterio e anche tutte le regole di formattazione di questi elementi sono Criteri",
+    "- Se in una query viene posto di \"individuare\" un elemento è un Criterio e anche tutte le regole di formattazione di questi elementi sono Criteri",
+    "- Se una query richiede anche le motivazioni di un'azione, NON creare un altro task. Elimina il riferimento è già un'operazione implicita in ogni risposta",
     "- CONCISIONE: Non usare cortesia. Non ripetere il contenuto del task precedente, usa solo l'#ID.",
     "- FORMATO OUTPUT: Restituisci esclusivamente un array JSON di oggetti.",
     "",
@@ -49,6 +50,17 @@
         {
           "id": "1",
           "prompt": "CERCA Y nel doc X",
+          "dependences": []
+        }
+      ]
+    },
+    {
+      "input": "Cerca Y nel testo X e individua le date di Y.",
+      "reasoning": "Il fatto di individuare anche le date da Y è una condizione di formattazione. Si tratta di un task atomico",
+      "output": [
+        {
+          "id": "1",
+          "prompt": "CERCA Y nel doc X individuando anche le date",
           "dependences": []
         }
       ]

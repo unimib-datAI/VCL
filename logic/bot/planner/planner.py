@@ -53,15 +53,16 @@ class Planner:
             # Generate sub-steps for the current operation
             decomposed_ops = self._process_operation(op)
             
-            # If no expansion occurred, append the single operation
+            '''# If no expansion occurred, append the single operation
             if len(decomposed_ops) == 1:
                 decomposed_ops[0]["id"] = op["id"]
                 decomposed_ops[0]["prompt"] = op["prompt"]
                 final_plan.append(decomposed_ops[0])
             else:
-                # Group sub-operations within the original operation structure
-                op['operations'] = decomposed_ops
-                final_plan.append(op)
+                # Group sub-operations within the original operation structure'''
+            
+            op['operations'] = decomposed_ops
+            final_plan.append(op)
 
         return final_plan
 
@@ -208,6 +209,10 @@ class Planner:
                     "from": last_ids
                 }
             }
+            
+            if ops[-1].get("structured_prompt", {}).get("how", {}).get("limit", {}):
+                integration_step["structured_prompt"]["how"]["limit"] = ops[-1]["structured_prompt"]["how"]["limit"]
+                
             ops.append(integration_step)
         return ops
 

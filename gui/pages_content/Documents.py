@@ -42,7 +42,7 @@ def _display_header():
             st.rerun()
     
     with col2:
-        if st.button("Carica Documenti", use_container_width=True):
+        if st.button("💾 Carica Documenti", use_container_width=True):
             st.session_state.show_uploader = True
 
         files = None

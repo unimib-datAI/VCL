@@ -98,7 +98,7 @@ def _display_chat_history() -> None:
                 st.markdown(message["content"])
 
             # Mini badge modello (solo per l'assistente)
-            if message["role"] == "assistant" and label:
+            if message["role"] == "assistant" and message["content"] != "Ciao! Come posso aiutarti oggi?" and label:
                 st.markdown(
                     f"<span style='font-size:0.75rem; opacity:0.7;'>🔌 Risposta generata con: <b>{label}</b></span>",
                     unsafe_allow_html=True,

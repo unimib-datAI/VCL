@@ -153,6 +153,7 @@ class RAGModel:
         return reranked_results
 
     def initialize(self, paths: List[str]):
+        return
         all_docs = []
         all_chunks = []
 
@@ -177,6 +178,7 @@ class RAGModel:
             self.index = RagIndex(vectors, all_docs)
 
     def query(self, question: str):
+        return
         if self.index is None:
             raise RuntimeError("Devi inizializzare l'indice caricando i documenti prima di fare una query.")
 

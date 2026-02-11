@@ -58,11 +58,11 @@ def evaluation():
     print(f"[INFO] Retrieved {len(documents)} document paths")
 
     registry = ModelRegistry()
-    #registry.register(DQLModel("LDQL-U"))
-    #registry.register(GPTModel(GENERATION_OPENAI_MODEL))
-    #registry.register(RAGModel(GENERATION_OPENAI_MODEL))
+    registry.register(DQLModel("LDQL-U"))
+    registry.register(GPTModel(GENERATION_OPENAI_MODEL))
+    registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     registry.register(CopilotModel())
-    #registry.register(NotebookLMModel())
+    registry.register(NotebookLMModel())
 
     for m in registry.all():
         print(f"[INFO] Initializing model: {m.name}")
@@ -115,14 +115,16 @@ def evaluation():
                             final_results[model.name]["answers"][str(i)] = "\n".join(question_data[model.name]["answers"][str(i)])
                             
                             if str(i) in question_data[model.name].get("details", {}):
-                                final_results[model.name]["details"] = {}
+                                if "details" not in final_results[model.name]:
+                                    final_results[model.name]["details"] = {}
                                 final_results[model.name]["details"][str(i)] = question_data[model.name]["details"][str(i)]
                         else:
                             try:
                                 result = model.query(question)
                                 if isinstance(result, dict):
                                     final_results[model.name]["answers"][str(i)] = result["content"] if "content" in result else ""
-                                    final_results[model.name]["details"] = {}
+                                    if "details" not in final_results[model.name]:
+                                        final_results[model.name]["details"] = {}
                                     final_results[model.name]["details"][str(i)] = result
                                 else:
                                     final_results[model.name]["answers"][str(i)] = result
@@ -153,7 +155,7 @@ def evaluation():
                 
                 print(f"[INFO] Generation for {id_question}: End")
                 
-                print(f"[INFO] Evaluation {id_question}: Start")
+                '''print(f"[INFO] Evaluation {id_question}: Start")
                 
                 ground_truth_dict = question_data.get("ground_truth", {})
                 for annotator in ["Keita Jacopo Viganò"]: #ground_truth_dict:
@@ -187,6 +189,7 @@ def evaluation():
                                     final_results[model.name]["evaluation"][annotator] = {}
                                     print(f"[INFO] Evaluation for {model.name}: Error {e}")
                             else:
+                                final_results[model.name]["evaluation"][annotator] = question_data.get(model.name, {}).get("evaluation",  {}).get(annotator, {})
                                 print(f"[INFO] Evaluation for {model.name}: Skipped")
                         else:
                             final_results[model.name]["evaluation"][annotator] = {}
@@ -202,7 +205,7 @@ def evaluation():
                         
                         time.sleep(10)
                         
-                    print(f"[INFO] Annotator {annotator}: End")
+                    print(f"[INFO] Annotator {annotator}: End")'''
                 
                 for model in registry.all():
                     for i in final_results[model.name]["answers"]:

@@ -7,7 +7,7 @@ from typing import Any, Union, List
 # --- Page setup ---
 # ------------------
 
-PAGE_TITLE = "Definisci il linguaggio DQL"
+PAGE_TITLE = "Definisci l'ontologia di DQL"
 
 # -------------------------------
 # --- Language Initialization ---
@@ -231,7 +231,7 @@ def _display_form_ui() -> None:
         )
         
         st.markdown("### Sezione WHAT")
-        st.markdown("Definisci i termini utilizzabili nei comandi DQL e le loro caratteristiche.\nConsidera che esistono due elementi non modificabili:\n- \"intero documento\": il comando deve essere applicato all'intero documento selezionato.\n- \"altro\": riguarda tutti quei casi in cui non è possibile categorizzare l'elemento richiesto.")
+        st.markdown("Definisci i termini utilizzabili nei comandi DQL e le loro caratteristiche.\nConsidera che esistono alcuni elementi non modificabili:\n- \"intero documento\": il comando deve essere applicato all'intero documento selezionato.\n- \"frase\": l'utente vuole estrarre una frase simile o relativa a un elemento nella richiesta\n- \"concetto\": l'utente vuole individuare l'occorrenza di una stringa o concetto non identificato nelle precedenti categorie.")
         
         # Dynamically link the sources available in the 'WHAT' multiselect to current 'FROM' data
         try:

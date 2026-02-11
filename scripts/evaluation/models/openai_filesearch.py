@@ -26,6 +26,7 @@ class GPTModel():
         return { "sources": used_doc }
 
     def initialize(self, paths):
+        return
         self.file_paths = paths
 
         vector_store = client.vector_stores.create(name="MyFileStore")
@@ -39,6 +40,7 @@ class GPTModel():
                 )
 
     def query(self, question: str):
+        return
         if not self.vector_store_id:
             raise ValueError("You must execute initialize() before.")
 

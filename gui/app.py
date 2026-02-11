@@ -162,10 +162,10 @@ def _render_sidebar() -> None:
         if st.button("📁 Visualizza Documenti", width='stretch'):
             change_page("Documents")
                 
-        if st.button("ℹ️ Informazioni Linguaggio", width='stretch'):
+        if st.button("Informazioni Linguaggio", width='stretch'):
             change_page("Info")
 
-        if st.button("ℹ️ Tracking Domande", width='stretch'):
+        if st.button("Tracking Domande", width='stretch'):
             change_page("QuestionTracking")
         
         if st.button("⚙️ Impostazioni", width='stretch'):

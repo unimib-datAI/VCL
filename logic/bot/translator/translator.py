@@ -131,8 +131,9 @@ class Translator:
         # Update tasks with parallel results
         for i in range(len(command_parameters)):
             if "altro" == command_parameters[i]:
-                raise ValueError("Detected 'altro' in command, indicating failure.")
-            
+                self._logger.warning("Detected 'altro' in command.")
+                command_parameters[i] = "cerca"
+                
             tasks[i]["structured_prompt"]["command"] = command_parameters[i]
             tasks[i]["structured_prompt"]["what"] = what_parameters[i]
         

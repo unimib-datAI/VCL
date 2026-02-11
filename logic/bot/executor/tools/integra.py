@@ -4,6 +4,9 @@ def integra(context: list, query: dict, llm, language) -> str:
     if not context:
         return "Non è stato possibile rispondere alla tua richiesta perché non ho trovato i documenti richiesti."
     
+    if len(context) == 1 and not query.get("how", {}):
+        return context[0]
+    
     command = query.get("command")
     if command != "integra":
         raise ValueError("Error: The command provided does not match 'integra'.")
