@@ -58,11 +58,11 @@ def evaluation():
     print(f"[INFO] Retrieved {len(documents)} document paths")
 
     registry = ModelRegistry()
-    registry.register(DQLModel("LDQL-U"))
     registry.register(GPTModel(GENERATION_OPENAI_MODEL))
     registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     registry.register(CopilotModel())
     registry.register(NotebookLMModel())
+    registry.register(DQLModel("LDQL-U"))
 
     for m in registry.all():
         print(f"[INFO] Initializing model: {m.name}")
@@ -155,10 +155,10 @@ def evaluation():
                 
                 print(f"[INFO] Generation for {id_question}: End")
                 
-                '''print(f"[INFO] Evaluation {id_question}: Start")
+                print(f"[INFO] Evaluation {id_question}: Start")
                 
                 ground_truth_dict = question_data.get("ground_truth", {})
-                for annotator in ["Keita Jacopo Viganò"]: #ground_truth_dict:
+                for annotator in ground_truth_dict:
                     print(f"[INFO] Annotator {annotator}: Start")
                     
                     ground_truth = ground_truth_dict.get(annotator, {}).get("text", [])
@@ -181,7 +181,7 @@ def evaluation():
                         answers_claims = final_results[model.name]["claims"]["answers"]
                         
                         if answers and answers_claims:
-                            if len(question_data.get(model.name, {}).get("evaluation",  {}).get(annotator, {})) < K:
+                            if len(question_data.get(model.name, {}).get("evaluation",  {}).get(annotator, {})) <= K:
                                 try:
                                     final_results[model.name]["evaluation"][annotator] = asyncio.run(judge.judge(question, answers, ground_truth, answers_claims, ground_truth_claims))
                                     print(f"[INFO] Evaluation for {model.name}: Done")
@@ -203,9 +203,7 @@ def evaluation():
                             "delta": (model_evaluation_end_time - model_evaluation_start_time).total_seconds()
                         }
                         
-                        time.sleep(10)
-                        
-                    print(f"[INFO] Annotator {annotator}: End")'''
+                    print(f"[INFO] Annotator {annotator}: End")
                 
                 for model in registry.all():
                     for i in final_results[model.name]["answers"]:
