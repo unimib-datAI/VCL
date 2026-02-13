@@ -18,10 +18,6 @@ class GPTJudge:
         self.client = AsyncOpenAI()
         
         self.llm_default = llm_factory(
-            self.model, client=self.client, max_tokens=4096
-        )
-        
-        self.llm_long = llm_factory(
             self.model, client=self.client, max_tokens=16384
         )
         
@@ -32,7 +28,7 @@ class GPTJudge:
         )
 
         self.faithfulness = Faithfulness(
-            llm=self.llm_long
+            llm=self.llm_default
         )
 
         self.context = []
