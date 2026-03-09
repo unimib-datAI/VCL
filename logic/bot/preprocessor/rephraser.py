@@ -77,10 +77,10 @@ class Rephraser():
             
             # Step 1: Fetch the specialized prompt for rewriting
             if not chat:
-                prompt = self._dql_language.prompts.get("CorrectionQuery.json", None)
+                prompt = self._dql_language.prompts.get("it", {}).get("CorrectionQuery.json", None)
                 state = { "query": query }
             else:
-                prompt = self._dql_language.prompts.get("RephraseQuery.json", None)
+                prompt = self._dql_language.prompts.get("it", {}).get("RephraseQuery.json", None)
                 chat = "\n".join([str(c) for c in chat])
                 state = { "query": query, "chat": chat }
             

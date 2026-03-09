@@ -16,7 +16,7 @@ def integra(context: list, query: dict, llm, language) -> str:
         "context": format_context(context)
     }
     
-    prompt = language.prompts.get("Integra.json")
+    prompt = language.prompts.get("it", {}).get("Integra.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

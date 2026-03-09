@@ -22,10 +22,10 @@ from scripts.evaluation.models.notebooklm import NotebookLMModel
 
 project_root = Path(__file__).resolve().parent.parent.parent
 
-GENERATION_OPENAI_MODEL = "gpt-4o-mini"
+GENERATION_OPENAI_MODEL = "gpt-5.1"
 EVALUATION_OPENAI_MODEL = "gpt-4o-mini"
 
-K = 3
+K = 1
 
 def serialize(obj):
     return str(obj)
@@ -62,7 +62,7 @@ def evaluation():
     registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     registry.register(CopilotModel())
     registry.register(NotebookLMModel())
-    registry.register(DQLModel("LDQL-U"))
+    registry.register(DQLModel("DQL (gpt-5.1)"))
 
     for m in registry.all():
         print(f"[INFO] Initializing model: {m.name}")
@@ -154,6 +154,8 @@ def evaluation():
                     }
                 
                 print(f"[INFO] Generation for {id_question}: End")
+                
+                time.sleep(10)
                 
                 print(f"[INFO] Evaluation {id_question}: Start")
                 

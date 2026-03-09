@@ -72,7 +72,7 @@ class Decomposer():
 
         try:
             # Step 1: Fetch the specialized prompt for decomposition
-            prompt = self._dql_language.prompts.get("Decomposition.json", None)
+            prompt = self._dql_language.prompts.get("it", {}).get("Decomposition.json", None)
             
             if not prompt:
                 raise ValueError("Decomposition prompt not found in language config.")

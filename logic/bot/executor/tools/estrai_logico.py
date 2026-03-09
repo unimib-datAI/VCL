@@ -26,7 +26,7 @@ def estrai_logico(context: list, query: dict, llm, language) -> str:
         "description_what": language.get_description_from_what(what.get("name"))
     }
     
-    prompt = language.prompts.get("EstraiLogico.json")
+    prompt = language.prompts.get("it", {}).get("EstraiLogico.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

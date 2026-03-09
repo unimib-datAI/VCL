@@ -36,7 +36,7 @@ MODEL_LABELS = {
 }
 DEFAULT_MODEL = "DQL"
 
-BATTLE_MODELS = ["DQL", "GPT", "NotebookLM"]
+BATTLE_MODELS = ["DQL", "GPT"]
 
 # ---------------------------
 # --- Chat Initialization ---
@@ -274,7 +274,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
         thread = threading.Thread(
             target=_call_assistant_thread,
-            args=(prompt, selected_model, assistant, username, stop_event, result_queue, st.query_params.chat),
+            args=(prompt, selected_model, assistant, username, stop_event, result_queue, st.query_params.chat, st.session_state.storage),
         )
         thread.start()
 
@@ -434,26 +434,29 @@ def _render_model_selector() -> str:
 # --- Threading & Log Helpers ---
 # -------------------------------
 
-def _call_assistant_thread(prompt: str, selected_model: str, assistant, username: str, stop_event: threading.Event, result_queue: queue.Queue, chat_id) -> None:
+def _call_assistant_thread(prompt: str, selected_model: str, assistant, username: str, stop_event: threading.Event, result_queue: queue.Queue, chat_id, storage = None) -> None:
     """
     Wrapper to run the heavy assistant logic in a thread.
     """
     try:
-        response = _call_model(prompt, selected_model, assistant, username, chat_id)
+        response = _call_model(prompt, selected_model, assistant, username, chat_id, storage)
         result_queue.put(response)
     except Exception as e:
         result_queue.put({"result": f"Error: {str(e)}"})
     finally:
         stop_event.set()
 
-def _load_case_documents(assistant, username: str) -> List[Dict[str, str]]:
+def _load_case_documents(assistant, username: str, storage = None) -> List[Dict[str, str]]:
     """
     Recupera i documenti utente da Mongo tramite assistant.storage
     SENZA usare st.session_state (che non è thread-safe).
     """
     docs = []
 
-    raw_docs = st.session_state.storage.get_all_documents(username) or []
+    raw_docs = storage.get_all_documents("vitali") if storage else st.session_state.storage.get_all_documents("vitali")
+    
+    if not raw_docs:
+        raw_docs = []
 
     TEXT_KEYS = ["text", "contenuto", "content", "body"]
     NAME_KEYS = ["name", "titolo", "filename"]
@@ -480,13 +483,13 @@ def _load_case_documents(assistant, username: str) -> List[Dict[str, str]]:
 
     return docs
 
-def _build_docs_block(assistant, username: str) -> str:
+def _build_docs_block(assistant, username: str, storage = None) -> str:
     """
     Costruisce il blocco di testo con elenco e contenuto completo
     dei documenti di caso dell'utente.
     Riutilizzato da GPT e NotebookLM.
     """
-    case_docs = _load_case_documents(assistant, username)
+    case_docs = _load_case_documents(assistant, username, storage)
 
     if not case_docs:
         return "Nessun documento giudiziario disponibile per l'utente corrente."
@@ -507,7 +510,7 @@ def _build_docs_block(assistant, username: str) -> str:
 
 
 
-def _ask_gpt(prompt: str, assistant, username: str) -> Dict:
+def _ask_gpt(prompt: str, assistant, username: str, storage = None) -> Dict:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return {
@@ -520,7 +523,7 @@ def _ask_gpt(prompt: str, assistant, username: str) -> Dict:
     try:
         client = OpenAI(api_key=api_key)
 
-        docs_block = _build_docs_block(assistant, username)
+        docs_block = _build_docs_block(assistant, username, storage)
 
         base_system = (
             "Sei un assistente legale integrato nell'interfaccia DQL.\n"
@@ -613,7 +616,7 @@ def _ask_notebooklm(prompt: str, assistant, username: str) -> Dict:
         return {"result": f"❌ Errore chiamando NotebookLM (implementazione attuale): {e}"}
 
 
-def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id) -> Dict:
+def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id, storage) -> Dict:
     """
     Modalità Battle:
     - sceglie 2 modelli diversi a caso tra DQL, GPT, NotebookLM
@@ -627,8 +630,8 @@ def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id
 
     model_a, model_b = random.sample(BATTLE_MODELS, 2)
 
-    ans_a = _run_single_model_for_battle(model_a, prompt, assistant, username, chat_id)
-    ans_b = _run_single_model_for_battle(model_b, prompt, assistant, username, chat_id)
+    ans_a = _run_single_model_for_battle(model_a, prompt, assistant, username, chat_id, storage)
+    ans_b = _run_single_model_for_battle(model_b, prompt, assistant, username, chat_id, storage)
 
     mode = "anon" if anonymized else "labeled"
 
@@ -653,7 +656,7 @@ def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id
     return {"result": battle_payload}
 
 
-def _run_single_model_for_battle( model_key: str, prompt: str, assistant, username: str, chat_id) -> Dict[str, str]:
+def _run_single_model_for_battle( model_key: str, prompt: str, assistant, username: str, chat_id, storage) -> Dict[str, str]:
     """
     Esegue un singolo modello (DQL / GPT / NotebookLM) e restituisce
     un dict con:
@@ -667,7 +670,7 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
         text = resp.get("result", "")
 
     elif model_key == "GPT":
-        resp = _ask_gpt(prompt, assistant, username)
+        resp = _ask_gpt(prompt, assistant, username, storage)
         text = resp.get("result", "")
 
     elif model_key == "NotebookLM":
@@ -685,7 +688,7 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
     }
 
 
-def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_id):
+def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_id, storage) -> Dict:
     """
     Dispatcher per decidere quale motore usare in base al modello selezionato.
     """
@@ -693,16 +696,16 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
         return assistant.chat(prompt)
 
     elif selected_model == "GPT":
-        return _ask_gpt(prompt, assistant, username)
+        return _ask_gpt(prompt, assistant, username, storage)
 
     elif selected_model == "NotebookLM":
         return _ask_notebooklm(prompt, assistant, username)
 
     elif selected_model == "BattleAnon":
-        return _ask_battle(prompt, assistant, username, True, chat_id)
+        return _ask_battle(prompt, assistant, username, True, chat_id, storage)
 
     elif selected_model == "BattleLabeled":
-        return _ask_battle(prompt, assistant, username, False, chat_id)
+        return _ask_battle(prompt, assistant, username, False, chat_id, storage)
 
     else:
         return {"result": f"⚠️ Modello '{selected_model}' non riconosciuto."}

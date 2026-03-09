@@ -17,7 +17,7 @@ def riassumi(context: list, query: dict, llm, language) -> str:
         "context": format_context(context),
         "limit": format_limit_condition(limit)
     }
-    prompt = language.prompts.get("Riassumi.json")
+    prompt = language.prompts.get("it", {}).get("Riassumi.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

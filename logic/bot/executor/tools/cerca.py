@@ -23,16 +23,9 @@ def cerca(context: list, query: dict, llm, language) -> str:
     
     state = {}
     if what_name == "frase":
-        '''prompt = language.prompts.get("CercaFrase.json")
-        what_name = what.get("element")
-        
-        state = {
-            "context": format_context(context),
-            "what": what.get("element")
-        }'''
         return cerca_frase(what, context, language, llm)
     elif what_name == "concetto":
-        prompt = language.prompts.get("CercaConcetto.json")
+        prompt = language.prompts.get("it", {}).get("CercaConcetto.json")
         what_name = what.get("element")
         
         state = {
@@ -41,7 +34,7 @@ def cerca(context: list, query: dict, llm, language) -> str:
             "what": what_name
         }
     else:
-        prompt = language.prompts.get("Cerca.json")
+        prompt = language.prompts.get("it", {}).get("Cerca.json")
         
         state = {
             "how": format_conditions(query.get("how", {}), command),
@@ -67,7 +60,7 @@ def cerca_frase(what, context, language, llm):
             "what": what.get("element")
         }
         
-        prompt = language.prompts.get("CercaFrase1.json")
+        prompt = language.prompts.get("it", {}).get("CercaFrase1.json")
         
         if not prompt:
             raise ValueError("Error: Could not determine how to process this request.")
@@ -76,9 +69,8 @@ def cerca_frase(what, context, language, llm):
     else:
         result = what_name 
         
-    print(result)
     if result not in f_context:
-        return f"L'elemento \"{what_name}\" non è stato trovato nel testo"
+        return f"L'elemento \"{what_name}\" non è presente nel testo."
     
     idx_start = f_context.index(result)
     idx_end = idx_start + len(result)
@@ -88,7 +80,7 @@ def cerca_frase(what, context, language, llm):
 
     f_context_window = f_context[window_start:window_end]
     
-    prompt = language.prompts.get("CercaFrase2.json")
+    prompt = language.prompts.get("it", {}).get("CercaFrase2.json")
     state = {
         "context": f_context_window,
         "what": what.get("element")
@@ -98,4 +90,8 @@ def cerca_frase(what, context, language, llm):
         raise ValueError("Error: Could not determine how to process this request.")
     
     result = llm.invoke(prompt, state)
+    
+    if "ERRORE" in result:
+        return f"L'elemento \"{what_name}\" è presente nel testo, ma non ha una frase identificabile."
+    
     return result

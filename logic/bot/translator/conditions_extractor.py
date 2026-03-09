@@ -124,7 +124,7 @@ class ConditionsExtractor:
         status = "Error"
 
         try:
-            prompt = self._dql_language.prompts.get(f"{name}.json", None)
+            prompt = self._dql_language.prompts.get("it", {}).get(f"{name}.json", None)
             
             if not prompt:
                 raise ValueError(f"{name}.json prompt template missing.")
@@ -179,7 +179,7 @@ class ConditionsExtractor:
                 "description_what": "\n".join(f"\t- {w.get('name', '')}: \"{self._dql_language.get_description_from_what(w.get('name', ''))}\"" for w in structured_query.get("what", [])),
             }
         
-            prompt = self._dql_language.prompts.get("AdditionalConditionsExtraction.json", None)
+            prompt = self._dql_language.prompts.get("it", {}).get("AdditionalConditionsExtraction.json", None)
             
             if not prompt:
                 raise ValueError("AdditionalConditionsExtraction.json template missing.")

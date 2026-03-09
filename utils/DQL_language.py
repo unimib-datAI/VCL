@@ -359,35 +359,38 @@ class DQLLanguage:
         Compiles LangChain ChatPromptTemplate objects for every tool and component.
         Resolves role-based headers and few-shot sections during construction.
         """
-        folder = os.path.join(self._project_root, "documents", "prompts")
         self.prompts = {}
         
-        if not os.path.exists(folder): return
+        for language in ["it", "en"]:
+            folder = os.path.join(self._project_root, "documents", "prompts", language)
+            self.prompts[language] = {}
+            
+            if not os.path.exists(folder): return
 
-        for file in sorted(os.listdir(folder)):
-            if not str(file).endswith(".json"): continue
-            
-            try:
-                template = FileHandler().read_file(os.path.join(folder, file))
-            except Exception: continue
-            
-            # Extract basic structural elements
-            system_msg = "\n".join(template.get("system", []))
-            human_msg = "\n".join(template.get("human", []))
-            examples = template.get("examples", [])
-            
-            # Resolve grammar-driven static parameters (e.g. lists of commands)
-            params_DQL = self._resolve_DQL_params(template.get("params", {}).get("from_DQL", []))
-            params_user = template.get("params", {}).get("from_user", [])
-            parser = template.get("parser", "str")
-            
-            # Construct complex chat templates with optional few-shot components
-            messages = [("system", system_msg)]
-            if examples:
-                messages.append(self._build_few_shot_prompt(examples))
-            messages.append(("human", human_msg))
-            
-            self.prompts[file] = [ChatPromptTemplate.from_messages(messages), params_DQL, params_user, parser]
+            for file in sorted(os.listdir(folder)):
+                if not str(file).endswith(".json"): continue
+                
+                try:
+                    template = FileHandler().read_file(os.path.join(folder, file))
+                except Exception: continue
+                
+                # Extract basic structural elements
+                system_msg = "\n".join(template.get("system", []))
+                human_msg = "\n".join(template.get("human", []))
+                examples = template.get("examples", [])
+                
+                # Resolve grammar-driven static parameters (e.g. lists of commands)
+                params_DQL = self._resolve_DQL_params(template.get("params", {}).get("from_DQL", []))
+                params_user = template.get("params", {}).get("from_user", [])
+                parser = template.get("parser", "str")
+                
+                # Construct complex chat templates with optional few-shot components
+                messages = [("system", system_msg)]
+                if examples:
+                    messages.append(self._build_few_shot_prompt(examples))
+                messages.append(("human", human_msg))
+                
+                self.prompts[language][file] = [ChatPromptTemplate.from_messages(messages), params_DQL, params_user, parser]
         
     def _resolve_DQL_params(self, params: list) -> dict:
         """Injects system-level metadata (roles, grammar lists) into prompt variables."""
@@ -395,7 +398,7 @@ class DQLLanguage:
         for param in params:
             if "role" in param:
                 # Load specialized header based on user functional role
-                header_folder = os.path.join(self._project_root, "documents", "prompts", "header")
+                header_folder = os.path.join(self._project_root, "documents", "prompts", "it", "header")
                 role_file = f"{self._role}.txt" if self._role in ["Giudice", "Avvocato"] else "Altro.txt"
                 resolved[param] = FileHandler().read_file(os.path.join(header_folder, role_file))
             elif "commands" in param:

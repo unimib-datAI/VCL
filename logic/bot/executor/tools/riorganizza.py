@@ -19,7 +19,7 @@ def riorganizza(context: list, query: dict, llm, language) -> str:
         "direction": order.get("direction", "Crescente")
     }
     
-    prompt = language.prompts.get("Riorganizza.json")
+    prompt = language.prompts.get("it", {}).get("Riorganizza.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

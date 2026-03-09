@@ -18,7 +18,7 @@ def classifica(context: list, query: dict, llm, language) -> str:
         "classes": str(classes)
     }
     
-    prompt = language.prompts.get("Classifica.json")
+    prompt = language.prompts.get("it", {}).get("Classifica.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

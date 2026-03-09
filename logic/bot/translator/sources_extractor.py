@@ -156,7 +156,7 @@ class SourcesExtractor:
         """
         Uses LLM to identify document names directly mentioned in the query.
         """
-        prompt = self._dql_language.prompts.get("ExplicitDocumentsExtraction.json", None)
+        prompt = self._dql_language.prompts.get("it", {}).get("ExplicitDocumentsExtraction.json", None)
         
         if not prompt:
             raise ValueError("ExplicitDocumentsExtraction.json prompt template missing.")
@@ -193,7 +193,7 @@ class SourcesExtractor:
             "current_doc_info": current_doc_info
         }
 
-        prompt = self._dql_language.prompts.get("ImplicitDocumentsExtraction.json", None)
+        prompt = self._dql_language.prompts.get("it", {}).get("ImplicitDocumentsExtraction.json", None)
         
         if not prompt:
             raise ValueError("ImplicitDocumentsExtraction.json prompt template missing.")

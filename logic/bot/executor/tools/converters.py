@@ -178,7 +178,7 @@ def riformula(context: list, query: dict, llm, language) -> str:
         "limit": format_limit_condition(limit)
     }
     
-    prompt = language.prompts.get("Riformula.json")
+    prompt = language.prompts.get("it", {}).get("Riformula.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

@@ -211,7 +211,7 @@ class Planner:
             }
             
             if ops[-1].get("structured_prompt", {}).get("how", {}).get("limit", {}):
-                integration_step["structured_prompt"]["how"]["limit"] = ops[-1]["structured_prompt"]["how"]["limit"]
+                integration_step["structured_prompt"]["how"] = {"limit": deepcopy(ops[-1]["structured_prompt"]["how"]["limit"])}
                 
             ops.append(integration_step)
         return ops

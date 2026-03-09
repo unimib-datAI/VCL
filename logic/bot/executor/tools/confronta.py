@@ -13,7 +13,7 @@ def confronta(context: list, query: dict, llm, language) -> str:
         "context": format_context(context)
     }
     
-    prompt = language.prompts.get("Confronta.json")
+    prompt = language.prompts.get("it", {}).get("Confronta.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

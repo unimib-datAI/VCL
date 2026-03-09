@@ -66,7 +66,7 @@ class CommandClassifier:
 
         try:
             # Load the system prompt specifically designed for intent recognition
-            prompt = self._dql_language.prompts.get("IntentClassification.json", None)
+            prompt = self._dql_language.prompts.get("it", {}).get("IntentClassification.json", None)
             
             if not prompt:
                 raise ValueError("IntentClassification.json prompt template is missing from language config.")

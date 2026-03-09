@@ -26,7 +26,7 @@ def estrai_semantico(context: list, query: dict, llm, language) -> str:
         "description_what": language.get_description_from_what(what.get("name"))
     }
 
-    prompt = language.prompts.get("EstraiSemantico.json")
+    prompt = language.prompts.get("it", {}).get("EstraiSemantico.json")
 
     if not prompt:
         raise ValueError("Error: Could not determine how to process this request.")

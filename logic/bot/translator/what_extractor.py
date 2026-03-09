@@ -72,7 +72,7 @@ class WhatExtractor:
             }
         
             # Load the system prompt specifically designed for 'what' entity extraction
-            prompt = self._dql_language.prompts.get("WhatExtraction.json", None)
+            prompt = self._dql_language.prompts.get("it", {}).get("WhatExtraction.json", None)
             
             if not prompt:
                 raise ValueError("WhatExtraction.json prompt template not found.")
@@ -126,7 +126,7 @@ class WhatExtractor:
         status = "Error"
 
         try:
-            prompt = self._dql_language.prompts.get("ConceptDisambiguation.json", None)
+            prompt = self._dql_language.prompts.get("it", {}).get("ConceptDisambiguation.json", None)
             
             if not prompt:
                 raise ValueError("ConceptDisambiguation.json prompt template is missing from language config.")
@@ -166,7 +166,7 @@ class WhatExtractor:
         status = "Error"
 
         try:
-            prompt = self._dql_language.prompts.get("PhraseDisambiguation.json", None)
+            prompt = self._dql_language.prompts.get("it", {}).get("PhraseDisambiguation.json", None)
             
             if not prompt:
                 raise ValueError("PhraseDisambiguation.json prompt template is missing from language config.")
