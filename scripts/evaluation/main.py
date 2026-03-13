@@ -62,7 +62,7 @@ def evaluation():
     registry.register(RAGModel(GENERATION_OPENAI_MODEL))
     registry.register(CopilotModel())
     registry.register(NotebookLMModel())
-    registry.register(DQLModel("DQL (gpt-5.1)"))
+    registry.register(DQLModel("DQL"))
 
     for m in registry.all():
         print(f"[INFO] Initializing model: {m.name}")

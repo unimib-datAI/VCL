@@ -2,22 +2,24 @@
 
 DQL (Document Query Language) is a structured, extensible query language designed to describe *cognitive operations* a human performs on documents. Think of it as a semantics-first abstraction layer between natural language and the concrete operations performed on legal/technical documents: **search**, **summarize**, **extract**, **compare**, **integrate**, **verify**, and so on.
 
-The project implements:
+The project implements the following core modules:
 
-* A translator from **natural language** → **DQL/JSON**;
-* A **planner** that turns structured DQL into an ordered execution plan;
-* An **executor** that runs atomic operations against a document corpus using LLMs and deterministic tools where appropriate;
-* A Streamlit-based **GUI** for interactive usage;
-* Storage integrations (MongoDB/Elasticsearch) and a configurable multi-provider LLM layer.
+* Preprocessor: Converts Natural Language (NL) input into a Directed Acyclic Graph (DAG), subsequently transforming it into a list of tasks in NL to guide the execution.
+* Translator: A translator from natural language → DQL/JSON.
+* Planner: Turns structured DQL into an ordered execution plan, managing dependencies between operations.
+* Executor: Runs atomic operations against a document corpus using LLMs and deterministic tools where appropriate.
+* GUI: A Streamlit-based interface for interactive usage.
+* Storage & LLM Layer: Storage integrations (MongoDB/Elasticsearch) and a configurable multi-provider LLM layer.
+* Evaluation Script: Includes a dedicated evaluation script to assess system performance, accuracy, and reliability across the workflow.
 
 The system is intentionally **modular** so components can be swapped (different LLM providers, plug-in deterministic tools, alternative UIs).
 
 # 1. Features
 
-This section explains, in depth, what DQL provides now (V.1) and what it intends to provide.
+This section explains, in depth, what DQL provides now (V0.2) and what it intends to provide.
 
 * **Structured cognitive primitives**
-  A catalog of atomic operations (e.g., `search`, `summarize`, `extract_semantic`, `extract_logical`, `compare`, `integrate`, `verify`, `classify`, `reorganize`) with deterministic semantics and operational guidelines. Commands are configured in a single JSON language file so the semantics are explicit and editable.
+  A catalog of atomic operations (e.g., `search`, `summarize`, `extract semantic`, `extract logical`, `compare`, `integrate`, `verify`, `classify`, `reorganize`) with deterministic semantics and operational guidelines. Commands are configured in a single JSON language file so the semantics are explicit and editable.
 
 * **Natural Language → DQL translation**
   The translator subsystem converts user NL queries into a structured DQL representation (JSON). This representation captures `command`, `what`, `source`, `conditions`, and optional `parameters`.
@@ -62,11 +64,11 @@ Below is a compact reference of the supported commands. Each command entry summa
 
   * Output: new text (rewritten) capturing facts, relevant arguments, device; no verbatim copy of entire sections.
 
-* **`extract_semantic` (`estrai semantico`)** — Extract semantically coherent sections (facts, reasons, devices).
+* **`extract semantic` (`estrai semantico`)** — Extract semantically coherent sections (facts, reasons, devices).
 
   * Output: focused sections, reformulated for clarity but preserving conceptual content.
 
-* **`extract_logical` (`estrai logico`)** — Reconstruct argumentation chain (sillogisms, premises→conclusion).
+* **`extract logical` (`estrai logico`)** — Reconstruct argumentation chain (sillogisms, premises→conclusion).
 
   * Output: stepwise mapping of premises, intermediate inferences, and conclusion(s). Reformulation allowed to clarify logical structure.
 
@@ -196,7 +198,7 @@ MONGO_INITDB_ROOT_USERNAME=...
 MONGO_INITDB_ROOT_PASSWORD=...
 ```
 
-## 5) Download files
+## 5) Insert files
 
 In `documents` directory you must store your documents.
 Each document is a JSON file containing three keys:
@@ -204,6 +206,7 @@ Each document is a JSON file containing three keys:
 - *name*: the name of the file
 - *text*: the text content to be processed
 - *type_doc*: the label describing the document type
+- *owner*: the username of the file owner
 
 ## 6) Docker
 
@@ -250,9 +253,9 @@ The script accepts several optional flags (arguments) to customize its behavior.
     * **Description:** Sets the number of seconds to wait after each LLM call.
     * **Default:** `0`
 
-* `-parsers`
+* `-evaluation_mode`
 
-    * **Description:** If present, this flag disables the use of the LLM for the spell-checking phase, using an alternative method instead.
+    * **Description:** If present, the Streamlit application is not started, but the experimentation script is started
     * **Usage:** Just add the flag; it does not require a value
 
 **Example**
