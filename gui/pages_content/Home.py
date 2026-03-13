@@ -9,13 +9,14 @@ import queue
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Optional, Generator
+
 import streamlit as st
 import random
 
 from openai import OpenAI
 
 from logic.orchestrator import Orchestrator
-#import docx
+# import docx
 
 # Add Root Directory to sys.path
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
@@ -113,13 +114,13 @@ def _display_chat_history() -> None:
 def _handle_suggestions_and_controls() -> Optional[str]:
     """
     Renders the top control bar (Suggestions, New Chat, Delete Chat).
-    
+
     Returns:
         Optional[str]: A prompt string if a suggestion is clicked, otherwise None.
     """
-    col1, col2, col3, col4, col5= st.columns([0.15, 0.45, 0.20, 0.10, 0.10])
+    col1, col2, col3, col4, col5 = st.columns([0.15, 0.45, 0.20, 0.10, 0.10])
     prompt_selected = None
-    
+
     # Col 1: Suggestions
     with col1:
         # Retrieve stored suggestion trigger if page reloaded
@@ -136,34 +137,15 @@ def _handle_suggestions_and_controls() -> Optional[str]:
                         st.rerun()
             else:
                 st.info("Caricamento configurazione...")
-    
+
     with col2:
         # 0. Selettore modello
         selected_model = _render_model_selector()
 
-        '''label = MODEL_LABELS.get(selected_model, selected_model)
-        st.markdown(
-            f"""
-            <div style="
-                margin-top: 0.5rem;
-                margin-bottom: 0.3rem;
-                display: inline-block;
-                padding: 0.2rem 0.6rem;
-                border-radius: 999px;
-                font-size: 0.85rem;
-                background-color: rgba(255, 255, 255, 0.08);
-                border: 1px solid rgba(255, 255, 255, 0.25);
-            ">
-                🔌 Modello corrente: <b>{label}</b>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )'''
-        
     with col3:
         current_source = st.session_state.config.get_sources_id()
         options = ["salomone", "vitali", "user"]
-        
+
         source_pill = st.pills(
             "Seleziona la fonte",
             options=options,
@@ -172,10 +154,10 @@ def _handle_suggestions_and_controls() -> Optional[str]:
             default=current_source if current_source in options else "user",
             key="source_pill_widget"
         )
-        
+
         if source_pill:
             st.session_state.config.set_sources_id(source_pill)
-        
+
     # Col 4: New Chat
     with col4:
         if st.button("📝 Nuova conversazione"):
@@ -191,23 +173,24 @@ def _handle_suggestions_and_controls() -> Optional[str]:
 
                 st.query_params.chat = st.session_state.config.set_chat_id(new_chat_id)
                 st.rerun()
-        
+
     # Col 5: Delete Chat
     with col5:
         if st.button("❌ Elimina conversazione"):
             st.session_state.storage.delete_chat(st.session_state.username, st.query_params.chat)
-            
+
             all_keys = st.session_state.storage.get_all_chats(st.session_state.username).keys()
             all_keys = sorted(all_keys, reverse=True)
-            
+
             if not all_keys:
                 st.query_params.chat = st.session_state.config.set_chat_id()
             else:
                 st.query_params.chat = st.session_state.config.set_chat_id(all_keys[0])
-                
+
             st.rerun()
 
     return prompt_selected, selected_model
+
 
 def _display_gui_components() -> None:
     """
@@ -224,9 +207,10 @@ def _display_gui_components() -> None:
 
     # Determine if we have a prompt to process
     prompt_to_submit = suggestion_prompt or chat_prompt
-    
+
     if prompt_to_submit:
         _submit_prompt(prompt_to_submit, selected_model)
+
 
 def _submit_prompt(prompt: str, selected_model: str) -> None:
     """
@@ -244,7 +228,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         "time": datetime.now().isoformat(),
         "model": selected_model,
     }
-    
+
     st.session_state.messages.append(user_msg)
 
     # --- USER QUESTION TRACKING ---
@@ -271,6 +255,9 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         # Start Assistant in background thread
         assistant = Orchestrator(st.session_state.config)
         username = st.session_state.username
+
+        # ✅ IMPORTANTISSIMO: cattura storage nel main thread e passalo al thread
+        storage = st.session_state.storage
 
         thread = threading.Thread(
             target=_call_assistant_thread,
@@ -317,8 +304,8 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
                 st.query_params.get("chat", "default"),
             )
 
-            # Eventuali dettagli tecnici nell'expander
-            _show_expander(result)  # Skip "LOGS:" header
+            # Eventuali dettagli tecnici nell'expander (solo se presenti)
+            _show_expander(result)
 
             # Messaggio assistente salvato in cronologia
             assistant_msg = {
@@ -328,7 +315,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
                 "full_details": result,
                 "logs": log_list[1:],
                 "model": selected_model,
-                "battle": battle_payload,   # 👈 payload usato da _display_chat_history
+                "battle": battle_payload,  # 👈 payload usato da _display_chat_history
             }
             st.session_state.messages.append(assistant_msg)
 
@@ -340,18 +327,16 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
             # Render final output con effetto "macchina da scrivere"
             _typewriter_effect(text, placeholder)
-        
+
             if selected_model == "DQL":
+                # In DQL spesso result include già struttura attesa
                 assistant_msg = result
-                
-                if "details" not in assistant_msg:
-                    assistant_msg["details"]
-                
+                if "details" not in assistant_msg or assistant_msg["details"] is None:
+                    assistant_msg["details"] = {}
                 if "logs" not in assistant_msg["details"]:
                     assistant_msg["details"]["logs"] = log_list[1:]
-                    
                 _show_expander(assistant_msg)
-            else:        
+            else:
                 assistant_msg = {
                     "role": "assistant",
                     "content": text,
@@ -360,6 +345,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
                     "logs": log_list[1:],
                     "model": selected_model,
                 }
+
             st.session_state.messages.append(assistant_msg)
 
     # --- 3. Persist messages ---
@@ -380,7 +366,6 @@ def _render_model_selector() -> str:
     - Se l'utente cambia modello rispetto a last_model_for_chat,
       viene creata una nuova chat e associata a quel modello.
     """
-
     # Modello "logico" selezionato (usato anche da _initialize_chat)
     if "selected_model" not in st.session_state:
         st.session_state.selected_model = DEFAULT_MODEL
@@ -424,7 +409,6 @@ def _render_model_selector() -> str:
                 st.session_state.messages = []
                 st.rerun()
 
-
     # Se non è cambiato, manteniamo selected_model allineato
     st.session_state.selected_model = selected
 
@@ -437,6 +421,10 @@ def _render_model_selector() -> str:
 def _call_assistant_thread(prompt: str, selected_model: str, assistant, username: str, stop_event: threading.Event, result_queue: queue.Queue, chat_id, storage = None) -> None:
     """
     Wrapper to run the heavy assistant logic in a thread.
+
+    IMPORTANT:
+    - Non usare st.session_state dentro i thread.
+    - Passiamo 'storage' dal main thread per leggere documenti e loggare.
     """
     try:
         response = _call_model(prompt, selected_model, assistant, username, chat_id, storage)
@@ -448,10 +436,10 @@ def _call_assistant_thread(prompt: str, selected_model: str, assistant, username
 
 def _load_case_documents(assistant, username: str, storage = None) -> List[Dict[str, str]]:
     """
-    Recupera i documenti utente da Mongo tramite assistant.storage
-    SENZA usare st.session_state (che non è thread-safe).
+    Recupera i documenti utente da Mongo tramite storage (thread-safe).
+    NON usa st.session_state.
     """
-    docs = []
+    docs: List[Dict[str, str]] = []
 
     raw_docs = storage.get_all_documents("vitali") if storage else st.session_state.storage.get_all_documents("vitali")
     
@@ -486,8 +474,7 @@ def _load_case_documents(assistant, username: str, storage = None) -> List[Dict[
 def _build_docs_block(assistant, username: str, storage = None) -> str:
     """
     Costruisce il blocco di testo con elenco e contenuto completo
-    dei documenti di caso dell'utente.
-    Riutilizzato da GPT e NotebookLM.
+    dei documenti di caso dell'utente. (thread-safe)
     """
     case_docs = _load_case_documents(assistant, username, storage)
 
@@ -502,12 +489,13 @@ def _build_docs_block(assistant, username: str, storage = None) -> str:
 
     body_chunks = []
     for doc in case_docs:
-        body_chunks.append(
-            f'\n\n# Documento: {doc["label"]}\n{doc["text"]}'
-        )
+        body_chunks.append(f'\n\n# Documento: {doc["label"]}\n{doc["text"]}')
 
     return header + "".join(body_chunks)
 
+# -------------------------------
+# --- Model calls (thread-safe)
+# -------------------------------
 
 
 def _ask_gpt(prompt: str, assistant, username: str, storage = None) -> Dict:
@@ -556,16 +544,12 @@ def _ask_gpt(prompt: str, assistant, username: str, storage = None) -> Dict:
         return {"result": f"❌ Errore chiamando GPT: {e}"}
 
 
-def _ask_notebooklm(prompt: str, assistant, username: str) -> Dict:
+def _ask_notebooklm(prompt: str, assistant, username: str, storage) -> Dict:
     """
     Implementazione attuale di NotebookLM nel tuo sistema:
     - legge i documenti da Mongo
     - usa OpenAI come backend
     - ma con uno stile/istruzioni simili a NotebookLM.
-
-    In futuro, qui potrai sostituire la chiamata con:
-    - API ufficiale NotebookLM Enterprise
-    - oppure Gemini API con RAG personalizzato.
     """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
@@ -579,7 +563,7 @@ def _ask_notebooklm(prompt: str, assistant, username: str) -> Dict:
     try:
         client = OpenAI(api_key=api_key)
 
-        docs_block = _build_docs_block(assistant, username)
+        docs_block = _build_docs_block(storage, username)
 
         system_msg = (
             "Sei una versione 'NotebookLM-like' dell'assistente.\n"
@@ -624,7 +608,6 @@ def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id
     - se anonymized=True: l'utente vede solo Risposta A / Risposta B
     - se anonymized=False: l'utente vede anche il modello (GPT / NotebookLM / DQL)
     """
-    # Scegliamo 2 modelli diversi dalla pool
     if len(BATTLE_MODELS) < 2:
         return {"result": "⚠️ Non ci sono abbastanza modelli per la modalità Battle."}
 
@@ -637,6 +620,7 @@ def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id
 
     battle_payload = {
         "mode": mode,
+        "prompt": prompt,
         "answers": [
             {
                 "id": "A",
@@ -664,17 +648,17 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
       - model_key: chiave interna (es. 'GPT')
       - model_label: etichetta per l'UI (es. 'GPT' o 'NotebookLM')
     """
-
     if model_key == "DQL":
         resp = assistant.chat(prompt)
         text = resp.get("result", "")
 
     elif model_key == "GPT":
         resp = _ask_gpt(prompt, assistant, username, storage)
+        resp = _ask_gpt(prompt, assistant, username, storage)
         text = resp.get("result", "")
 
     elif model_key == "NotebookLM":
-        resp = _ask_notebooklm(prompt, assistant, username)
+        resp = _ask_notebooklm(prompt, assistant, username, storage)
         text = resp.get("result", "")
 
     else:
@@ -691,6 +675,10 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
 def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_id, storage) -> Dict:
     """
     Dispatcher per decidere quale motore usare in base al modello selezionato.
+
+    IMPORTANT:
+    - In thread non bisogna usare st.session_state.
+    - Passiamo 'storage' per recuperare documenti (GPT/NotebookLM) e per Battle.
     """
     if selected_model == "DQL":
         return assistant.chat(prompt)
@@ -699,7 +687,7 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
         return _ask_gpt(prompt, assistant, username, storage)
 
     elif selected_model == "NotebookLM":
-        return _ask_notebooklm(prompt, assistant, username)
+        return _ask_notebooklm(prompt, assistant, username, storage)
 
     elif selected_model == "BattleAnon":
         return _ask_battle(prompt, assistant, username, True, chat_id, storage)
@@ -710,55 +698,54 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
     else:
         return {"result": f"⚠️ Modello '{selected_model}' non riconosciuto."}
 
+# -------------------------------
+# --- Logs streaming (main thread)
+# -------------------------------
 
 def _stream_logs_to_ui(placeholder, stop_event: threading.Event) -> List[str]:
     """
     Follows the log file and updates the UI placeholder until the stop_event is set.
-    
+
     Returns:
         List[str]: Collected log lines.
     """
     log_file = os.path.join(
-        st.session_state.config.project_root, 
-        "logs", 
+        st.session_state.config.project_root,
+        "logs",
         f"{st.session_state.config.get_request_id()}.log"
     )
-    
+
     log_list = ["LOGS:"]
-    
-    # Generator yields lines from file
+
     for line in _follow_log_generator(log_file, stop_event):
         log_list.append(line)
-        # Update UI with current logs
         placeholder.markdown("\n\n".join(log_list).strip())
-        
+
         if stop_event.is_set():
-            placeholder.markdown("") # Clear logs from main view when done
+            placeholder.markdown("")  # Clear logs from main view when done
             break
-            
+
     return log_list
+
 
 def _follow_log_generator(file_path: str, stop_event: threading.Event, wait_time: float = 0) -> Generator[str, None, None]:
     """
     Generator that reads a log file like 'tail -f'.
     """
-    # Wait for file creation
     while not (os.path.exists(file_path) or stop_event.is_set()):
         time.sleep(wait_time)
 
     if os.path.exists(file_path):
         try:
             with open(file_path, "r") as f:
-                f.seek(0, 2) # Optional: Start at end if we only want new logs. 
-                # Since file is new per request, starting at 0 is fine.
-                
+                f.seek(0, 2)
+
                 while not stop_event.is_set():
                     line = f.readline()
                     if not line:
                         time.sleep(wait_time)
                         continue
-                    
-                    # Clean up log lines for display
+
                     for label in ["INFO", "ERROR", "WARNING"]:
                         if f"- {label} -" in line:
                             line = line.split(f"- {label} -", 1)[-1].strip()
@@ -766,6 +753,7 @@ def _follow_log_generator(file_path: str, stop_event: threading.Event, wait_time
                     yield f"\t{line}"
         except Exception:
             yield "\t (Errore lettura log)"
+
 
 def _typewriter_effect(text: str, placeholder) -> None:
     """Simulates typing effect for the assistant response."""
@@ -775,19 +763,23 @@ def _typewriter_effect(text: str, placeholder) -> None:
         placeholder.markdown(typed_text)
         time.sleep(0.01)
 
+# -------------------------------
+# --- Battle UI (main thread)
+# -------------------------------
+
 def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: str) -> None:
     """
-    Mostra due risposte in modalità 'Battle':
+    Mostra due risposte in modalità 'Battle'.
 
-    - Prima fase: due riquadri affiancati con bottone "Preferisco questa risposta".
-    - Dopo la scelta: una risposta va in "schermo intero".
-      Ci sono frecce per passare da una risposta all'altra.
+    Logging voto:
+    - usa st.session_state.storage.log_battle_vote(...)
+    - 1 voto per battle_id per utente (upsert nello Storage)
     """
     if not battle_payload:
         st.markdown("⚠️ Nessuna risposta ricevuta in modalità Battle.")
         return
 
-    mode = battle_payload.get("mode", "anon")
+    mode = battle_payload.get("mode", "anon")  # "anon" | "labeled"
     answers = battle_payload.get("answers", [])
     if len(answers) < 2:
         st.markdown("⚠️ Modalità Battle richiede almeno due risposte.")
@@ -795,16 +787,14 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
 
     battle_id = battle_payload.get("battle_id", "default")
 
-    # Chiave base per lo stato di questa specifica "sfida"
     base_key = f"battle_{chat_id}_{battle_id}"
     focus_key = f"{base_key}_focus"  # "A", "B" oppure None
 
-    focus = st.session_state.get(focus_key)  # risposta attualmente "in primo piano"
+    focus = st.session_state.get(focus_key)
 
-    # Helper per rendere un riquadro risposta
-    def _render_answer_card(answer: dict, title_prefix: str, mode: str):
+    def _render_answer_card(answer: dict, title_prefix: str, mode_: str):
         title = title_prefix
-        if mode == "labeled":
+        if mode_ == "labeled":
             label = answer.get("model_label") or answer.get("model_key", "")
             if label:
                 title += f"  \n<sub style='opacity:0.7;'>Modello: <b>{label}</b></sub>"
@@ -825,17 +815,37 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
         st.markdown(answer.get("text", ""))
         st.markdown("</div>", unsafe_allow_html=True)
 
+    def _log_vote(chosen_side: str):
+        try:
+            storage = st.session_state.storage
+            chat = st.query_params.get("chat", "")
+            prompt = battle_payload.get("prompt") or ""
+
+            model_a = answers[0].get("model_key", "UNKNOWN")
+            model_b = answers[1].get("model_key", "UNKNOWN")
+            chosen_model = model_a if chosen_side == "A" else model_b
+
+            storage.log_battle_vote(
+                user_id=st.session_state.username,
+                chat_id=chat,
+                battle_id=battle_id,
+                prompt=prompt,
+                mode=mode,
+                model_a=model_a,
+                model_b=model_b,
+                chosen_model=chosen_model,
+                chosen_side=chosen_side,
+            )
+        except Exception as e:
+            print(f"[WARN] impossibile loggare voto battle: {e}")
+
     st.markdown("### ⚔️ Modalità Battle")
 
-    # -----------------------------
     # FASE 2: una risposta scelta
-    # -----------------------------
     if focus in ("A", "B"):
-        # Indice 0 -> A, 1 -> B
         current_idx = 0 if focus == "A" else 1
         current_answer = answers[current_idx]
 
-        # Barra di navigazione per passare da una risposta all'altra
         nav_col1, nav_col2, nav_col3 = st.columns([0.25, 0.5, 0.25])
 
         with nav_col1:
@@ -855,28 +865,23 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
                 st.rerun()
 
         st.markdown("---")
-
-        # Risposta scelta in "schermo intero"
         _render_answer_card(current_answer, f"Risposta {focus}", mode)
         return
 
-    # -----------------------------
     # FASE 1: nessuna scelta ancora
-    # -----------------------------
-
     colA, colB = st.columns(2)
 
-    # Risposta A
     with colA:
         _render_answer_card(answers[0], "Risposta A", mode)
         if st.button("✅ Preferisco questa risposta", key=f"{base_key}_pick_A"):
+            _log_vote("A")
             st.session_state[focus_key] = "A"
             st.rerun()
 
-    # Risposta B
     with colB:
         _render_answer_card(answers[1], "Risposta B", mode)
         if st.button("✅ Preferisco questa risposta", key=f"{base_key}_pick_B"):
+            _log_vote("B")
             st.session_state[focus_key] = "B"
             st.rerun()
 
@@ -889,12 +894,12 @@ def _show_expander(message: Dict) -> None:
     Renders the details expander containing input structure, operations, and logs.
     """
     details = message.get("details", {}) if message else {}
-    
+
     prompt = details.get("prompt", "")
     prompt_process = details.get("prompt_process", prompt)
     tasks = details.get("tasks", [])
     logs = details.get("logs", [])
-    
+
     if not (message and details and tasks):
         return
 
@@ -904,7 +909,6 @@ def _show_expander(message: Dict) -> None:
         else:
             op_count_str = "La richiesta non è stata scomposta."
 
-        # 1. Structured Input
         st.markdown(
             f"""
             L'utente ha richiesto \"{prompt}\".
@@ -916,10 +920,8 @@ def _show_expander(message: Dict) -> None:
             unsafe_allow_html=True,
         )
 
-        # 2. Operations
         _display_task(tasks)
-        
-        # 3. Logs
+
         if logs:
             text_escaped = html.escape("\n".join([l.strip() for l in logs]).strip())
             st.markdown(
@@ -934,71 +936,64 @@ def _show_expander(message: Dict) -> None:
                 """,
                 unsafe_allow_html=True,
             )
-            
+
         st.markdown("\n", unsafe_allow_html=True)
-        
+
+
 def _display_task(tasks: list) -> None:
     """Renders a single operation detail block."""
     for index, task in enumerate(tasks, start=1):
-        prompt_task = task.get('prompt', '')
+        prompt_task = task.get("prompt", "")
         structured_prompt = task.get("structured_prompt", {})
-        
-        # Create a clean subset for display
+
         display_dict = {
             "command": structured_prompt.get("command", ""),
             "from": structured_prompt.get("from", []),
         }
-        
+
         for key in ["what", "how"]:
             if structured_prompt.get(key, None):
                 display_dict[key] = structured_prompt[key]
 
         task_json = json.dumps(display_dict, indent=4)
         task_result = markdown.markdown(task.get("result", ""))
-        
-        operation = [_display_operation(i, t) for i, t in enumerate(task.get("operations", []))] if len(task.get("operations", [])) > 1 else []
-        
+
         html_code = [
             '<details style="margin-left:20px; margin-top:10px;">',
-            '\t' + f'<summary>Task {index}: {prompt_task}</summary>',
-            '\t<p></p>',
-            '\tIl Task è stato trodotto in DQL nel seguente modo:'
-            '\t<p></p>',
-            '\t' + f'<pre><code class="language-json">{task_json}</code></pre>',
-            '\t<p></p>'
+            "\t" + f"<summary>Task {index}: {prompt_task}</summary>",
+            "\t<p></p>",
+            "\tIl Task è stato trodotto in DQL nel seguente modo:"
+            "\t<p></p>",
+            "\t" + f'<pre><code class="language-json">{task_json}</code></pre>',
+            "\t<p></p>",
         ]
-    
+
         n_operations = len(task.get("operations", []))
         if n_operations > 1:
-            html_code.append('\t' + f'Dopo essere stato tradotto, è stato necessario scomporre il task in {n_operations} operazioni.')
-            operation = [_display_operation(i, t) for i, t in enumerate(task.get("operations", []))]
-        
-            for o in operation:
-                for r in o:
-                    html_code.append("\t" + r)
+            html_code.append("\t" + f"Dopo essere stato tradotto, è stato necessario scomporre il task in {n_operations} operazioni.")
+            operation_blocks = [_display_operation(i, t) for i, t in enumerate(task.get("operations", []))]
+            for block in operation_blocks:
+                for row in block:
+                    html_code.append("\t" + row)
         else:
-            html_code.append('\t' + f'Dopo essere stato tradotto, non è stato necessario scomporre il task.')
-        
-        html_code.append('\t<details style="margin-left:20px; margin-top:10px;">')
-        html_code.append('\t\t<summary>Visualizza il risultato del task</summary>')
-        html_code.append('\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">')
-        html_code.append('\t\t\t' + task_result)
-        html_code.append('\t\t</div>')
-        html_code.append('\t</details>')
-        
-        html_code.append('</details>')
-            
-        st.markdown(
-            "\n".join([h for h in html_code if h.strip()]),
-            unsafe_allow_html=True,
-        )
+            html_code.append("\t" + "Dopo essere stato tradotto, non è stato necessario scomporre il task.")
 
-def _display_operation(index: int, operation: Dict) -> None:
+        html_code.append('\t<details style="margin-left:20px; margin-top:10px;">')
+        html_code.append("\t\t<summary>Visualizza il risultato del task</summary>")
+        html_code.append('\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">')
+        html_code.append("\t\t\t" + task_result)
+        html_code.append("\t\t</div>")
+        html_code.append("\t</details>")
+
+        html_code.append("</details>")
+
+        st.markdown("\n".join([h for h in html_code if h.strip()]), unsafe_allow_html=True)
+
+
+def _display_operation(index: int, operation: Dict) -> List[str]:
     """Renders a single operation detail block."""
-    
     structured_prompt = operation.get("structured_prompt", {})
-    
-    # Create a clean subset for display
+
     display_dict = {
         "command": structured_prompt.get("command", ""),
         "from": structured_prompt.get("from", []),
@@ -1009,23 +1004,24 @@ def _display_operation(index: int, operation: Dict) -> None:
 
     operation_json = json.dumps(display_dict, indent=4)
     operation_result = markdown.markdown(operation.get("result", ""))
-    operation_command = display_dict.get('command', '')
+    operation_command = display_dict.get("command", "")
 
     return [
         '<details style="margin-left:20px; margin-top:10px;">',
-        '\t' + f'<summary>Operazione {index}: {operation_command}</summary>',
-        '\t<p></p>',
-        '\tIl comando della singola operazione è:'
-        '\t<p></p>',
-        '\t' + f'<pre><code class="language-json">{operation_json}</code></pre>',
+        "\t" + f"<summary>Operazione {index}: {operation_command}</summary>",
+        "\t<p></p>",
+        "\tIl comando della singola operazione è:"
+        "\t<p></p>",
+        "\t" + f'<pre><code class="language-json">{operation_json}</code></pre>',
         '\t<details style="margin-left:20px; margin-top:10px;">',
-        '\t\t<summary>Visualizza il risultato dell\'operazione</summary>',
+        "\t\t<summary>Visualizza il risultato dell'operazione</summary>",
         '\t\t<div style="margin:10px; padding:10px; border:1px solid #ccc; border-radius:8px;">',
-        '\t\t\t' + operation_result,
-        '\t\t</div>',
-        '\t</details>',
-        '</details>'
+        "\t\t\t" + operation_result,
+        "\t\t</div>",
+        "\t</details>",
+        "</details>",
     ]
+
 
 def _save_messages(messages: List[Dict]) -> None:
     """Helper to persist messages to storage."""
@@ -1045,7 +1041,6 @@ def show_home():
     """
     Main page entry point.
     """
-    # Guard clause for missing state
     required_keys = ["config", "username", "storage"]
     if not all(hasattr(st.session_state, k) and getattr(st.session_state, k) for k in required_keys) or not st.query_params.get("chat"):
         st.warning("Inizializzazione della configurazione in corso... Ricarica se il messaggio persiste.")
@@ -1053,6 +1048,7 @@ def show_home():
 
     _initialize_chat()
     _display_gui_components()
+
 
 if __name__ == "__main__":
     show_home()
