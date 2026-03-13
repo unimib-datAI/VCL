@@ -1,5 +1,6 @@
 # ====== Core Framework (Interface) ======
 streamlit
+streamlit-cookies-manager
 
 # ====== Environment Variable ======
 python-dotenv
@@ -9,31 +10,41 @@ python-dotenv
 langchain
 langchain-core
 
-# ====== LLM Provider for LangChain ======
+# ====== LLM Providers & Embeddings ======
 # Required for 'google_genai' (Google Gemini)
 langchain-google-genai
 
 # Required for 'openai' (GPT Models)
 langchain-openai
 openai
+tiktoken  # For OpenAI token counting
 
 # Required for 'huggingface'
 langchain-huggingface
 huggingface_hub
 transformers
-# Often useful for HF embeddings
-sentence-transformers
+sentence-transformers  # Often useful for HF embeddings
 
-# ====== Databases and Search Engines ======
-# For connecting to MongoDB
+# Required for Voyage AI embeddings
+voyageai
+
+# ====== Databases, Search Engines & Vector Stores ======
+# For connecting to MongoDB (includes bson)
 pymongo
 
 # For connecting to Elasticsearch
 elasticsearch
 
+# For local vector search (use faiss-gpu se hai una GPU Nvidia compatibile)
+faiss-cpu
+
 # ====== Utilities and Data Management ======
-# Used for data management
+# Used for data management and scientific computing
 pandas
+numpy==1.26.4
+
+# For graph structures and algorithms
+networkx
 
 # For password hashing
 bcrypt
@@ -41,16 +52,14 @@ bcrypt
 # For spell checking
 pyspellchecker
 
-# For cookie management (if needed)
-streamlit-cookies-manager
-
 # For parsing Markdown (if used outside of Streamlit)
 markdown
 
-# For documents analysis
-numpy==1.26.4
-spacy
+# For advanced document parsing and config handling
 tomlkit
 
-# For evaluation
+# For Natural Language Processing (NLP)
+spacy
+
+# ====== Evaluation ======
 ragas

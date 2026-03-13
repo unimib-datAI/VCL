@@ -42,7 +42,7 @@ def _display_header():
             st.rerun()
     
     with col2:
-        if st.button("💾 Carica Documenti", use_container_width=True):
+        if st.button("💾 Carica Documenti", width='stretch'):
             st.session_state.show_uploader = True
 
         files = None
@@ -83,7 +83,7 @@ def _display_header():
         if st.session_state.get("current_doc") and st.session_state.username == st.session_state.config.get_sources_id():
             doc_to_del = st.session_state.current_doc.get("_id", None)
             if doc_to_del:
-                if st.button("🗑️ Elimina Documento Corrente", use_container_width=True, type="secondary"):
+                if st.button("🗑️ Elimina Documento Corrente", width='stretch', type="secondary"):
                     if st.session_state.storage.delete_document(st.session_state.username, doc_to_del):
                         st.success("Documento eliminato con successo.")
                         _initialize_docs(st.session_state.config.get_sources_id())
@@ -91,9 +91,9 @@ def _display_header():
                     else:
                         st.error("Errore durante l'eliminazione del documento.")
             else:
-                st.button("🗑️ Elimina Documento Corrente", use_container_width=True, disabled=True)
+                st.button("🗑️ Elimina Documento Corrente", width='stretch', disabled=True)
         else:
-            st.button("🗑️ Elimina Documento Corrente", use_container_width=True, disabled=True)
+            st.button("🗑️ Elimina Documento Corrente", width='stretch', disabled=True)
 
 def _display_buttons():
     """
@@ -128,7 +128,7 @@ def _display_buttons():
             btn_type = "primary" if is_selected else "secondary"
             label = f"{doc.get('type_doc', 'Doc')}\n({doc.get('name', 'N/A')})"
 
-            if st.button(label, key=f"btn_{i}", type=btn_type, use_container_width=True):
+            if st.button(label, key=f"btn_{i}", type=btn_type, width='stretch'):
                 st.session_state.current_doc = doc
                 st.rerun()
 

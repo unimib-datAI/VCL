@@ -49,7 +49,7 @@ def _render_questions_log():
             "Modello": MODEL_LABELS.get(r.get("model", "-"), r.get("model", "-")),
         })
 
-    st.dataframe(table, use_container_width=True, hide_index=True)
+    st.dataframe(table, width='stretch', hide_index=True)
 
 
 def _render_battle_scores():
@@ -73,7 +73,7 @@ def _render_battle_scores():
     scores = storage.get_battle_scores_summary(user_id=st.session_state.username, mode=mode_filter)
     total = scores.get("total_matches", 0)
     st.caption(f"Totale match: {total}")
-    st.dataframe(_scores_summary_to_df(scores), use_container_width=True, hide_index=True)
+    st.dataframe(_scores_summary_to_df(scores), width='stretch', hide_index=True)
 
     st.divider()
     st.subheader("🗳️ Ultimi voti battle")
@@ -111,7 +111,7 @@ def _render_battle_scores():
             "Prompt": r.get("prompt", ""),
         })
 
-    st.dataframe(table, use_container_width=True, hide_index=True)
+    st.dataframe(table, width='stretch', hide_index=True)
 
 
 def show_questions_tracking():

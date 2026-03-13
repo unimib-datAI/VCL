@@ -148,7 +148,7 @@ def _show_battle_scores_admin():
     scores_global = storage.get_battle_scores_summary(user_id=None, mode=mode_filter)
     total_global = scores_global.get("total_matches", 0)
     st.caption(f"Totale match registrati: {total_global}")
-    st.dataframe(_scores_summary_to_df(scores_global), use_container_width=True, hide_index=True)
+    st.dataframe(_scores_summary_to_df(scores_global), width='stretch', hide_index=True)
 
     st.divider()
 
@@ -167,7 +167,7 @@ def _show_battle_scores_admin():
     scores_user = storage.get_battle_scores_summary(user_id=selected_user, mode=mode_filter)
     total_user = scores_user.get("total_matches", 0)
     st.caption(f"Match di {selected_user}: {total_user}")
-    st.dataframe(_scores_summary_to_df(scores_user), use_container_width=True, hide_index=True)
+    st.dataframe(_scores_summary_to_df(scores_user), width='stretch', hide_index=True)
 
 
 def show_admin():
