@@ -1,12 +1,12 @@
-# DQL — Document Query Language
+# VCL — Verbal Command Langiage
 
-DQL (Document Query Language) is a structured, extensible query language designed to describe *cognitive operations* a human performs on documents. Think of it as a semantics-first abstraction layer between natural language and the concrete operations performed on legal/technical documents: **search**, **summarize**, **extract**, **compare**, **integrate**, **verify**, and so on.
+VCL (Verbal Command Language) is a structured, extensible query language designed to describe *cognitive operations* a human performs on documents. Think of it as a semantics-first abstraction layer between natural language and the concrete operations performed on legal/technical documents: **search**, **summarize**, **extract**, **compare**, **integrate**, **verify**, and so on.
 
 The project implements the following core modules:
 
 * Preprocessor: Converts Natural Language (NL) input into a Directed Acyclic Graph (DAG), subsequently transforming it into a list of tasks in NL to guide the execution.
-* Translator: A translator from natural language → DQL/JSON.
-* Planner: Turns structured DQL into an ordered execution plan, managing dependencies between operations.
+* Translator: A translator from natural language → VCL/JSON.
+* Planner: Turns structured VCL into an ordered execution plan, managing dependencies between operations.
 * Executor: Runs atomic operations against a document corpus using LLMs and deterministic tools where appropriate.
 * GUI: A Streamlit-based interface for interactive usage.
 * Storage & LLM Layer: Storage integrations (MongoDB/Elasticsearch) and a configurable multi-provider LLM layer.
@@ -16,22 +16,22 @@ The system is intentionally **modular** so components can be swapped (different 
 
 # 1. Features
 
-This section explains, in depth, what DQL provides now (V0.2) and what it intends to provide.
+This section explains, in depth, what VCL provides now (V0.2) and what it intends to provide.
 
 * **Structured cognitive primitives**
   A catalog of atomic operations (e.g., `search`, `summarize`, `extract semantic`, `extract logical`, `compare`, `integrate`, `verify`, `classify`, `reorganize`) with deterministic semantics and operational guidelines. Commands are configured in a single JSON language file so the semantics are explicit and editable.
 
-* **Natural Language → DQL translation**
-  The translator subsystem converts user NL queries into a structured DQL representation (JSON). This representation captures `command`, `what`, `source`, `conditions`, and optional `parameters`.
+* **Natural Language → VCL translation**
+  The translator subsystem converts user NL queries into a structured VCL representation (JSON). This representation captures `command`, `what`, `source`, `conditions`, and optional `parameters`.
 
 * **Operation planner**
-  A planner maps a DQL representation into an ordered list of atomic operations (an execution plan). The planner resolves dependencies and can break some commands into multiple sub-operations when beneficial.
+  A planner maps a VCL representation into an ordered list of atomic operations (an execution plan). The planner resolves dependencies and can break some commands into multiple sub-operations when beneficial.
 
 * **LLM-guided execution**
   Execution primarily uses a LLM for tasks. In Future, deterministic tools or algorithmic routines will be used (e.g., exact reference extraction, regex-based monetary extraction) where possible.
 
 * **Command-specific behavior & constraints**
-  Each DQL command has a specific set of operational guidelines (for example, `search` must return verbatim text snippets only, no paraphrase; `summarize` must be a conceptual rewrite). These guidelines are enforced by the executor.
+  Each VCL command has a specific set of operational guidelines (for example, `search` must return verbatim text snippets only, no paraphrase; `summarize` must be a conceptual rewrite). These guidelines are enforced by the executor.
 
 * **Streamlit GUI**
   Lightweight web UI for interactive queries, document uploads, and result visualization.
@@ -47,9 +47,9 @@ This section explains, in depth, what DQL provides now (V0.2) and what it intend
   Keeps a history of interactions (V.1: stored but not used to influence understanding by default).
 
 * **Editable configuration**
-  DQL possible sources, and the `what` types are defined in a config JSON that can be edited by GUI.
+  VCL possible sources, and the `what` types are defined in a config JSON that can be edited by GUI.
 
-# 2. Supported DQL Commands
+# 2. Supported VCL Commands
 
 Below is a compact reference of the supported commands. Each command entry summarizes the intent and the key operational guidelines the executor follows.
 
@@ -131,12 +131,12 @@ This section provides a compact but detailed description of each major component
   * Rule-based or dictionary-based fallback when `-parsers` is set.
 * **LLM-based:** **Optional** (default yes, configurable).
 
-### Translator (NL → DQL)
+### Translator (NL → VCL)
 
-* **Role:** Convert an NL query to a DQL JSON structure with fields such as `command`, `what`, `source`, `conditions`, `params`.
+* **Role:** Convert an NL query to a VCL JSON structure with fields such as `command`, `what`, `source`, `conditions`, `params`.
 * **Submodules (all LLM-based):**
 
-  1. **Command Classifier:** chooses the best-matching DQL command.
+  1. **Command Classifier:** chooses the best-matching VCL command.
   2. **Source Extractor:** identifies which document sources are relevant (sentenza 1°, memoria, ricorso).
   3. **What Extractor:** determines the object of operation (e.g., `fact`, `decision`, `precedent`, `sillogism`).
   4. **Condition Extractor:** pulls filters (dates, parties, jurisdiction).
@@ -144,8 +144,8 @@ This section provides a compact but detailed description of each major component
 
 ### Planner
 
-* **Role:** Convert DQL JSON into an ordered plan of atomic operations. Resolve dependencies and split complex requests into sub-operations when needed.
-* **Implementation:** Rule engine plus a planner algorithm that maps DQL -> sequence of tasks (JSON list).
+* **Role:** Convert VCL JSON into an ordered plan of atomic operations. Resolve dependencies and split complex requests into sub-operations when needed.
+* **Implementation:** Rule engine plus a planner algorithm that maps VCL -> sequence of tasks (JSON list).
 * **LLM-based:** **No** (deterministic planning logic).
 
 ### Executor
@@ -155,7 +155,7 @@ This section provides a compact but detailed description of each major component
   * Deterministic functions: regex extraction, citation parsing, DB queries.
   * LLM-invocations for summarization, logical reconstruction, paraphrasing, synthesis.
 * **Behavior:** The executor enforces the operational guidelines for each command (e.g., `search` returns verbatim snippets).
-* **LLM-based:** **Yes** It takes as input the information that can be obtained from the language configuration and the user's DQL request.
+* **LLM-based:** **Yes** It takes as input the information that can be obtained from the language configuration and the user's VCL request.
 
 ### Databases (Document Corpus)
 
@@ -167,8 +167,8 @@ This section provides a compact but detailed description of each major component
 ## 1) Clone repository
 
 ```bash
-git clone https://github.com/unimib-datAI/DQL.git
-cd DQL
+git clone https://github.com/unimib-datAI/VCL.git
+cd VCL
 ```
 ## 2) Python environment
 
