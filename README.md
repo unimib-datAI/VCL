@@ -1,4 +1,4 @@
-# VCL — Verbal Command Langiage
+# VCL — Verbal Command Language
 
 VCL (Verbal Command Language) is a structured, extensible query language designed to describe *cognitive operations* a human performs on documents. Think of it as a semantics-first abstraction layer between natural language and the concrete operations performed on legal/technical documents: **search**, **summarize**, **extract**, **compare**, **integrate**, **verify**, and so on.
 
