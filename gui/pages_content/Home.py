@@ -31,7 +31,7 @@ APP_TITLE = "DQL"
 MODEL_LABELS = {
     "DQL": "DQL",
     "GPT": "GPT",
-    "NotebookLM": "NotebookLM",
+    # "NotebookLM": "NotebookLM",
     "BattleAnon": "Battle (anonimo)",
     "BattleLabeled": "Battle (etichettato)",
 }
