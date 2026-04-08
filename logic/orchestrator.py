@@ -47,17 +47,21 @@ class Orchestrator:
         # Access persistent storage and language definitions via configuration
         self._storage = self._CFG.get_storage()
         self._language = self._CFG.get_DQL()
+        
+        self._get_request_id = self._CFG.get_request_id
 
     # ----------------------
     # --- Public Methods ---
     # ----------------------
     
-    def chat(self, prompt: str) -> dict:
+    def chat(self, prompt: str, user_id: str, chat_id: str, request_id: str = None) -> dict:
         """
         Entry point for processing a user query. Orchestrates the 4-step pipeline.
 
         Args:
-            prompt (str): The raw natural language query from the user.
+            prompt (str): The user's query.
+            user_id (str): The ID of the user initiating the request.
+            chat_id (str): The ID of the chat session.
 
         Returns:
             dict: A comprehensive response object containing:
@@ -65,24 +69,45 @@ class Orchestrator:
                 - details: Technical breakdown (tasks, DQL commands, logs).
                 - metadata: Request ID, timestamp, and model used.
         """
-        # Lazy initialization of specialized components for the current request
-        self._logger = self._CFG.get_logger("Orchestrator")
-        self._preprocessor = Preprocessor(self._CFG)
-        self._translator = Translator(self._CFG)
-        self._planner = Planner(self._CFG)
-        self._executor = Executor(self._CFG)
+        status = {}
         
-        # Structure the base response object
-        response = {
-            "role": "assistant",
-            "time": datetime.now().isoformat(),
-            "id": self._CFG.get_request_id(),
-            "model": "DQL"
-        }
+        request_id = request_id if request_id else self._get_request_id(user_id)
+        
+        # Lazy initialization of specialized components for the current request
+        self._logger = self._CFG.get_logger("Orchestrator", request_id)
+        self._preprocessor = Preprocessor(self._CFG, request_id)
+        self._translator = Translator(self._CFG, request_id)
+        self._planner = Planner(self._CFG, request_id)
+        self._executor = Executor(self._CFG, request_id)
 
         try:
+            if not prompt or prompt.strip() == "":
+                raise ValueError("No prompt provided in the request status.")
+            
+            status = {
+                "role": "assistant",
+                "time": datetime.now().isoformat(),
+                "model": "DQL",
+                
+                "id": request_id,
+                
+                "ids": {
+                    "user": user_id,
+                    "session": chat_id,
+                    "request": request_id,
+                },
+                
+                "details": {
+                    "prompt": prompt
+                }
+            }
+            
+            self.user_id = status["ids"]["user"]
+            self.session_id = status["ids"]["session"]
+            self.request_id = status["ids"]["request"]
+
             # --- Pipeline Execution Flow ---
-            self._logger.info(f"Starting processing for request ID \"{response['id']}\".")
+            self._logger.info(f"Starting processing for request ID \"{status['id']}\".")
             self._logger.info(f"Request received \"{prompt}\".")
             
             # Step 1: Clean input and split into logical tasks
@@ -107,28 +132,29 @@ class Orchestrator:
             self._logger.error(f"Processing failed with error: {e}")
 
         # Finalizing the response object with metadata and technical details
-        response["details"] = {
-            "prompt": prompt,
-            "prompt_process": prompt_process,
-            "tasks": result
-        }
+        status["details"].update(
+            {
+                "prompt_process": prompt_process,
+                "tasks": result
+            }
+        )
         
-        response["content"] = last_result
-        response["result"] = last_result
+        status["content"] = last_result
+        status["result"] = last_result
         
         self._logger.info(last_result)
         
         # Extract and deduplicate source documents referenced during the process
         used_documents = set()
         available_sources = [src["name"] for src in self._language.get_sources()]
-        for task in response["details"]["tasks"]:
+        for task in status["details"]["tasks"]:
             for doc in task.get("structured_prompt", {}).get("from", []):
                 if doc in available_sources:
                     used_documents.add(doc)
         
-        response["details"]["used_documents"] = list(used_documents)
+        status["details"]["used_documents"] = list(used_documents)
 
-        return response
+        return status
 
     # ------------------------------
     # --- Private Helper Methods ---
@@ -137,7 +163,7 @@ class Orchestrator:
     def _preprocess(self, prompt: str) -> list:
         """Executes query cleaning and semantic task decomposition."""
         self._logger.info("Starting Preprocessing step.")
-        prompt_clean, tasks = self._preprocessor.process(prompt)
+        prompt_clean, tasks = self._preprocessor.process(prompt, self.user_id, self.session_id, self.request_id)
         self._logger.info("Preprocessing step completed.")
         return prompt_clean, tasks
 
@@ -166,22 +192,3 @@ class Orchestrator:
             
         # Returns the full list of results and the specific final generated text
         return results, results[-1].get("result", self.error_msg)
-
-    def store_response(self, response: dict):
-        """
-        Persists the final response in both remote storage (Redis) and local JSON files.
-
-        Args:
-            response (dict): The complete response object generated by the chat method.
-        """
-        try:
-            # Cache the response for 1 hour for quick retrieval in the UI
-            self._storage.set_documents(response, ttl=3600)
-        except Exception:
-            self._logger.error("Failed to persist document in remote storage.")
-            raise Exception("Document not saved in remote storage.")
-            
-        # File-based persistence for audit and long-term tracking
-        request_id = response.get("id", "unknown")
-        file_path = os.path.join(self._CFG.project_root, "documents", f"{request_id}.json")
-        FileHandler().write_file(file_path, response)

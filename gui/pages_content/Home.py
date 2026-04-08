@@ -171,7 +171,7 @@ def _handle_suggestions_and_controls() -> Optional[str]:
                 # salviamo subito l'associazione nella mappa
                 st.session_state.chat_models[new_chat_id] = current_model
 
-                st.query_params.chat = st.session_state.config.set_chat_id(new_chat_id)
+                st.query_params.chat = new_chat_id
                 st.rerun()
 
     # Col 5: Delete Chat
@@ -183,9 +183,9 @@ def _handle_suggestions_and_controls() -> Optional[str]:
             all_keys = sorted(all_keys, reverse=True)
 
             if not all_keys:
-                st.query_params.chat = st.session_state.config.set_chat_id()
+                st.query_params.chat = st.session_state.storage.create_new_chat(st.session_state.username)
             else:
-                st.query_params.chat = st.session_state.config.set_chat_id(all_keys[0])
+                st.query_params.chat = all_keys[0]
 
             st.rerun()
 
@@ -250,7 +250,8 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         stop_event = threading.Event()
         result_queue = queue.Queue()
 
-        st.session_state.config.set_request_id()
+        chat_id = st.query_params.get("chat", "default")
+        request_id = st.session_state.config.get_request_id(st.session_state.username)
 
         # Start Assistant in background thread
         assistant = Orchestrator(st.session_state.config)
@@ -261,13 +262,13 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
         thread = threading.Thread(
             target=_call_assistant_thread,
-            args=(prompt, selected_model, assistant, username, stop_event, result_queue, st.query_params.chat, st.session_state.storage),
+            args=(prompt, selected_model, assistant, username, stop_event, result_queue, chat_id, request_id, st.session_state.storage),
         )
         thread.start()
 
         # Stream logs while waiting
         if selected_model not in ("BattleAnon", "BattleLabeled"):
-            log_list = _stream_logs_to_ui(placeholder, stop_event)
+            log_list = _stream_logs_to_ui(placeholder, stop_event, request_id)
         else:
             # In modalità Battle non mostriamo i log in tempo reale
             log_list = ["LOGS:", "\t (Log non mostrati in modalità Battle)", ""]
@@ -418,7 +419,7 @@ def _render_model_selector() -> str:
 # --- Threading & Log Helpers ---
 # -------------------------------
 
-def _call_assistant_thread(prompt: str, selected_model: str, assistant, username: str, stop_event: threading.Event, result_queue: queue.Queue, chat_id, storage = None) -> None:
+def _call_assistant_thread(prompt: str, selected_model: str, assistant, username: str, stop_event: threading.Event, result_queue: queue.Queue, chat_id, request_id, storage = None) -> None:
     """
     Wrapper to run the heavy assistant logic in a thread.
 
@@ -427,7 +428,7 @@ def _call_assistant_thread(prompt: str, selected_model: str, assistant, username
     - Passiamo 'storage' dal main thread per leggere documenti e loggare.
     """
     try:
-        response = _call_model(prompt, selected_model, assistant, username, chat_id, storage)
+        response = _call_model(prompt, selected_model, assistant, username, chat_id, request_id,storage)
         result_queue.put(response)
     except Exception as e:
         result_queue.put({"result": f"Error: {str(e)}"})
@@ -600,7 +601,7 @@ def _ask_notebooklm(prompt: str, assistant, username: str, storage) -> Dict:
         return {"result": f"❌ Errore chiamando NotebookLM (implementazione attuale): {e}"}
 
 
-def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id, storage) -> Dict:
+def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id, request_id, storage) -> Dict:
     """
     Modalità Battle:
     - sceglie 2 modelli diversi a caso tra DQL, GPT, NotebookLM
@@ -613,8 +614,8 @@ def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id
 
     model_a, model_b = random.sample(BATTLE_MODELS, 2)
 
-    ans_a = _run_single_model_for_battle(model_a, prompt, assistant, username, chat_id, storage)
-    ans_b = _run_single_model_for_battle(model_b, prompt, assistant, username, chat_id, storage)
+    ans_a = _run_single_model_for_battle(model_a, prompt, assistant, username, chat_id, request_id, storage)
+    ans_b = _run_single_model_for_battle(model_b, prompt, assistant, username, chat_id, request_id, storage)
 
     mode = "anon" if anonymized else "labeled"
 
@@ -640,7 +641,7 @@ def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id
     return {"result": battle_payload}
 
 
-def _run_single_model_for_battle( model_key: str, prompt: str, assistant, username: str, chat_id, storage) -> Dict[str, str]:
+def _run_single_model_for_battle( model_key: str, prompt: str, assistant, username: str, chat_id, request_id, storage) -> Dict[str, str]:
     """
     Esegue un singolo modello (DQL / GPT / NotebookLM) e restituisce
     un dict con:
@@ -649,7 +650,8 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
       - model_label: etichetta per l'UI (es. 'GPT' o 'NotebookLM')
     """
     if model_key == "DQL":
-        resp = assistant.chat(prompt)
+        print(prompt, username, chat_id, request_id)
+        resp = assistant.chat(prompt, username, chat_id, request_id)
         text = resp.get("result", "")
 
     elif model_key == "GPT":
@@ -672,7 +674,7 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
     }
 
 
-def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_id, storage) -> Dict:
+def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_id, request_id, storage) -> Dict:
     """
     Dispatcher per decidere quale motore usare in base al modello selezionato.
 
@@ -681,7 +683,8 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
     - Passiamo 'storage' per recuperare documenti (GPT/NotebookLM) e per Battle.
     """
     if selected_model == "DQL":
-        return assistant.chat(prompt)
+        print(prompt, username, chat_id, request_id)
+        return assistant.chat(prompt, username, chat_id, request_id)
 
     elif selected_model == "GPT":
         return _ask_gpt(prompt, assistant, username, storage)
@@ -690,10 +693,10 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
         return _ask_notebooklm(prompt, assistant, username, storage)
 
     elif selected_model == "BattleAnon":
-        return _ask_battle(prompt, assistant, username, True, chat_id, storage)
+        return _ask_battle(prompt, assistant, username, True, chat_id, request_id, storage)
 
     elif selected_model == "BattleLabeled":
-        return _ask_battle(prompt, assistant, username, False, chat_id, storage)
+        return _ask_battle(prompt, assistant, username, False, chat_id, request_id, storage)
 
     else:
         return {"result": f"⚠️ Modello '{selected_model}' non riconosciuto."}
@@ -702,7 +705,7 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
 # --- Logs streaming (main thread)
 # -------------------------------
 
-def _stream_logs_to_ui(placeholder, stop_event: threading.Event) -> List[str]:
+def _stream_logs_to_ui(placeholder, stop_event: threading.Event, request_id: str) -> List[str]:
     """
     Follows the log file and updates the UI placeholder until the stop_event is set.
 
@@ -712,7 +715,7 @@ def _stream_logs_to_ui(placeholder, stop_event: threading.Event) -> List[str]:
     log_file = os.path.join(
         st.session_state.config.project_root,
         "logs",
-        f"{st.session_state.config.get_request_id()}.log"
+        f"{request_id}.log"
     )
 
     log_list = ["LOGS:"]

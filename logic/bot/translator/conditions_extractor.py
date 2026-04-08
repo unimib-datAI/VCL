@@ -22,7 +22,7 @@ class ConditionsExtractor:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id: str):
         """
         Initialize the ConditionsExtractor with required services.
 
@@ -31,7 +31,7 @@ class ConditionsExtractor:
                           logger, and DQL language definitions.
         """
         self._llm = cfg.get_LLM()
-        self._logger = cfg.get_logger("Conditions Extractor")
+        self._logger = cfg.get_logger("Conditions Extractor", request_id)
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
         

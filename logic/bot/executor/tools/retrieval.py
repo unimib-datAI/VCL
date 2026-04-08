@@ -44,23 +44,26 @@ class Retrieval:
         self._chat_id = cfg.get_chat_id()
         self._operations = operations or []
         self._project_root = cfg.project_root
-        self._logger = cfg.get_logger("Retrieval")
+        self.get_logger = cfg.get_logger
 
     # ----------------------
     # --- Public Methods ---
     # ----------------------
     
-    def execute(self, operation: dict) -> list[dict]:
+    def execute(self, operation: dict, request_id: str = None) -> list[dict]:
         """
         Resolves all document dependencies listed in the 'from' field of an operation.
 
         Args:
             operation (dict): A structured DQL operation dictionary.
+            request_id (str, optional): The ID of the current request for logging purposes.
 
         Returns:
             list[dict]: A list of objects containing 'name', 'text', and 'type' for 
                         every successfully retrieved document.
         """
+        self._logger = self.get_logger("Retrieval", request_id)
+        
         retrieved_docs = []
 
         # Iterate through all identifiers in the 'from' clause

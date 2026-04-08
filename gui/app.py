@@ -146,7 +146,7 @@ def _render_sidebar() -> None:
 
             if st.button(label, key=f"nav_{chat_id}", width='stretch'):
                 # Navigation logic: update chat context and synchronize engine state
-                st.query_params["chat"] = st.session_state.config.set_chat_id(chat_id)
+                st.query_params["chat"] = chat_id
 
                 # Sync model selection keys for the Home view
                 st.session_state.selected_model = model_key

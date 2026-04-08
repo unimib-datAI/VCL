@@ -53,7 +53,7 @@ class Executor:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id: str):
         """
         Initialize the Executor with application-wide configurations.
 
@@ -62,7 +62,7 @@ class Executor:
         """
         self._cfg = cfg
         self._llm = cfg.get_LLM()
-        self._logger = cfg.get_logger("Executor")
+        self._logger = cfg.get_logger("Executor", request_id)
         self._language: DQLLanguage = cfg.get_DQL()
         self.file_handler = FileHandler()
 

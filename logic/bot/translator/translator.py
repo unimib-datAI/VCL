@@ -31,7 +31,7 @@ class Translator:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id: str):
         """
         Initialize the Translator with shared configuration and sub-components.
 
@@ -39,19 +39,19 @@ class Translator:
             cfg (Config): Global configuration instance providing access to 
                           LLM services, loggers, and language definitions.
         """
-        self._logger = cfg.get_logger("Translator")
+        self._logger = cfg.get_logger("Translator", request_id)
 
         # Instantiate specialized extraction classes
-        self._sources_extractor_class = SourcesExtractor(cfg)
-        self._command_classifier_class = CommandClassifier(cfg)
-        self._what_extractor_class = WhatExtractor(cfg)
-        self._conditions_extractor_class = ConditionsExtractor(cfg)
+        self._sources_extractor_class = SourcesExtractor(cfg, request_id)
+        self._command_classifier_class = CommandClassifier(cfg, request_id)
+        self._what_extractor_class = WhatExtractor(cfg, request_id)
+        self._conditions_extractor_class = ConditionsExtractor(cfg, request_id)
 
     # -----------------------------
     # --- Main Rewriting Method ---
     # -----------------------------
     
-    def rewrite(self, tasks: list) -> list:
+    def rewrite(self, tasks: list, user_id: str = None, chat_id: str = None) -> list:
         """
         Transforms a list of raw tasks into structured DQL commands.
 
@@ -83,7 +83,7 @@ class Translator:
         # --- PHASE 1: Source Extraction ---
         # This is high-priority as sources define the scope for subsequent steps
         thread_from = threading.Thread(
-            target=self._from, args=(deepcopy(tasks), result_from)
+            target=self._from, args=(deepcopy(tasks), deepcopy(user_id), deepcopy(chat_id), result_from)
         )
         
         self._logger.info("Starting sources extraction threading...")
@@ -181,7 +181,7 @@ class Translator:
         
         result_queue.put(result)
         
-    def _from(self, tasks: list, result_queue: queue.Queue):
+    def _from(self, tasks: list, user_id: str, chat_id: str, result_queue: queue.Queue):
         """Thread target: executes source/document identification for all tasks."""
         result = []
         try:
@@ -189,7 +189,7 @@ class Translator:
             
             for t in tasks:
                 if "from" not in t.get("structured_prompt", {}):
-                    result.append(self._sources_extractor_class.extract(t.get("prompt", ''), ids))
+                    result.append(self._sources_extractor_class.extract(t.get("prompt", ''), ids, user_id, chat_id))
                 else:
                     result.append(t["structured_prompt"]["from"])
         except Exception as e:

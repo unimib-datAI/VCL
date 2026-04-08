@@ -19,7 +19,7 @@ class Decomposer():
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id):
         """
         Initialize the Decomposer with configuration and resources.
 
@@ -34,7 +34,7 @@ class Decomposer():
         
         self.docs_in_string = cfg.docs_in_string
         
-        self._logger = cfg.get_logger("Decomposer")
+        self._logger = cfg.get_logger("Decomposer", request_id)
         
     @classmethod
     def get_instance(cls, cfg: Config):
@@ -53,7 +53,7 @@ class Decomposer():
                     cls._instance = cls(cfg)
         return cls._instance
         
-    def decompose(self, query: str) -> list:
+    def decompose(self, query: str, request_id: str) -> list:
         """
         Main entry point for query decomposition.
         
@@ -64,6 +64,7 @@ class Decomposer():
 
         Args:
             query (str): The raw input query.
+            request_id (str): The unique identifier for the current request.
 
         Returns:
             list: A list of ordered dictionaries representing the structured tasks.
@@ -87,7 +88,7 @@ class Decomposer():
                 )
                 
                 # Step 3: Apply graph logic to sort tasks by dependency
-                result = self.order_tasks(result)
+                result = self.order_tasks(result, request_id)
                 
                 if len(result) == 0:
                     raise Exception("0 task detected")
@@ -112,14 +113,14 @@ class Decomposer():
         # Format the final task list with unique request-based IDs
         return [
             {
-                "id": f"{self._cfg.get_request_id()}_{str(q.get('id', str(i)))}",
+                "id": f"{request_id}_{str(q.get('id', str(i)))}",
                 "prompt": q.get("prompt", ""),
                 "structured_prompt": q.get("structured_prompt", {})
             }
             for i, q in enumerate(result, start=1)
         ]
         
-    def order_tasks(self, tasks: list) -> list:
+    def order_tasks(self, tasks: list, request_id: str) -> list:
         """
         Builds a Directed Acyclic Graph (DAG) to sort tasks based on their dependencies.
         
@@ -128,6 +129,7 @@ class Decomposer():
 
         Args:
             tasks (list): Raw list of tasks with 'id' and 'dependences'.
+            request_id (str): The unique identifier for the current request.
 
         Returns:
             list: Tasks ordered by topological sort.
@@ -166,10 +168,10 @@ class Decomposer():
             new_task_data = {
                 "id": new_id, 
                 "prompt": f"Integra {sink_nodes_str}",
-                "from": [[f"{self._cfg.get_request_id()}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],
+                "from": [[f"{request_id}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],
                 "structured_prompt": {
                     "command": "integra",
-                    "from": [[f"{self._cfg.get_request_id()}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],
+                    "from": [[f"{request_id}_{str(s)}", f"#{str(s)}"] for s in sink_nodes],
                     "what": [{"name": "intero documento"}]
                 }
             }

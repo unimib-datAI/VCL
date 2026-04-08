@@ -23,7 +23,7 @@ class SourcesExtractor:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id: str):
         """
         Initialize the SourcesExtractor with system configuration.
 
@@ -34,7 +34,7 @@ class SourcesExtractor:
         self._llm = cfg.get_LLM()
         self._user_id = cfg.get_user_id()
         self._storage = cfg.get_storage()
-        self._logger = cfg.get_logger("Sources Extractor")
+        self._logger = cfg.get_logger("Sources Extractor", request_id)
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
         
@@ -85,7 +85,7 @@ class SourcesExtractor:
 
         return []
 
-    def extract(self, query: str, tasks_id: list = None) -> list:
+    def extract(self, query: str, tasks_id: list = None, user_id: str = None, chat_id: str = None) -> list:
         """
         Orchestrates the document extraction pipeline.
         
@@ -95,13 +95,14 @@ class SourcesExtractor:
         Args:
             query (str): The natural language input from the user.
             tasks_id (list, optional): List of IDs for previously generated tasks in the session.
-
+            user_id (str, optional): The ID of the user initiating the request.
+            chat_id (str, optional): The ID of the chat session.
         Returns:
             list: A list of relevant document references or a fallback list of all sources.
         """
         status = "Error"
         try:
-            chat = self.get_chat_history()
+            chat = self.get_chat_history(user_id, chat_id) if user_id and chat_id else None
             
             # Strategy 1: Look for direct names of documents in the query text
             documents = self._explicit_documents_extraction(query) 

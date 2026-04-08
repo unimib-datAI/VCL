@@ -22,7 +22,7 @@ class Preprocessor:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id: str):
         """
         Initialize the Preprocessor with specialized sub-modules.
 
@@ -30,9 +30,9 @@ class Preprocessor:
             cfg (Config): Global configuration instance providing logging, 
                           storage access, and LLM handles.
         """
-        self._logger = cfg.get_logger("Preprocessor")
-        self._decomposer_class = Decomposer(cfg)
-        self._rephraser_class = Rephraser(cfg)
+        self._logger = cfg.get_logger("Preprocessor", request_id)
+        self._decomposer_class = Decomposer(cfg, request_id)
+        self._rephraser_class = Rephraser(cfg, request_id)
         self._storage = cfg.get_storage()
         
         # Helper function to retrieve the current conversation history
@@ -42,7 +42,7 @@ class Preprocessor:
     # --- Main Preprocessing Pipeline ---
     # -----------------------------------
 
-    def process(self, query: str) -> tuple:
+    def process(self, query: str, user_id: str, chat_id: str, request_id: str) -> tuple:
         """
         Executes the full preprocessing workflow on a raw user string.
 
@@ -66,7 +66,7 @@ class Preprocessor:
             raise Exception("Received empty or invalid query during preprocessing.")
         
         # Retrieve context to decide between correction or rephrasing
-        chat = self.get_chat_history()
+        chat = self.get_chat_history(user_id, chat_id)
         
         if not chat:
             chat = None
@@ -83,7 +83,7 @@ class Preprocessor:
         # PHASE 3: Structural Decomposition
         # Breaking the complex prompt into atomic, interdependent tasks
         self._logger.info("Starting query decomposition into atomic tasks.")
-        prompts = self._decomposer_class.decompose(normalized_query)
+        prompts = self._decomposer_class.decompose(normalized_query, request_id)
         self._logger.info("Query decomposition completed.")
 
         return normalized_query, prompts

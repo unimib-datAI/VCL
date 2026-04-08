@@ -20,17 +20,17 @@ class Planner:
         - Avoiding command conflicts (e.g., search vs. extraction).
     """
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id: str):
         """
         Initialize the Planner with language definitions and logging.
 
         Args:
             cfg (Config): Global configuration providing access to DQL language grammar.
         """
-        self._logger = cfg.get_logger("Planner")
+        self._logger = cfg.get_logger("Planner", request_id)
         self._project_root = cfg.project_root
         self._dql_language: DQLLanguage = cfg.get_DQL()
-        self._request_id = cfg.get_request_id()
+        self._request_id = request_id
 
     # -------------------------------------------------------------------------
     # Public Methods

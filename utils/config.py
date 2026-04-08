@@ -199,7 +199,7 @@ class Config:
     # --- Logger ---
     # --------------
     
-    def get_logger(self, name: str, level=logging.INFO) -> logging.Logger:
+    def get_logger(self, name: str, request_id: str, level=logging.INFO) -> logging.Logger:
         """
         Creates or retrieves a logger that writes to a request-specific file.
         Clears existing handlers to avoid duplicate logs in long-running processes.
@@ -212,7 +212,7 @@ class Config:
             logging.Logger: The configured logger.
         """
         # Path to the log file named after the current Request ID
-        log_file = os.path.join(self._log_dir, f"{self.get_request_id()}.log")
+        log_file = os.path.join(self._log_dir, f"{request_id}.log")
         
         logger = logging.getLogger(name)
         logger.setLevel(level)
@@ -246,24 +246,12 @@ class Config:
     # --------------------------
     # --- Request Identifier ---
     # --------------------------
-    
-    def get_request_id(self) -> str:
-        """
-        Provides the ID for the current execution request.
-        Auto-generates one if it doesn't exist.
-        """
-        if not self._request_id:
-            self.set_request_id()
-        return self._request_id
 
-    def set_request_id(self, id: str = None):
+    def get_request_id(self, user_id: str = None):
         """
         Generates and sets a unique request identifier.
         Format: user_id + UTC timestamp (ISO format sanitized).
         """
-        if id:
-            self._request_id = id
-            return
         
         timestamp = datetime.now(timezone.utc).isoformat()
         # Clean timestamp for safe filename usage
@@ -272,7 +260,7 @@ class Config:
         if "+" in sanitized:
             sanitized = sanitized[:sanitized.rindex("+")]
             
-        self._request_id = f"{self._user_id}_{sanitized}".lower()
+        return f"{user_id}_{sanitized}".lower()
         
     # -----------------------
     # --- Chat Identifier ---
@@ -295,7 +283,7 @@ class Config:
         
         return self._chat_id
         
-    def get_chat_history(self) -> list:
+    def get_chat_history(self, user_id: str, chat_id: str) -> list:
         """
         Retrieves the chronologically sorted chat history for the active session.
         Filters out messages without technical details to focus on actual interactions.
@@ -308,8 +296,7 @@ class Config:
                     "used_documents": chat.get("details", {}).get("used_documents", []),
                     "content": chat.get("content", "")
                 }
-                for chat in self._storage.get_chat_messages(self.get_user_id(),
-                                                            self.get_chat_id())
+                for chat in self._storage.get_chat_messages(user_id, chat_id)
                 if "details" in chat
             ], 
             key=lambda x: x["id"]

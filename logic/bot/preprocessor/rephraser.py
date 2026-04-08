@@ -20,7 +20,7 @@ class Rephraser():
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config):
+    def __init__(self, cfg: Config, request_id: str):
         """
         Initialize the Rephraser with configuration and LLM resources.
 
@@ -33,7 +33,7 @@ class Rephraser():
         self._project_root = cfg.project_root
         self._dql_language = cfg.get_DQL()
         
-        self._logger = cfg.get_logger("Rephraser")
+        self._logger = cfg.get_logger("Rephraser", request_id)
         
     @classmethod
     def get_instance(cls, cfg: Config):
