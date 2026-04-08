@@ -1,0 +1,302 @@
+{
+    "commands": [
+        {
+            "key": "a",
+            "command": "cerca",
+            "description": "Estrazione puntuale: identifica entit\u00e0 e concetti chiave. Per ogni elemento, riporta la citazione testuale esatta (verbatim) e spiega perch\u00e9 \u00e8 rilevante."
+        },
+        {
+            "key": "b",
+            "command": "riassumi",
+            "description": "Sintesi densa: elimina ripetizioni e dettagli minori. Mantieni solo i punti informativi essenziali e i passaggi decisivi."
+        },
+        {
+            "key": "c",
+            "command": "estrai semantico",
+            "description": "Filtro tematico: isola e raggruppa solo le parti del testo che trattano l'argomento specifico indicato."
+        },
+        {
+            "key": "d",
+            "command": "estrai logico",
+            "description": "Analisi strutturale: individua ed estrai le singole tesi, argomentazioni o catene di ragionamento presenti."
+        },
+        {
+            "key": "e",
+            "command": "confronta",
+            "description": "Comparazione: analizza due o pi\u00f9 elementi evidenziando in modo preciso somiglianze, differenze e punti di contatto."
+        },
+        {
+            "key": "f",
+            "command": "integra",
+            "description": "Fusione dati: unisci pi\u00f9 testi in un unico output coerente, eliminando i doppioni e risolvendo eventuali contrasti tra le informazioni."
+        },
+        {
+            "key": "k",
+            "command": "altro",
+            "description": "Task libero: esegui qualsiasi altra operazione richiesta non specificata sopra.",
+            "default": true,
+            "atomic": [
+                "*"
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "name": "finance",
+            "synonyms": [],
+            "description": "Financial and corporate documentation, such as financial statements and annual reports. This includes company information and governance (name, location, stock exchange listings, board members, executives, shareholders, auditors, and compensation policies), key financial metrics (revenue, profit/loss, debt, assets, cash reserves, EPS, dividends (with USD conversion), and operational and strategic analysis (business segments, business segments, significant events, and risk factors)."
+        }
+    ],
+    "what": [
+        {
+            "name": "company_name",
+            "definition": "A \"str\" element with the following description \"the full legal name of the company as disclosed in the annual report.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "registered_office",
+            "definition": "A \"str\" element with the following description \"the registered address or main office location of the company.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "exchange_code",
+            "definition": "A \"multi_str\" element with the following description \"The code of the stock exchange where the company is listed (e.g., ASX, SUN).\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "principal_activities",
+            "definition": "A \"multi_str\" element with the following description \"main business activities or industry classification; choose one or more from ['Mining', 'finance', 'Healthcare', 'Manufacturing', 'Technology', 'Retail', 'Energy', 'Utilities', 'Real Estate', 'Transportation', 'Agriculture', 'Telecommunications', 'Media', 'Other'], seperated by `||` (e.g. Mining || finance).\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "board_members",
+            "definition": "A \"multi_str\" element with the following description \"profiles of board members.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "executive_profiles",
+            "definition": "A \"multi_str\" element with the following description \"profiles of executive management team members.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "revenue",
+            "definition": "A \"int\" element with the following description \"total operating revenue recognized during the reporting period. Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "net_profit_or_loss",
+            "definition": "A \"int\" element with the following description \"net profit or loss amount for the reporting period (enter a negative number for loss). Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "total_debt",
+            "definition": "A \"int\" element with the following description \"total debt outstanding at the end of the reporting period. Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "total_assets",
+            "definition": "A \"int\" element with the following description \"total assets held by the company at the end of the reporting period. Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "cash_reserves",
+            "definition": "A \"int\" element with the following description \"total cash and cash equivalents held at period-end. Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "net_assets",
+            "definition": "A \"int\" element with the following description \"net asset value at the end of the reporting period. Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "earnings_per_share",
+            "definition": "A \"float\" element with the following description \"earnings per share (EPS) for the reporting period. Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "dividend_per_share",
+            "definition": "A \"float\" element with the following description \"dividends paid per share for the period. Enter a number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "largest_shareholder",
+            "definition": "A \"multi_str\" element with the following description \"the name of the largest shareholder.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "the_highest_ownership_stake",
+            "definition": "A \"float\" element with the following description \"the highest percentage of ownership held by a single shareholder. Enter a number, unit: percent (%).\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "major_equity_changes",
+            "definition": "A \"str\" element with the following description \"whether there were major equity changes during the period; choose one from ['Yes', 'No'].\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "major_events",
+            "definition": "A \"multi_str\" element with the following description \"type(s) of major events; choose one or more from ['M&A', 'Litigation', 'Major Contract', 'Leadership Change', 'Restructuring', 'Delisting', 'Other'], seperated by `||` (e.g. Litigation).\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "bussiness_sales",
+            "definition": "A \"int\" element with the following description \"total operating revenue from all major business lines or segments. If the document reports revenue for multiple segments separately, sum all segments to obtain the total. Enter a single number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "bussiness_profit",
+            "definition": "A \"int\" element with the following description \"total profit contributed by all major business lines or projects. If the document reports profit for multiple segments separately, sum all segments to obtain the total. Enter a single number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "bussiness_cost",
+            "definition": "A \"int\" element with the following description \"total cost associated with all main business lines or projects. If the document reports cost for multiple segments separately, sum all segments to obtain the total. Enter a single number. If the original currency is not USD, convert to USD according to the latest available exchange rate.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "business_segments_num",
+            "definition": "A \"int\" element with the following description \"number of business segments reported. Enter a number.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "business_risks",
+            "definition": "A \"multi_str\" element with the following description \"main types of business risks; choose one or more from ['Market Risk', 'Credit Risk', 'Operational Risk', 'Legal/Compliance Risk', 'Environmental Risk', 'Strategic Risk', 'Other'], seperated by `||` (e.g. Credit Risk || Market Risk).\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "remuneration_policy",
+            "definition": "A \"multi_str\" element with the following description \"executive remuneration policy type; choose only one from ['Fixed', 'Performance-based', 'Stock Option', 'Mixed', 'Not Disclosed'].\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "auditor",
+            "definition": "A \"str\" element with the following description \"name of the external audit firm.\"",
+            "available": [
+                "finance"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        }
+    ]
+}

@@ -1,0 +1,347 @@
+{
+    "commands": [
+        {
+            "key": "a",
+            "command": "cerca",
+            "description": "Estrazione puntuale: identifica entit\u00e0 e concetti chiave. Per ogni elemento, riporta la citazione testuale esatta (verbatim) e spiega perch\u00e9 \u00e8 rilevante."
+        },
+        {
+            "key": "b",
+            "command": "riassumi",
+            "description": "Sintesi densa: elimina ripetizioni e dettagli minori. Mantieni solo i punti informativi essenziali e i passaggi decisivi."
+        },
+        {
+            "key": "c",
+            "command": "estrai semantico",
+            "description": "Filtro tematico: isola e raggruppa solo le parti del testo che trattano l'argomento specifico indicato."
+        },
+        {
+            "key": "d",
+            "command": "estrai logico",
+            "description": "Analisi strutturale: individua ed estrai le singole tesi, argomentazioni o catene di ragionamento presenti."
+        },
+        {
+            "key": "e",
+            "command": "confronta",
+            "description": "Comparazione: analizza due o pi\u00f9 elementi evidenziando in modo preciso somiglianze, differenze e punti di contatto."
+        },
+        {
+            "key": "f",
+            "command": "integra",
+            "description": "Fusione dati: unisci pi\u00f9 testi in un unico output coerente, eliminando i doppioni e risolvendo eventuali contrasti tra le informazioni."
+        },
+        {
+            "key": "k",
+            "command": "altro",
+            "description": "Task libero: esegui qualsiasi altra operazione richiesta non specificata sopra.",
+            "default": true,
+            "atomic": [
+                "*"
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "name": "player",
+            "synonyms": [],
+            "description": "Biographical and sports profile of an NBA player. Includes personal details (name, date of birth, age, nationality), career and academic/draft history information (current or former team, position, college, year, and draft pick), and complete list of honors (NBA titles, MVP awards, Olympic and FIBA ​​World Championship gold medals)."
+        },
+        {
+            "name": "manager",
+            "synonyms": [],
+            "description": "Definitive and management information about the owner or manager of an NBA team. Contains personal data (name, age, nationality), the name of the franchise owned, and the year of acquisition or beginning of the tenure."
+        },
+        {
+            "name": "team",
+            "synonyms": [],
+            "description": "Historical and organizational data for an NBA franchise. Includes the team's official name, founding year, hometown, current ownership, and total number of championships won."
+        },
+        {
+            "name": "city",
+            "synonyms": [],
+            "description": "Demographic, geographic, and economic data for a city, usually referring to the home of a sports franchise. Includes the name of the city and state, population, area in square kilometers, and Gross Domestic Product (GDP)."
+        }
+    ],
+    "what": [
+        {
+            "name": "player.name",
+            "definition": "A \"str\" element with the following description \"full name of the NBA player (e.g., LeBron James).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.birth_date",
+            "definition": "A \"str\" element with the following description \"birth date of the player; use format YYYY/%-m/%-d (e.g., 1984/2/30).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.nationality",
+            "definition": "A \"str\" element with the following description \"nationality of the player (e.g., American, France).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.age",
+            "definition": "A \"int\" element with the following description \"age of the player (if death_date is given, compute as death_date - birth_date; otherwise, compute as 2025/1/1 - birth_date).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.team",
+            "definition": "A \"str\" element with the following description \"the current NBA team the player belongs to, or the last NBA team the player joined if not currently active (e.g., Los Angeles Lakers).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.position",
+            "definition": "A \"str\" element with the following description \"player's primary position on the team; choose one from ['Frontcourt', 'Backcourt'].\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.draft_pick",
+            "definition": "A \"int\" element with the following description \"the pick number at which the player was selected in the NBA draft (e.g., 1).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.draft_year",
+            "definition": "A \"int\" element with the following description \"the year the player was selected in the NBA draft; use format YYYY (e.g., 2003).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.college",
+            "definition": "A \"str\" element with the following description \"the college the player attended, if applicable (e.g., Duke University).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.nba_championships",
+            "definition": "A \"int\" element with the following description \"number of NBA championships the player has won (e.g., 4).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.mvp_awards",
+            "definition": "A \"int\" element with the following description \"number of NBA MVP awards the player has won; use 0 if none (e.g., 2).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.olympic_gold_medals",
+            "definition": "A \"int\" element with the following description \"number of Olympic gold medals the player has won (e.g., 3).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "player.fiba_world_cup",
+            "definition": "A \"int\" element with the following description \"number of FIBA World Cup titles the player has won (e.g., 1).\"",
+            "available": [
+                "player"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "manager.name",
+            "definition": "A \"str\" element with the following description \"name is the full name of the team owner (e.g. Jeanie Buss).\"",
+            "available": [
+                "manager"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "manager.age",
+            "definition": "A \"int\" element with the following description \"age is the age of the team owner, a integer (e.g. 45).\"",
+            "available": [
+                "manager"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "manager.nationality",
+            "definition": "A \"str\" element with the following description \"nationality is the nationality of the team owner (e.g. American).\"",
+            "available": [
+                "manager"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "manager.nba_team",
+            "definition": "A \"str\" element with the following description \"NBA_team is the NBA team's name the owner own, (e.g. Los Angeles Lakers).\"",
+            "available": [
+                "manager"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "manager.own_year",
+            "definition": "A \"int\" element with the following description \"own_year is year the owner have this NBA team (e.g. 2010).\"",
+            "available": [
+                "manager"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "team.team_name",
+            "definition": "A \"str\" element with the following description \"team_name is the full name of the team (e.g. Los Angeles Lakers).\"",
+            "available": [
+                "team"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "team.founded_year",
+            "definition": "A \"int\" element with the following description \"founded_year is the year of this team team founded (e.g. 1947).\"",
+            "available": [
+                "team"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "team.location",
+            "definition": "A \"str\" element with the following description \"location is the lastest city the team team located (e.g. Los Angeles).\"",
+            "available": [
+                "team"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "team.ownership",
+            "definition": "A \"str\" element with the following description \"ownership is the name of the team's owner (e.g. Jeanie Buss).\"",
+            "available": [
+                "team"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "team.championship",
+            "definition": "A \"int\" element with the following description \"championships is the number of this team getting championships (e.g. 5).\"",
+            "available": [
+                "team"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "city.city_name",
+            "definition": "A \"str\" element with the following description \"city_name is the name of the city (e.g. Boston)\"",
+            "available": [
+                "city"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "city.state_name",
+            "definition": "A \"str\" element with the following description \"state_name is the name of the state the city is located in (e.g. California).\"",
+            "available": [
+                "city"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "city.population",
+            "definition": "A \"int\" element with the following description \"population is the population of the city (e.g. 7000000).\"",
+            "available": [
+                "city"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "city.area",
+            "definition": "A \"float\" element with the following description \"area is the area of the city in square kilometers (e.g. 89.64).\"",
+            "available": [
+                "city"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "city.gdp",
+            "definition": "A \"str\" element with the following description \"gdp is the gross domestic product of the city in millions (e.g. 7.2).\"",
+            "available": [
+                "city"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        }
+    ]
+}

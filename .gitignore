@@ -208,7 +208,7 @@ __marimo__/
 
 #DQL Files
 data/
-documents/*.json
+documents/corpus/*
 settings/*
 /**/*.csv
 scripts/evaluation/questions/**/*.json

@@ -1,0 +1,302 @@
+{
+    "commands": [
+        {
+            "key": "a",
+            "command": "cerca",
+            "description": "Estrazione puntuale: identifica entit\u00e0 e concetti chiave. Per ogni elemento, riporta la citazione testuale esatta (verbatim) e spiega perch\u00e9 \u00e8 rilevante."
+        },
+        {
+            "key": "b",
+            "command": "riassumi",
+            "description": "Sintesi densa: elimina ripetizioni e dettagli minori. Mantieni solo i punti informativi essenziali e i passaggi decisivi."
+        },
+        {
+            "key": "c",
+            "command": "estrai semantico",
+            "description": "Filtro tematico: isola e raggruppa solo le parti del testo che trattano l'argomento specifico indicato."
+        },
+        {
+            "key": "d",
+            "command": "estrai logico",
+            "description": "Analisi strutturale: individua ed estrai le singole tesi, argomentazioni o catene di ragionamento presenti."
+        },
+        {
+            "key": "e",
+            "command": "confronta",
+            "description": "Comparazione: analizza due o pi\u00f9 elementi evidenziando in modo preciso somiglianze, differenze e punti di contatto."
+        },
+        {
+            "key": "f",
+            "command": "integra",
+            "description": "Fusione dati: unisci pi\u00f9 testi in un unico output coerente, eliminando i doppioni e risolvendo eventuali contrasti tra le informazioni."
+        },
+        {
+            "key": "k",
+            "command": "altro",
+            "description": "Task libero: esegui qualsiasi altra operazione richiesta non specificata sopra.",
+            "default": true,
+            "atomic": [
+                "*"
+            ]
+        }
+    ],
+    "sources": [
+        {
+            "name": "Art",
+            "synonyms": [],
+            "description": "Biographical, historical, and stylistic information about an artist and their works. It includes demographic details (birth, death, nationality), academic and professional background (movements, institutions, teaching, awards), and visual/thematic analysis of the works (style, composition, colors, objects depicted)."
+        }
+    ],
+    "what": [
+        {
+            "name": "name",
+            "definition": "A \"str\" element with the following description \"full name of the artist\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "nationality",
+            "definition": "A \"multi_str\" element with the following description \"artist's nationality (e.g., french, japanese)\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "art_movement",
+            "definition": "A \"multi_str\" element with the following description \"art movement contributed to (e.g., impressionism)\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "birth_date",
+            "definition": "A \"str\" element with the following description \"birth_date in YYYY/M/D format with partial dates allowed (e.g., 1839/1/9, 1993/4, or 1900), or leave empty if not applicable\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "death_date",
+            "definition": "A \"str\" element with the following description \"death_date in YYYY/M/D format with partial dates allowed (e.g., 1839/1/9, 1993/4, or 1900), or leave empty if not applicable\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "age",
+            "definition": "A \"int\" element with the following description \"age of the artist (if death_date is given, compute as death_date - birth_date; otherwise, compute as 2025/1/1 - birth_date)\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "century",
+            "definition": "A \"str\" element with the following description \"century when the artist was active or influential (e.g., 19th or 19th\u201320th; can span multiple centuries)\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "zodiac",
+            "definition": "A \"str\" element with the following description \"western zodiac sign based on birth date, choose only one from [Aries, Taurus, Gemini, Cancer, Leo, Virgo, Libra, Scorpio, Sagittarius, Capricorn, Aquarius, Pisces]\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "birth_country",
+            "definition": "A \"multi_str\" element with the following description \"country where the artist was born (e.g., netherlands)\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "birth_city",
+            "definition": "A \"multi_str\" element with the following description \"city where the artist was born\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "birth_continent",
+            "definition": "A \"str\" element with the following description \"continent where the artist was born, select one from [Africa, Asia, Europe, North America, South America, Oceania]\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "death_country",
+            "definition": "A \"str\" element with the following description \"country where the artist died, or leave empty if not applicable (e.g., switzerland)\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "death_city",
+            "definition": "A \"str\" element with the following description \"city where the artist died, or leave empty if not applicable\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "field",
+            "definition": "A \"multi_str\" element with the following description \"primary artistic field, choose one or more from: [Painting, Sculpture, Printmaking, Drawing, Photography, Illustration, Collage, Textile art, Installation, Performance, Ceramics, Digital art, Architecture, Mosaic, Graphic Design, Calligraphy], seperated by `||` (e.g. Collage || Illustration || Textile art).\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "genre",
+            "definition": "A \"multi_str\" element with the following description \"primary genre of work, choose one or more from: [Portrait, Landscape, Still Life, Religious, Mythological, History, genre, Nude, Animal, Illustration, Allegorical, Abstract, Fantasy, Sketch, Figurative, Conceptual, Surrealist, Symbolic, Political, Social Realism, Pop art, Narrative, Environmental, Sculpture, Architecture, Music, Film, Digital art, Literature, Other], seperated by `||` (e.g. Portrait || Political).\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "marriage",
+            "definition": "A \"str\" element with the following description \"marital status of the artist, reflecting the artist\u2019s latest (final) marital status as mentioned in the biography. Choose one from: [Cohabiting, Divorced, Married, Remarried, Separated, Unmarried, Widowed, Unknown]. Only extract and fill in the last marital status referenced in the text.\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "art_institution",
+            "definition": "A \"multi_str\" element with the following description \"art academies, schools, organizations, associations, or exhibition societies the artist was affiliated with, taught at, or participated in (e.g., national art academies, artist unions, art schools, exhibition societies).\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "teaching",
+            "definition": "A \"int\" element with the following description \"whether the artist taught at an institution (1 if yes, 0 if none)\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "awards",
+            "definition": "A \"int\" element with the following description \"Number of significant and clearly documented awards the artist received (enter an integer; use 0 if none; exclude medals, scholarships, or honorary mentions).\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "style",
+            "definition": "A \"multi_str\" element with the following description \"the overall artistic style of the image. Choose one or more from: [Abstraction, Cubism, Realism, Impressionism, Modernism, Design, Conceptual, Environmental, Popular, Photography, Digital, Outsider, Asian, Misc, Other]; if multiple styles are clearly present, separate them with `||`.\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "image_genre",
+            "definition": "A \"multi_str\" element with the following description \"the artistic genre or type of the image, choose one or more from: [Abstraction, Geometry, Conceptual, Figuration, Portraiture, Landscape, Urban, Street, Interior, Architecture, Narrative, Imagination, Religion, History, Politics, Animals, Action, StillLife, Medium, Graphic, Industry, Text, Other]; if multiple genres are relevant, separate them with `||`.\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "object",
+            "definition": "A \"multi_str\" element with the following description \"the primary visible objects or subjects depicted in the image (e.g., woman, tree, city skyline, animals, abstract shapes). List the key visual elements as nouns or short noun phrases; if there are several, separate them with `||`.\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "color",
+            "definition": "A \"multi_str\" element with the following description \"the dominant or characteristic colors of the image; Choose one or more from: [Grey, Gray, Black, White, Yellow, Red, Pink, Brown, Orange, Green, Blue, Purple, Gold, Silver, Other]; if multiple colors are important, separate them with `||`.\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "tone",
+            "definition": "A \"multi_str\" element with the following description \"the overall tonal and emotional quality of the image, Choose one or more from: [Bold,Bright,Calm,Contrast,Dark,Dramatic,Dreamlike,Dynamic,Ethereal,Light,Minimalist,Minimalistic,Muted,Natural,Neutral,Soft,Somber,Subdued,Vibrant,Warm,Other]; if multiple tones are relevant, separate them with `||`.\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        },
+        {
+            "name": "composition",
+            "definition": "A \"str\" element with the following description \"the way visual elements are arranged in the image (e.g., asymmetrical with central focus, symmetrical and balanced, dynamic diagonal composition, crowded and layered, minimal with large negative space). Describe the composition style in one short free-form phrase.\"",
+            "available": [
+                "Art"
+            ],
+            "relative_command": [
+                "cerca"
+            ]
+        }
+    ]
+}
