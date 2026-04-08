@@ -202,9 +202,7 @@ class Storage:
             except Exception:
                 pass
 
-        persisted_doc = [doc for doc in self._get_default_docs() if doc.get("owner", "") == username]
-
-        for doc in persisted_doc:
+        for doc in self._get_default_docs(username):
             self.upload_document(username, doc)
 
     def upload_document(self, username: str, persisted_doc, file_name=None) -> bool:
@@ -338,24 +336,30 @@ class Storage:
         docs = self.get_all_documents(user_id)
         value = value.lower()
         if not docs:
-            return None
-        return next((doc for doc in docs if (doc.get("type_doc") or "").lower() == value), None)
+            return []
+        return [doc for doc in docs if (doc.get("type_doc") or "").lower() == value]
 
     def get_document_by_name(self, user_id: str, value: str) -> Optional[dict]:
         """Retrieves a document filtered by its filename/name."""
         docs = self.get_all_documents(user_id)
         value = value.lower()
         if not docs:
-            return None
-        return next((doc for doc in docs if (doc.get("name") or "").lower() == value), None)
+            return []
+        return [doc for doc in docs if (doc.get("name") or "").lower() == value]
 
-    def _get_default_docs(self) -> list:
+    def _get_default_docs(self, username: str) -> list:
         """Loads base JSON documents from the local filesystem."""
-        doc_path = os.path.join(self._project_root, "documents")
-        return [
+        doc_path = os.path.join(self._project_root, "documents", "corpus", username)
+        
+        if not os.path.exists(doc_path):
+            return []
+        
+        all_docs =[
             self._file_handler.read_file(os.path.join(doc_path, f))
             for f in os.listdir(doc_path) if f.endswith(".json")
         ]
+        
+        return [doc for doc in all_docs if doc.get("owner", "") == username]
 
     def upsert_persisted_doc(self, user_id: str, doc: dict) -> bool:
         """Updates an existing document or pushes a new one if not found."""
@@ -609,7 +613,6 @@ class Storage:
             print(f"[WARN] get_battle_scores failed: {e}")
             return []
 
-    # ✅ NEW: dettagli eventi battle (per tracking e debug)
     def get_battle_results(
         self,
         user_id: Optional[str] = None,
@@ -745,8 +748,14 @@ class Storage:
         return self.set_language(user_id, self._get_default_language(user_id))
 
     def _get_default_language(self, username) -> dict:
-        """Loads the factory default language JSON from disk. 
-        DQL-Default, LDQL-Default, LDQL-U are users for evaluation"""
-        prefix = "ldql-default" if username.lower() not in ["dql-default", "ldql-u"] else username.lower()
-        path = os.path.join(self._project_root, "documents", "language", f"{prefix}_language.json")
+        """Loads the factory default language JSON from disk."""
+        path = os.path.join(self._project_root, "documents", "language", f"{username.lower()}_language.json")
+        
+        print(f"Loading default language for '{username}' from path: {path}")
+        
+        if not os.path.exists(path):
+            path = os.path.join(self._project_root, "documents", "language", "ldql_language.json")
+            
+        print(f"Default language path resolved to: {path}")
+            
         return self._file_handler.read_file(path)

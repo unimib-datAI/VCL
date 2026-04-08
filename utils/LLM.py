@@ -33,7 +33,7 @@ class LLM:
     _lock = threading.Lock()
 
     # Default settings
-    model_name: str = "gemini-2.0-flash"
+    model_name: str = "gemini-2.5-flash"
     provider: str = "google_genai"
     parser = StrOutputParser()
 
@@ -54,7 +54,7 @@ class LLM:
         api_key: str = None,
         seconds: int = 5,
         project_root=None,
-        model_name: str = "gemini-2.0-flash",
+        model_name: str = "gemini-2.5-flash",
         provider: str = "google_genai",
     ):
         """
@@ -75,7 +75,7 @@ class LLM:
         except Exception as e:
             # Secondary attempt: Automatic fallback to highly available Gemini engine
             print(f"CRITICAL: Failed to initialize {provider}/{model_name}. Fallback triggered. Error: {e}")
-            self._initialize_llm(None, "gemini-2.0-flash", "google_genai")
+            self._initialize_llm(None, "gemini-2.5-flash", "google_genai")
 
         self._seconds = seconds
         self._initialized = True
@@ -86,7 +86,7 @@ class LLM:
         api_key: str = None,
         seconds: int = 5,
         project_root=None,
-        model_name: str = "gemini-2.0-flash",
+        model_name: str = "gemini-2.5-flash",
         provider: str = "google_genai",
     ):
         """

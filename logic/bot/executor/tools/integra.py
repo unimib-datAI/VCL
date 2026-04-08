@@ -8,8 +8,6 @@ def integra(context: list, query: dict, llm, language) -> str:
         return context[0]
     
     command = query.get("command")
-    if command != "integra":
-        raise ValueError("Error: The command provided does not match 'integra'.")
     
     state = {
         "how": format_conditions(query.get("how", {}), command),

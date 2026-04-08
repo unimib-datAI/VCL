@@ -65,9 +65,9 @@ class Retrieval:
 
         # Iterate through all identifiers in the 'from' clause
         for doc_name in operation.get("from", []):
-            doc = self._retrieve_document(doc_name)
-            if doc:
-                retrieved_docs.append(doc)
+            retrieved_docs.extend(self._retrieve_document(doc_name))
+                
+        print(len(retrieved_docs))
 
         return retrieved_docs
 
@@ -106,70 +106,79 @@ class Retrieval:
 
         for label, method in retrieval_methods:
             doc = method(doc_name)
-            if doc:
+            if len(doc) > 0:
                 self._logger.info(f"Document '{doc_name}' successfully retrieved from {label}.")
                 return doc
 
         # Fallback mechanism: If no source contains the ID, treat it as a literal string input
         self._logger.warning(f"'{doc_name}' not found in any source. Casting to raw text document.")
-        return {"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}
+        return [{"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}]
 
-    def _get_from_operations_list(self, doc_name: str) -> dict | None:
+    def _get_from_operations_list(self, doc_name: str) -> list[dict]:
         """
         Checks the internal pipeline state for results from previous tasks.
         Enables the assistant to 'remember' and use data generated earlier in the same request.
         """
+        result = []
+        
         for op in self._operations:
             # Check top-level operations for matching ID
             if op.get("id") == doc_name:
                 if "result" in op and op.get("structured_prompt", {}).get("from"):
-                    return {"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]}
-                else:
-                    return None
+                    result.append({"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]})
             
             # Recurse into sub-operations if present
             if "operations" in op:
                 for o in op["operations"]:
                     if o.get("id") == doc_name:
                         if "result" in o and o.get("structured_prompt", {}).get("from"):
-                            return {"name": doc_name, "text": o["result"], "type": o["structured_prompt"]["from"][0]}
-                        else:
-                            return None
-        return None
+                            result.append({"name": doc_name, "text": o["result"], "type": o["structured_prompt"]["from"][0]})
+        
+        return result
 
-    def _get_doc_from_mongo(self, doc_name: str) -> dict | None:
+    def _get_doc_from_mongo(self, doc_name: str) -> list[dict]:
         """
         Retrieves user-scoped legal documents from MongoDB.
         Checks both the 'type_doc' and 'name' indices.
         """
+        result = []
         # Sequential check: Try matching by document type first, then by filename
         for method in [self._storage.get_document_by_type,
                         self._storage.get_document_by_name]:
             doc = method(self._sources_id, doc_name)
             if doc and "text" in doc:
-                return {"name": doc["name"], "text": doc["text"], "type": doc_name}
-        return None
+                result.append({"name": doc["name"], "text": doc["text"], "type": doc_name})
+        
+        return result
     
-    def _get_chat_from_mongo(self, doc_name: str) -> dict | None:
+    def _get_chat_from_mongo(self, doc_name: str) -> list[dict]:
         """
         Retrieves a specific message from the current chat history in MongoDB.
         Useful when the user refers to a previous answer by its unique ID.
         """
+        result = []
         doc = self._storage.get_message(self._user_id, self._chat_id, doc_name)
         
         if doc and "content" in doc:
-            return {"name": doc["id"], "text": doc["content"], "type": doc_name}
-        return None
+            result.append({"name": doc["id"], "text": doc["content"], "type": doc_name})
+        
+        return result
 
-    def _get_from_local_system(self, doc_name: str) -> dict | None:
+    def _get_from_local_system(self, doc_name: str) -> list[dict]:
         """
         Fallback to the local 'documents/' directory for static JSON files.
         Validates ownership against the current 'sources_id' config.
         """
-        folder = os.path.join(self._project_root, "documents")
+        result = []
+        
+        folder = os.path.join(self._project_root, "documents", "corpus", self._sources_id)
         handler = FileHandler()
 
         try:
+            if not os.path.exists(folder):
+                self._logger.warning(f"Local document repository not found: {folder}")
+                return []
+                        
             for fname in os.listdir(folder):
                 if not fname.endswith(".json"):
                     continue
@@ -179,11 +188,13 @@ class Retrieval:
 
                     # Ownership and name/type validation
                     if (doc.get("name").lower() == doc_name.lower() or doc.get("type_doc").lower() == doc_name.lower()) and doc.get("owner") == self._sources_id:
-                        return {
-                            "name": doc.get("name", ""),
-                            "text": doc.get("text", ""),
-                            "type": doc.get("type_doc", "task"),
-                        }
+                        result.append(
+                            {
+                                "name": doc.get("name", ""),
+                                "text": doc.get("text", ""),
+                                "type": doc.get("type_doc", "task"),
+                            }
+                        )
                 except Exception as e:
                     self._logger.warning(f"Error parsing local file '{fname}': {e}")
         except FileNotFoundError:
@@ -191,22 +202,24 @@ class Retrieval:
         except Exception as e:
             self._logger.warning(f"Unexpected error scanning local directory: {e}")
             
-        return None
+        return result
 
-    def _get_from_elastic_search(self, doc_name: str) -> dict | None:
+    def _get_from_elastic_search(self, doc_name: str) -> list[dict]:
         """
         Queries the global Elasticsearch index for documents matching the requested type.
         """
         # Search query focused on the 'type_doc' field
         query = {"query": {"bool": {"must": [{"match": {"type_doc": doc_name}}]}}}
 
+        result = []
+        
         try:
             response = self._client.search(index="sperimentazione", body=query)
             # Fetch the first relevant hit from the results
             for hit in response.get("hits", {}).get("hits", []):
                 src = hit.get("_source", {})
                 if "name" in src and "text" in src:
-                    return {"name": src["name"], "text": src["text"], "type": doc_name}
+                    result.append({"name": src["name"], "text": src["text"], "type": doc_name})
 
         except (NotFoundError, RequestError, AuthenticationException,
                 AuthorizationException, ConnectionTimeout, ConnectionError,
@@ -216,4 +229,4 @@ class Retrieval:
         except Exception as e:
             self._logger.warning(f"Unexpected ES failure for '{doc_name}': {e}")
 
-        return None
+        return result

@@ -193,7 +193,7 @@ class DQLLanguage:
         
         # Compilation Phase: Generate executable LangChain templates
         self._generate_prompts()
-        self.gui_examples = self._generate_gui_examples()
+        self.gui_examples = list(set(self._generate_gui_examples()))
 
     # --- Mapping Utilities ---
     

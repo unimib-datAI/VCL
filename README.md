@@ -245,7 +245,7 @@ The script accepts several optional flags (arguments) to customize its behavior.
 * `-model_name <MODEL_NAME>`
 
     * **Description:** Specifies the exact LLM model name to use.
-    * **Default:** `gemini-2.0-flash`
+    * **Default:** `gemini-2.5-flash`
     * **Examples:** `gpt-4o-mini`, `claude-3-5-sonnet`, `mistralai/Mistral-7B-Instruct-v0.2`.
 
 * `-wait_seconds <NUMBER>`

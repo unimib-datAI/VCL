@@ -121,7 +121,24 @@ class Executor:
 
         self._logger.info(f"Invoking tool handler for command: '{command}'")
         
-        # 3. Dynamic dispatch to the appropriate tool function
+        if len(docs) > 1 and command not in ["confronta", "integra"]:
+            sub_results = []
+            self._logger.info(f"Multiple documents retrieved for command '{command}': we need more execution of the command.")
+            
+            for i, doc in enumerate(docs):
+                self._logger.info(f"Processing document {i+1} of {len(docs)} for command '{command}'")
+                sub_result = self._call_tools(command, [doc], structured_prompt)
+                sub_results.append({"name": doc["name"], "text": sub_result, "type": doc["type"]})
+                
+                if i == 5:
+                    break
+            
+            self._logger.info(f"Processing sub-results for command '{command}' with 'integra' to combine them into a single output.")
+            return self._call_tools("integra", sub_results, structured_prompt)
+
+        return self._call_tools(command, docs, structured_prompt)
+        
+    def _call_tools(self, command: str, docs: list, structured_prompt: dict):
         try:
             result = self.FUNCTION_MAP.get(command, None)(
                 docs,
@@ -132,9 +149,6 @@ class Executor:
         except Exception as e:
             self._logger.error(f"Error during execution of command '{command}': {str(e)}")
             raise ValueError(f"Execution failed for command '{command}': {str(e)}")
-
-        # 4. Post-processing finale
-        #return result
         
         return re.sub(self._pattern, self._format_heading, result)
     

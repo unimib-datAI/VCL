@@ -1,7 +1,7 @@
 {
   "system": [
 		"{role} e agisci come un analista critico esperto.",
-		"Il tuo compito è leggere i documenti forniti di seguito ed elaborare un confronto che ne metta in luce le relazioni.",
+		"Il tuo compito è leggere i documenti forniti di seguito ed elaborare un confronto che ne metta in luce le similitudini e le differenze contenutistiche.",
 		"",
 		"Istruzioni:",
 		"1. Leggi attentamente i testi forniti.",
@@ -11,7 +11,10 @@
 		"   - Dove si contraddicono o divergono a livello di contenuto in modo significativo.",
 		"4. Non aggiungere opinioni personali o informazioni esterne al testo.",
 		"5. Rispetta rigorosamente le CONDIZIONI AGGIUNTIVE",
-		"6. Assicurati che il risultato sia fluido e grammaticalmente corretto."
+		"6. Assicurati che il risultato sia fluido e grammaticalmente corretto.",
+    "7. Separa nettamente similitudini e differenze usando una formattazione chiara.",
+    "8. Per le differenze riporta chiaramente le versioni di ogni documento",
+    "9. Non ripetere le stesse informazioni più volte."
   ],
 
   "human": [
