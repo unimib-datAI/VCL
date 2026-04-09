@@ -4,7 +4,7 @@ import os
 def retrieve_doc_paths(project_root: str, owner: str = "vitali"):
     paths = []
     
-    documents_folder = os.path.join(project_root, "documents")
+    documents_folder = os.path.join(project_root, "documents", "vitali")
     
     for file_name in os.listdir(documents_folder):
         f = os.path.join(documents_folder, file_name)
