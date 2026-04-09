@@ -1,6 +1,8 @@
+from pathlib import Path
 from dotenv import load_dotenv
-# Load environmental variables from the .env file (e.g., DB credentials)
-load_dotenv()
+# Carica SEMPRE il .env del progetto e sovrascrive eventuali variabili già presenti
+ENV_PATH = Path(__file__).resolve().parent / ".env"
+load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 import argparse
 import streamlit.web.cli as stcli
@@ -75,11 +77,11 @@ def parse_args() -> argparse.Namespace:
         action="store",
         dest="model_name",
         required=False,
-        default="gemini-2.0-flash",
+        default="gemini-2.5-flash",
         help=(
             "Specify the LLM model name.\n"
             "Examples:\n"
-            "  gemini-2.0-flash (default)\n"
+            "  gemini-2.5-flash (default)\n"
             "  gpt-4o-mini\n"
             "  mistralai/Mistral-7B-Instruct-v0.2\n"
             "  claude-3-5-sonnet\n"
