@@ -63,3 +63,6 @@ spacy
 
 # ====== Evaluation ======
 ragas
+
+# ====== API ======
+fastapi

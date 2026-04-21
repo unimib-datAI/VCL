@@ -47,12 +47,9 @@ class Config:
     _LOG_FORMAT = "%(asctime)s - %(levelname)s - %(name)s - %(message)s"
     
     # Placeholder for big components initialized lazily
-    DQL_info = None
     _storage = None
-    llm = None
-    
-    # Default source identifier
-    _sources_id = None
+    _llm = None
+    _DQL = {}
 
     def __init__(self, opts: argparse.Namespace = None):
         """
@@ -121,40 +118,6 @@ class Config:
         except (TypeError, ValueError):
             return 0
         
-    # ---------------------------------
-    # --- Authentication Management ---
-    # ---------------------------------
-    
-    def handle_login(self, user_id: str, role: str):
-        """
-        Configures the session context for a specific authenticated user.
-
-        Args:
-            user_id (str): The unique user identifier from the database.
-            role (str): The functional role (e.g., Judge, Lawyer) to adapt prompts.
-        """
-        if not user_id:
-            raise ValueError("User ID must be provided to initialize Orchestrator.")
-        
-        self._user_id = user_id
-        self._role = role
-        # Reset IDs to ensure a fresh session context
-        self._request_id = None
-        self._chat_id = None
-        
-        # Pre-load the DQL language metadata for the logged user
-        self.DQL_info = self.get_DQL()
-        
-    def handle_logout(self):
-        """
-        Clears all user-related state from the configuration.
-        """
-        self._user_id = None
-        self._role = None
-        self._request_id = None
-        self._chat_id = None
-        self.DQL_info = None
-        
     # --------------------------------
     # --- Big Components Accessors ---
     # --------------------------------
@@ -172,29 +135,29 @@ class Config:
         """
         Returns the Large Language Model (LLM) wrapper instance.
         """
-        if not self.llm:
-            self.llm = LLM(
+        if not self._llm:
+            self._llm = LLM(
                 api_key=self.api_key, 
                 seconds=self.seconds, 
                 project_root=self.project_root, 
                 model_name=self.model_name, 
                 provider=self.provider
             )
-        return self.llm
+        return self._llm
     
-    def get_DQL(self) -> DQLLanguage:
+    def get_DQL(self, user_id: str) -> DQLLanguage:
         """
         Returns the DQLLanguage instance. Sets user role for prompt personalization.
         """
-        if not self.DQL_info:
-            self.DQL_info = DQLLanguage(
-                self._user_id,
+        if user_id not in self._DQL:
+            self._DQL[user_id] = DQLLanguage(
+                user_id,
                 self.get_storage(), 
                 self.project_root
             )
-            self.DQL_info.set_role(self._role)
-        return self.DQL_info
-        
+            self._DQL[user_id].set_role("Altro") # DA SISTEMARE
+        return self._DQL[user_id]
+
     # --------------
     # --- Logger ---
     # --------------
@@ -232,56 +195,6 @@ class Config:
         logger.addHandler(file_handler)
 
         return logger
-    
-    # -----------------------
-    # --- User Identifier ---
-    # -----------------------
-    
-    def get_user_id(self) -> str:
-        """Retrieves the active user ID or raises error if unauthenticated."""
-        if not self._user_id:
-            raise ValueError("Authentication error: Empty user id")
-        return self._user_id
-    
-    # --------------------------
-    # --- Request Identifier ---
-    # --------------------------
-
-    def get_request_id(self, user_id: str = None):
-        """
-        Generates and sets a unique request identifier.
-        Format: user_id + UTC timestamp (ISO format sanitized).
-        """
-        
-        timestamp = datetime.now(timezone.utc).isoformat()
-        # Clean timestamp for safe filename usage
-        sanitized = timestamp.replace(":", "").replace(".", "")
-        
-        if "+" in sanitized:
-            sanitized = sanitized[:sanitized.rindex("+")]
-            
-        return f"{user_id}_{sanitized}".lower()
-        
-    # -----------------------
-    # --- Chat Identifier ---
-    # -----------------------
-    
-    def get_chat_id(self) -> str:
-        """Retrieves the current chat session ID."""
-        if not self._chat_id:
-            self.set_chat_id()
-        return self._chat_id
-    
-    def set_chat_id(self, id: str = None) -> str:
-        """
-        Sets a specific chat ID or requests a new one from storage.
-        """
-        if id:
-            self._chat_id = id
-        else:
-            self._chat_id = self.get_storage().create_new_chat(self._user_id)
-        
-        return self._chat_id
         
     def get_chat_history(self, user_id: str, chat_id: str) -> list:
         """
@@ -301,30 +214,6 @@ class Config:
             ], 
             key=lambda x: x["id"]
         )
-        
-    # --------------------------
-    # --- Sources Management ---
-    # --------------------------
-    
-    def get_sources_id(self) -> str:
-        """Retrieves the active data source identifier (default: 'vitali')."""
-        if not self._sources_id:
-            self.set_sources_id("vitali")
-        return self._sources_id
-    
-    def set_sources_id(self, id: str = None) -> str:
-        """
-        Sets the source project ID. If 'user' is selected, it maps to the user's private ID.
-        """
-        if id:
-            if id == "user":
-                self._sources_id = self._user_id
-            else:
-                self._sources_id = id
-        else:
-            self._sources_id = "vitali"
-        
-        return self._sources_id
     
     # -----------------------------
     # --- Conditions Management ---
@@ -343,3 +232,19 @@ class Config:
         ]
         
         return "\n\t\t".join(info).strip()
+    
+    @staticmethod
+    def generate_request_id(user_id: str = None):
+        """
+        Generates and sets a unique request identifier.
+        Format: user_id + UTC timestamp (ISO format sanitized).
+        """
+        
+        timestamp = datetime.now(timezone.utc).isoformat()
+        # Clean timestamp for safe filename usage
+        sanitized = timestamp.replace(":", "").replace(".", "")
+        
+        if "+" in sanitized:
+            sanitized = sanitized[:sanitized.rindex("+")]
+            
+        return f"{user_id}_{sanitized}".lower()

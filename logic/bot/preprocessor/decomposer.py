@@ -19,7 +19,7 @@ class Decomposer():
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config, request_id):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the Decomposer with configuration and resources.
 
@@ -30,7 +30,7 @@ class Decomposer():
         self._cfg = cfg
         self._llm = cfg.get_LLM()
         self._project_root = cfg.project_root
-        self._dql_language = cfg.get_DQL()
+        self._dql_language = cfg.get_DQL(user_id)
         
         self.docs_in_string = cfg.docs_in_string
         

@@ -31,7 +31,7 @@ class Translator:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the Translator with shared configuration and sub-components.
 
@@ -42,10 +42,10 @@ class Translator:
         self._logger = cfg.get_logger("Translator", request_id)
 
         # Instantiate specialized extraction classes
-        self._sources_extractor_class = SourcesExtractor(cfg, request_id)
-        self._command_classifier_class = CommandClassifier(cfg, request_id)
-        self._what_extractor_class = WhatExtractor(cfg, request_id)
-        self._conditions_extractor_class = ConditionsExtractor(cfg, request_id)
+        self._sources_extractor_class = SourcesExtractor(cfg, user_id, request_id)
+        self._command_classifier_class = CommandClassifier(cfg, user_id, request_id)
+        self._what_extractor_class = WhatExtractor(cfg, user_id, request_id)
+        self._conditions_extractor_class = ConditionsExtractor(cfg, user_id, request_id)
 
     # -----------------------------
     # --- Main Rewriting Method ---

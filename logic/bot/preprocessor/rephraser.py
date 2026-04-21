@@ -20,18 +20,20 @@ class Rephraser():
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the Rephraser with configuration and LLM resources.
 
         Args:
             cfg (Config): The global configuration object providing access to
                           the LLM instance, logging services, and language settings.
+            user_id (str): The unique identifier for the user.
+            request_id (str): The unique identifier for the current request.
         """
         self._cfg = cfg
         self._llm = cfg.get_LLM()
         self._project_root = cfg.project_root
-        self._dql_language = cfg.get_DQL()
+        self._dql_language = cfg.get_DQL(user_id)
         
         self._logger = cfg.get_logger("Rephraser", request_id)
         

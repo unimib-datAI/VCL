@@ -22,7 +22,7 @@ class Preprocessor:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the Preprocessor with specialized sub-modules.
 
@@ -31,8 +31,8 @@ class Preprocessor:
                           storage access, and LLM handles.
         """
         self._logger = cfg.get_logger("Preprocessor", request_id)
-        self._decomposer_class = Decomposer(cfg, request_id)
-        self._rephraser_class = Rephraser(cfg, request_id)
+        self._decomposer_class = Decomposer(cfg, user_id,request_id)
+        self._rephraser_class = Rephraser(cfg, user_id, request_id)
         self._storage = cfg.get_storage()
         
         # Helper function to retrieve the current conversation history

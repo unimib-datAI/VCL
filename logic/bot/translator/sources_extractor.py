@@ -23,20 +23,22 @@ class SourcesExtractor:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the SourcesExtractor with system configuration.
 
         Args:
             cfg (Config): Global configuration providing LLM access, storage, 
                           logging, and session-specific chat history.
+            user_id (str): The unique identifier for the user.
+            request_id (str): The unique identifier for the current request.
         """
         self._llm = cfg.get_LLM()
-        self._user_id = cfg.get_user_id()
+        self._user_id = user_id
         self._storage = cfg.get_storage()
         self._logger = cfg.get_logger("Sources Extractor", request_id)
         self._project_root = cfg.project_root
-        self._dql_language: DQLLanguage = cfg.get_DQL()
+        self._dql_language: DQLLanguage = cfg.get_DQL(user_id)
         
         # Cache of valid source names defined in the DQL language
         self._src_info = {}

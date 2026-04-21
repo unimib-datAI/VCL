@@ -53,24 +53,26 @@ class Executor:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the Executor with application-wide configurations.
 
         Args:
             cfg (Config): Shared configuration object providing LLM access and logging.
+            user_id (str): The unique identifier for the user.
+            request_id (str): The unique identifier for the current request.
         """
         self._cfg = cfg
         self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Executor", request_id)
-        self._language: DQLLanguage = cfg.get_DQL()
+        self._language: DQLLanguage = cfg.get_DQL(user_id)
         self.file_handler = FileHandler()
 
     # ----------------------
     # --- Public Methods ---
     # ----------------------
     
-    def generate(self, operations: list[dict]) -> list[dict]:
+    def generate(self, operations: list[dict], user_id: str, chat_id: str, source_id: str) -> list[dict]:
         """
         Processes a sequence of planned operations to generate final results.
 
@@ -85,7 +87,7 @@ class Executor:
             list[dict]: The operations list enriched with 'result' strings for each task.
         """
         # Initialize retrieval with current operations to enable cross-task referencing
-        self._retrieval = Retrieval(self._cfg, operations)
+        self._retrieval = Retrieval(self._cfg, operations, user_id, chat_id, source_id)
         
         for op in operations:
             self._logger.info(f"Executing operation sequence: {op['id']}")

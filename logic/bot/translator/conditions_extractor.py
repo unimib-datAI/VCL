@@ -22,18 +22,20 @@ class ConditionsExtractor:
     # --- Initialization ---
     # ----------------------
 
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the ConditionsExtractor with required services.
 
         Args:
             cfg (Config): Global configuration instance providing the LLM engine,
                           logger, and DQL language definitions.
+            user_id (str): The unique identifier for the user.
+            request_id (str): The unique identifier for the current request.
         """
         self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Conditions Extractor", request_id)
         self._project_root = cfg.project_root
-        self._dql_language: DQLLanguage = cfg.get_DQL()
+        self._dql_language: DQLLanguage = cfg.get_DQL(user_id)
         
         # Helper function to serialize document lists for prompt injection
         self.docs_in_string = cfg.docs_in_string

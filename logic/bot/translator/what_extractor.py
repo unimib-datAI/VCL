@@ -21,7 +21,7 @@ class WhatExtractor:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the WhatExtractor with configuration and dependencies.
 
@@ -32,7 +32,7 @@ class WhatExtractor:
         self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("What Extractor", request_id)
         self._project_root = cfg.project_root
-        self._dql_language: DQLLanguage = cfg.get_DQL()
+        self._dql_language: DQLLanguage = cfg.get_DQL(user_id)
 
     # ------------------------------
     # --- Main Extraction Method ---

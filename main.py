@@ -1,12 +1,15 @@
 from pathlib import Path
 from dotenv import load_dotenv
-# Carica SEMPRE il .env del progetto e sovrascrive eventuali variabili già presenti
+
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 load_dotenv(dotenv_path=ENV_PATH, override=True)
 
 import argparse
 import streamlit.web.cli as stcli
 import sys
+import multiprocessing
+import subprocess
+import uvicorn
 
 from scripts.evaluation.main import evaluation
 from utils.config import Config
@@ -116,36 +119,16 @@ def parse_args() -> argparse.Namespace:
         ),
     )
 
-    # Optional future flags (commented for now)
-    # parser.add_argument(
-    #     "-rag",
-    #     action="store_true",
-    #     dest="rag",
-    #     help=(
-    #         "Enable Retrieval-Augmented Generation (RAG) mode. "
-    #         "Retrieves either entire documents or relevant chunks."
-    #     ),
-    # )
-    #
-    # parser.add_argument(
-    #     "-max_iterations",
-    #     action="store",
-    #     dest="max_iterations",
-    #     type=int,
-    #     required=False,
-    #     help="Maximum number of query rewrite attempts.",
-    # )
-    #
-    # parser.add_argument(
-    #     "-minimum_score",
-    #     action="store",
-    #     dest="minimum_score",
-    #     type=float,
-    #     required=False,
-    #     help="Minimum rewrite score required to complete the process.",
-    # )
-
     return parser.parse_args()
+
+
+def _launch_uvicorn(opts: argparse.Namespace) -> None:
+    """
+    Launch the Uvicorn server in a separate process.
+    """
+    
+    Config.get_instance(opts)
+    uvicorn.run("logic.api:app", host="0.0.0.0", port=8000, reload=False)
 
 
 def _launch_streamlit() -> None:
@@ -156,25 +139,28 @@ def _launch_streamlit() -> None:
     to the 'streamlit run' command pointing to the application's entry point.
     """
 
-    # Modify sys.argv to trigger Streamlit's CLI runner pointing to app.py
     sys.argv = [
         "streamlit",
         "run",
         "gui/app.py",
-        "--server.fileWatcherType=none", # Optimized performance by disabling file watcher
+        "--server.fileWatcherType=none",
     ]
+    
     # Execute the Streamlit entry point and exit the parent process
     sys.exit(stcli.main())
+    
+def _launch_fast_api(opts: argparse.Namespace) -> None:
+    api_process = multiprocessing.Process(
+        target=_launch_uvicorn, 
+        args=(opts,), 
+        daemon=True
+    )
+    api_process.start()
 
 
 def main() -> None:
     """
     Entry point for the DQL CLI application.
-
-    Workflow:
-        1. Capture runtime arguments from the shell.
-        2. Initialize the thread-safe Config Singleton with the parsed options.
-        3. Transition from the CLI environment to the Streamlit Web UI.
     """
     # Parse CLI options
     opts = parse_args()
@@ -182,14 +168,32 @@ def main() -> None:
     # Bootstrap the configuration singleton before starting the UI
     Config.get_instance(opts)
     
-    if opts:
-        if opts.evaluation_mode:
-            evaluation()
-        else:
-            # Hand off execution to the web interface
-            _launch_streamlit()
+    print("Avvio dei container Docker...")
+    subprocess.run(
+        [
+            "docker",
+            "compose",
+            "up",
+            "-d",
+            "--build"
+        ]
+    )
+    
+    try:
+        if opts:
+            if opts.evaluation_mode:
+                evaluation()
+            else:
+                # 1. PRIMA avviamo l'API in background (NON bloccante)
+                #_launch_fast_api(opts)
+                _launch_uvicorn(opts)
+                # 2. DOPO passiamo il controllo a Streamlit (Bloccante)
+                #_launch_streamlit()
 
+    except KeyboardInterrupt:
+        print("\nInterruzione manuale rilevata. Arresto in corso...")
+        subprocess.run(["docker", "compose", "down"])
+        print("Chiusura completata.")
 
 if __name__ == "__main__":
-    # Start the application lifecycle
     main()

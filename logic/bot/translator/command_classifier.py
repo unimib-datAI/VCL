@@ -21,19 +21,21 @@ class CommandClassifier:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config, request_id: str):
+    def __init__(self, cfg: Config, user_id: str, request_id: str):
         """
         Initialize the Classifier with necessary engine and language dependencies.
 
         Args:
             cfg (Config): Global configuration providing access to the LLM 
                           wrapper, logging services, and DQL grammar.
+            user_id (str): The unique identifier for the user.
+            request_id (str): The unique identifier for the current request.
         """
         # Inject dependencies from the central configuration
         self._llm = cfg.get_LLM()
         self._logger = cfg.get_logger("Command Classifier", request_id)
         self._project_root = cfg.project_root
-        self._dql_language: DQLLanguage = cfg.get_DQL()
+        self._dql_language: DQLLanguage = cfg.get_DQL(user_id)
 
     # ----------------------------------
     # --- Main Classification Method ---

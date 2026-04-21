@@ -208,23 +208,15 @@ Each document is a JSON file containing three keys:
 - *type_doc*: the label describing the document type
 - *owner*: the username of the file owner
 
-## 6) Docker
-
-A `docker-compose.yml` is included for MongoDB.
-
-```bash
-docker compose up --build -d
-```
-
-If you run with Docker, set env vars in `docker-compose.yml` or mount an `.env` into the container.
-
-# 7) Running the application
+# 6) Running the application
 
 ```bash
 python main.py
 ```
 
-Then open: `http://localhost:8501`
+Then:
+* Streamlit link: `http://localhost:8501`
+* FastAPI link: `http://0.0.0.0:8000/api/v2/chat`
 
 The script accepts several optional flags (arguments) to customize its behavior.
 

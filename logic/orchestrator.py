@@ -46,15 +46,12 @@ class Orchestrator:
         
         # Access persistent storage and language definitions via configuration
         self._storage = self._CFG.get_storage()
-        self._language = self._CFG.get_DQL()
-        
-        self._get_request_id = self._CFG.get_request_id
 
     # ----------------------
     # --- Public Methods ---
     # ----------------------
     
-    def chat(self, prompt: str, user_id: str, chat_id: str, request_id: str = None) -> dict:
+    def chat(self, prompt: str, user_id: str, chat_id: str, request_id: str = None, source_id: str = None) -> dict:
         """
         Entry point for processing a user query. Orchestrates the 4-step pipeline.
 
@@ -62,6 +59,7 @@ class Orchestrator:
             prompt (str): The user's query.
             user_id (str): The ID of the user initiating the request.
             chat_id (str): The ID of the chat session.
+            source_id (str): The ID of the source corpus.
 
         Returns:
             dict: A comprehensive response object containing:
@@ -69,16 +67,18 @@ class Orchestrator:
                 - details: Technical breakdown (tasks, DQL commands, logs).
                 - metadata: Request ID, timestamp, and model used.
         """
+        self._language = self._CFG.get_DQL(user_id)
+        
         status = {}
         
         request_id = request_id if request_id else self._get_request_id(user_id)
         
         # Lazy initialization of specialized components for the current request
         self._logger = self._CFG.get_logger("Orchestrator", request_id)
-        self._preprocessor = Preprocessor(self._CFG, request_id)
-        self._translator = Translator(self._CFG, request_id)
-        self._planner = Planner(self._CFG, request_id)
-        self._executor = Executor(self._CFG, request_id)
+        self._preprocessor = Preprocessor(self._CFG, user_id, request_id)
+        self._translator = Translator(self._CFG, user_id, request_id)
+        self._planner = Planner(self._CFG, user_id, request_id)
+        self._executor = Executor(self._CFG, user_id, request_id)
 
         try:
             if not prompt or prompt.strip() == "":
@@ -120,7 +120,7 @@ class Orchestrator:
             structured_tasks = self._plan(structured_tasks)
             
             # Step 4: Execute RAG (Retrieval Augmented Generation) and merge results
-            result, last_result = self._execute(structured_tasks)
+            result, last_result = self._execute(structured_tasks, user_id, chat_id, source_id)
             
             self._logger.info(f"Processing completed correctly.")
         
@@ -181,13 +181,13 @@ class Orchestrator:
         self._logger.info("Planning step completed.")
         return operations
 
-    def _execute(self, operations: list[dict]) -> str:
+    def _execute(self, operations: list[dict], user_id, chat_id, source_id) -> str:
         """Coordinates retrieval and LLM generation for all planned operations."""
         if len(operations) < 1:
             raise Exception("Tasks not found during execution phase.")
         
         self._logger.info("Starting Execution step.")
-        results = self._executor.generate(deepcopy(operations))
+        results = self._executor.generate(deepcopy(operations), user_id, chat_id, source_id)
         self._logger.info("Execution step completed.")
             
         # Returns the full list of results and the specific final generated text

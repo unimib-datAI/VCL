@@ -28,7 +28,7 @@ class Retrieval:
     # --- Initialization ---
     # ----------------------
     
-    def __init__(self, cfg: Config, operations: list[dict] = None):
+    def __init__(self, cfg: Config, operations: list[dict] = None, user_id: str = None, chat_id: str = None, sources_id: str = None):
         """
         Initialize the Retrieval component with global configuration.
 
@@ -39,9 +39,9 @@ class Retrieval:
         """
         self._client = Elasticsearch(cfg.DB_URL)
         self._storage = cfg.get_storage()
-        self._user_id = cfg.get_user_id()
-        self._sources_id = cfg.get_sources_id()
-        self._chat_id = cfg.get_chat_id()
+        self._user_id = user_id
+        self._chat_id = chat_id
+        self._sources_id = sources_id
         self._operations = operations or []
         self._project_root = cfg.project_root
         self.get_logger = cfg.get_logger
