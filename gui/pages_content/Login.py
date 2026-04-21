@@ -20,12 +20,6 @@ def _initialize_user_session(user: dict):
     st.session_state.username = user["username"]
     st.session_state.role = user["role"]
     
-    # Update the central configuration object with authenticated user info
-    st.session_state.config.handle_login(
-        st.session_state.username, 
-        st.session_state.role
-    )
-    
     # Grant authentication access
     st.session_state.auth_status = True
     

@@ -1,4 +1,5 @@
 import streamlit as st
+import time
 
 from copy import deepcopy
 from tomlkit import value
@@ -33,7 +34,6 @@ st.set_page_config(page_title="DQL", layout="wide")
 PAGE_MAP: Dict[str, Callable] = {
     "Login": show_login,
     "Admin": show_admin,
-    # "Registration": show_registration,
     "Home": show_home,
     "Settings": show_settings,
     "Documents": show_documents,
@@ -78,8 +78,6 @@ def _handle_logout() -> None:
     Performs a complete session cleanup. 
     Clears session state, query parameters, and redirects the user to the Login page.
     """
-    st.session_state.config.handle_logout()
-    
     # Fully wipe session and query strings
     st.session_state.clear()
     st.query_params.clear()
@@ -207,8 +205,11 @@ if st.session_state.auth_status:
         st.rerun()
     
     # Synchronize chat context and language specs
-    st.query_params.chat = st.session_state.config.get_chat_id()
-    st.session_state.language = st.session_state.config.get_DQL()
+    if "chat" not in st.query_params or not st.query_params.chat:
+        st.query_params.chat = str(int(time.time()))
+        
+    if "language" not in st.query_params or not st.session_state.language:
+        st.session_state.language = st.session_state.config.get_DQL(st.session_state.username)
     
     _render_sidebar()
 

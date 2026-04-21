@@ -21,9 +21,7 @@ class Config:
 
     Responsibilities:
         - Loading environmental variables and managing project paths.
-        - Orchestrating user login/logout session states.
         - Providing request-scoped logging with unique file handlers.
-        - Managing unique identifiers for requests, chats, and data sources.
     """
     
     # Static variables for the Singleton pattern

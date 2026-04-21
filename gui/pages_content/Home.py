@@ -143,20 +143,16 @@ def _handle_suggestions_and_controls() -> Optional[str]:
         selected_model = _render_model_selector()
 
     with col3:
-        current_source = st.session_state.config.get_sources_id()
         options = ["salomone", "vitali", "user"]
 
-        source_pill = st.pills(
+        st.session_state.source_id = st.pills(
             "Seleziona la fonte",
             options=options,
             format_func=lambda option: option.capitalize(),
             selection_mode="single",
-            default=current_source if current_source in options else "user",
+            default="user",
             key="source_pill_widget"
         )
-
-        if source_pill:
-            st.session_state.config.set_sources_id(source_pill)
 
     # Col 4: New Chat
     with col4:
@@ -251,14 +247,11 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         result_queue = queue.Queue()
 
         chat_id = st.query_params.get("chat", "default")
-        request_id = st.session_state.config.get_request_id(st.session_state.username)
+        request_id = st.session_state.config.generate_request_id(st.session_state.username)
 
         # Start Assistant in background thread
         assistant = Orchestrator(st.session_state.config)
         username = st.session_state.username
-
-        # ✅ IMPORTANTISSIMO: cattura storage nel main thread e passalo al thread
-        storage = st.session_state.storage
 
         thread = threading.Thread(
             target=_call_assistant_thread,

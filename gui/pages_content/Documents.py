@@ -21,9 +21,6 @@ def _display_header():
     col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
-        c_source = st.session_state.config.get_sources_id()
-        current_source = "user" if c_source not in ["salomone", "vitali"] else c_source
-        
         options = ["salomone", "vitali", "user"]
         
         selected_source = st.pills(
@@ -31,13 +28,13 @@ def _display_header():
             options=options,
             format_func=lambda option: option.capitalize(),
             selection_mode="single",
-            default=current_source if current_source in options else "user",
+            default="user",
             key="source_pill_widget"
         )
 
-        if selected_source != current_source:
+        if selected_source != st.session_state.source_id:
             selected_source = st.session_state.username if selected_source not in ["salomone", "vitali"] else selected_source
-            st.session_state.config.set_sources_id(selected_source)
+            st.session_state.source_id = selected_source
             _initialize_docs(selected_source)
             st.rerun()
     
@@ -75,18 +72,18 @@ def _display_header():
                     )
 
             st.success("Documenti caricati con successo.")
-            _initialize_docs(st.session_state.config.get_sources_id())
+            _initialize_docs(st.session_state.source_id)
             st.session_state.show_uploader = False
             st.rerun()
         
     with col3:
-        if st.session_state.get("current_doc") and st.session_state.username == st.session_state.config.get_sources_id():
+        if st.session_state.get("current_doc") and st.session_state.username == st.session_state.source_id:
             doc_to_del = st.session_state.current_doc.get("_id", None)
             if doc_to_del:
                 if st.button("🗑️ Elimina Documento Corrente", width='stretch', type="secondary"):
                     if st.session_state.storage.delete_document(st.session_state.username, doc_to_del):
                         st.success("Documento eliminato con successo.")
-                        _initialize_docs(st.session_state.config.get_sources_id())
+                        _initialize_docs(st.session_state.source_id)
                         st.rerun()
                     else:
                         st.error("Errore durante l'eliminazione del documento.")
@@ -155,11 +152,14 @@ def show_documents():
     required_keys = ["config", "username", "storage"]
     if not all(hasattr(st.session_state, k) for k in required_keys):
         return 
+    
+    if "source_id" not in st.session_state or not st.session_state.source_id:
+        st.session_state.source_id = "vitali"
 
     st.title(PAGE_TITLE)
 
     if "docs" not in st.session_state:
-        _initialize_docs(st.session_state.config.get_sources_id())
+        _initialize_docs(st.session_state.source_id)
         
     if "show_uploader" not in st.session_state:
         st.session_state.show_uploader = False
