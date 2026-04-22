@@ -6,16 +6,18 @@ import sys
 import threading
 import time
 import queue
+import requests
+
+from copy import deepcopy
 from datetime import datetime
 from pathlib import Path
-from typing import List, Dict, Optional, Generator
+from typing import List, Dict, Optional, Generator, Tuple
 
 import streamlit as st
 import random
 
 from openai import OpenAI
 
-from logic.orchestrator import Orchestrator
 # import docx
 
 # Add Root Directory to sys.path
@@ -27,7 +29,7 @@ LEGAL_DOCS_DIR = ROOT_DIR / "documents"
 
 APP_TITLE = "DQL"
 
-# --- Modelli disponibili (UI) ---
+# --- Available Models (UI) ---
 MODEL_LABELS = {
     "DQL": "DQL",
     "GPT": "GPT",
@@ -35,6 +37,7 @@ MODEL_LABELS = {
     "BattleAnon": "Battle (anonimo)",
     "BattleLabeled": "Battle (etichettato)",
 }
+
 DEFAULT_MODEL = "DQL"
 
 BATTLE_MODELS = ["DQL", "GPT"]
@@ -48,7 +51,6 @@ def _initialize_chat() -> None:
     Initialize the chat session state by retrieving history from storage.
     Sets a default greeting message if the history is empty.
     """
-    # Assicuriamoci di avere un modello selezionato
     if "selected_model" not in st.session_state:
         st.session_state.selected_model = DEFAULT_MODEL
 
@@ -57,14 +59,14 @@ def _initialize_chat() -> None:
         st.query_params.chat
     )
 
-    current_model = st.session_state.selected_model
+    current_model = st.session_state.selected_model or DEFAULT_MODEL
 
     first_message = [
         {
             "role": "assistant",
             "content": "Ciao! Come posso aiutarti oggi?",
             "time": datetime.now().isoformat(),
-            "model": current_model,  # 👈 modello usato per questa chat
+            "model": current_model,
         }
     ]
 
@@ -83,13 +85,11 @@ def _display_chat_history() -> None:
     current_chat_id = st.query_params.get("chat", "default")
 
     for message in st.session_state.messages:
-        model = message.get("model")  # DQL / GPT / NotebookLM / BattleAnon / BattleLabeled ...
+        model = message.get("model")
         label = MODEL_LABELS.get(model, model) if model else None
 
-        with st.chat_message(message["role"]):
-            # Contenuto principale (per Battle, content può essere solo un riassunto)
+        with st.chat_message(message.get("role", "assistant")):
             if message.get("battle"):
-                # per i messaggi Battle mostriamo il layout speciale
                 _render_battle_answers(
                     message["battle"],
                     model or "",
@@ -98,8 +98,7 @@ def _display_chat_history() -> None:
             else:
                 st.markdown(message["content"])
 
-            # Mini badge modello (solo per l'assistente)
-            if message["role"] == "assistant" and message["content"] != "Ciao! Come posso aiutarti oggi?" and label:
+            if message.get("role", "assistant") == "assistant" and message["content"] != "Ciao! Come posso aiutarti oggi?" and label:
                 st.markdown(
                     f"<span style='font-size:0.75rem; opacity:0.7;'>🔌 Risposta generata con: <b>{label}</b></span>",
                     unsafe_allow_html=True,
@@ -111,19 +110,16 @@ def _display_chat_history() -> None:
 # --- Chat Input Handling ---
 # ---------------------------
 
-def _handle_suggestions_and_controls() -> Optional[str]:
+def _handle_suggestions_and_controls() -> Tuple[Optional[str], str]:
     """
     Renders the top control bar (Suggestions, New Chat, Delete Chat).
-
-    Returns:
-        Optional[str]: A prompt string if a suggestion is clicked, otherwise None.
+    Returns the prompt string (if a suggestion is clicked) and the selected model.
     """
     col1, col2, col3, col4, col5 = st.columns([0.15, 0.45, 0.20, 0.10, 0.10])
     prompt_selected = None
 
     # Col 1: Suggestions
     with col1:
-        # Retrieve stored suggestion trigger if page reloaded
         prompt_from_button = st.session_state.pop("prompt_from_button", None)
         if prompt_from_button:
             prompt_selected = prompt_from_button
@@ -138,21 +134,25 @@ def _handle_suggestions_and_controls() -> Optional[str]:
             else:
                 st.info("Caricamento configurazione...")
 
+    # Col 2: Model Selector
     with col2:
-        # 0. Selettore modello
         selected_model = _render_model_selector()
 
+    # Col 3: Source Pill Widget
     with col3:
         options = ["salomone", "vitali", "user"]
 
-        st.session_state.source_id = st.pills(
+        pill_val = st.pills(
             "Seleziona la fonte",
             options=options,
             format_func=lambda option: option.capitalize(),
+            default="vitali" if st.session_state.get("active_source") is None else st.session_state.active_source,
             selection_mode="single",
-            default="user",
-            key="source_pill_widget"
+            key="source_pill_widget",
         )
+        
+        if pill_val:
+            st.session_state.active_source = pill_val
 
     # Col 4: New Chat
     with col4:
@@ -162,9 +162,7 @@ def _handle_suggestions_and_controls() -> Optional[str]:
             new_chat_id = storage.create_new_chat(username)
 
             if new_chat_id:
-                # modello corrente per la nuova chat
                 current_model = st.session_state.get("selected_model", DEFAULT_MODEL)
-                # salviamo subito l'associazione nella mappa
                 st.session_state.chat_models[new_chat_id] = current_model
 
                 st.query_params.chat = new_chat_id
@@ -201,21 +199,64 @@ def _display_gui_components() -> None:
     # 3. Input
     chat_prompt = st.chat_input("Scrivi un messaggio...")
 
-    # Determine if we have a prompt to process
     prompt_to_submit = suggestion_prompt or chat_prompt
 
     if prompt_to_submit:
         _submit_prompt(prompt_to_submit, selected_model)
+        
+
+# ---------------------------
+# -- Render Model Selector --
+# ---------------------------
+
+def _render_model_selector() -> str:
+    """
+    Rende il selettore del modello da interrogare.
+    """
+    if "selected_model" not in st.session_state:
+        st.session_state.selected_model = DEFAULT_MODEL
+
+    if "model_selector" not in st.session_state:
+        st.session_state.model_selector = st.session_state.selected_model
+
+    if "last_model_for_chat" not in st.session_state:
+        st.session_state.last_model_for_chat = st.session_state.model_selector
+
+    st.radio(
+        "Seleziona il motore da interrogare",
+        options=list(MODEL_LABELS.keys()),
+        format_func=lambda k: MODEL_LABELS[k],
+        horizontal=True,
+        key="model_selector",
+    )
+
+    selected = st.session_state.model_selector
+
+    # Create a new chat if the model changes
+    if selected != st.session_state.last_model_for_chat:
+        storage = st.session_state.get("storage")
+        username = st.session_state.get("username")
+
+        if storage and username:
+            new_chat_id = storage.create_new_chat(username)
+            if new_chat_id:
+                st.session_state.selected_model = selected
+                st.session_state.last_model_for_chat = selected
+                st.session_state.chat_models[new_chat_id] = selected
+
+                st.query_params.chat = new_chat_id
+                st.session_state.messages = []
+                st.rerun()
+
+    st.session_state.selected_model = selected
+
+    return selected
 
 
 def _submit_prompt(prompt: str, selected_model: str) -> None:
     """
     Orchestrates the user prompt submission: updates UI, calls assistant thread,
     handles log streaming, and saves results.
-
-    Args:
-        prompt (str): The user's prompt.
-        selected_model (str): Selected engine key (e.g. 'DQL', 'GPT', 'NotebookLM', 'BattleAnon', 'BattleLabeled')
     """
     # --- 1. Display user's message ---
     user_msg = {
@@ -226,7 +267,19 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
     }
 
     st.session_state.messages.append(user_msg)
-
+    
+    user_info = deepcopy(user_msg)
+    user_info["chat_id"] = st.query_params.get("chat", "default")
+    user_info["user_id"] = st.session_state.username
+    user_info["request_id"] = st.session_state.config.generate_request_id(st.session_state.username)
+    
+    if hasattr(st.session_state, "active_source") and st.session_state.active_source and st.session_state.active_source in ["salomone", "vitali"]:
+        user_info["source_id"] = st.session_state.active_source
+    else:
+        user_info["source_id"] = st.session_state.username
+    
+    user_info["storage"] = st.session_state.storage
+    
     # --- USER QUESTION TRACKING ---
     try:
         st.session_state.storage.log_user_question(
@@ -246,24 +299,16 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         stop_event = threading.Event()
         result_queue = queue.Queue()
 
-        chat_id = st.query_params.get("chat", "default")
-        request_id = st.session_state.config.generate_request_id(st.session_state.username)
-
-        # Start Assistant in background thread
-        assistant = Orchestrator(st.session_state.config)
-        username = st.session_state.username
-
         thread = threading.Thread(
             target=_call_assistant_thread,
-            args=(prompt, selected_model, assistant, username, stop_event, result_queue, chat_id, request_id, st.session_state.storage),
+            args=(user_info, stop_event, result_queue),
         )
         thread.start()
 
         # Stream logs while waiting
         if selected_model not in ("BattleAnon", "BattleLabeled"):
-            log_list = _stream_logs_to_ui(placeholder, stop_event, request_id)
+            log_list = _stream_logs_to_ui(placeholder, stop_event, user_info["request_id"])
         else:
-            # In modalità Battle non mostriamo i log in tempo reale
             log_list = ["LOGS:", "\t (Log non mostrati in modalità Battle)", ""]
 
         # Ensure thread completion
@@ -277,13 +322,11 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         # --- Modalità BATTLE -----
         # -------------------------
         if selected_model in ("BattleAnon", "BattleLabeled"):
-            # Generiamo un id per questa "sfida" per mantenere stabile lo stato della scelta
             battle_id = datetime.now().isoformat()
 
             if isinstance(raw_result, dict):
                 battle_payload = raw_result
             else:
-                # fallback in caso di errore inatteso
                 battle_payload = {
                     "mode": "anon" if selected_model == "BattleAnon" else "labeled",
                     "answers": [],
@@ -291,17 +334,14 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 
             battle_payload["battle_id"] = battle_id
 
-            # Render layout a due colonne con Risposta A / Risposta B
             _render_battle_answers(
                 battle_payload,
                 selected_model,
                 st.query_params.get("chat", "default"),
             )
 
-            # Eventuali dettagli tecnici nell'expander (solo se presenti)
             _show_expander(result)
 
-            # Messaggio assistente salvato in cronologia
             assistant_msg = {
                 "role": "assistant",
                 "content": "(modalità Battle: due risposte generate)",
@@ -309,7 +349,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
                 "full_details": result,
                 "logs": log_list[1:],
                 "model": selected_model,
-                "battle": battle_payload,  # 👈 payload usato da _display_chat_history
+                "battle": battle_payload,
             }
             st.session_state.messages.append(assistant_msg)
 
@@ -319,11 +359,9 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         else:
             text = raw_result if isinstance(raw_result, str) else str(raw_result)
 
-            # Render final output con effetto "macchina da scrivere"
             _typewriter_effect(text, placeholder)
 
             if selected_model == "DQL":
-                # In DQL spesso result include già struttura attesa
                 assistant_msg = result
                 if "details" not in assistant_msg or assistant_msg["details"] is None:
                     assistant_msg["details"] = {}
@@ -343,99 +381,25 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
             st.session_state.messages.append(assistant_msg)
 
     # --- 3. Persist messages ---
-    # Save only the last exchange (user + assistant)
     _save_messages(st.session_state.messages[-2:])
-
-# ---------------------------
-# -- Render Model Selector --
-# ---------------------------
-
-def _render_model_selector() -> str:
-    """
-    Rende il selettore del modello da interrogare.
-
-    Comportamento:
-    - Il widget radio controlla st.session_state["model_selector"].
-    - last_model_for_chat tiene traccia del modello associato alla chat corrente.
-    - Se l'utente cambia modello rispetto a last_model_for_chat,
-      viene creata una nuova chat e associata a quel modello.
-    """
-    # Modello "logico" selezionato (usato anche da _initialize_chat)
-    if "selected_model" not in st.session_state:
-        st.session_state.selected_model = DEFAULT_MODEL
-
-    # Valore iniziale del widget radio
-    if "model_selector" not in st.session_state:
-        st.session_state.model_selector = st.session_state.selected_model
-
-    # Modello associato alla chat corrente
-    if "last_model_for_chat" not in st.session_state:
-        st.session_state.last_model_for_chat = st.session_state.model_selector
-
-    # Il widget radio aggiorna automaticamente st.session_state.model_selector
-    st.radio(
-        "Seleziona il motore da interrogare",
-        options=list(MODEL_LABELS.keys()),
-        format_func=lambda k: MODEL_LABELS[k],
-        horizontal=True,
-        key="model_selector",
-    )
-
-    selected = st.session_state.model_selector
-
-    # Se il modello selezionato è diverso da quello associato alla chat corrente,
-    # creiamo una NUOVA chat con quel modello.
-    if selected != st.session_state.last_model_for_chat:
-        storage = st.session_state.get("storage")
-        username = st.session_state.get("username")
-
-        if storage and username:
-            new_chat_id = storage.create_new_chat(username)
-            if new_chat_id:
-                # aggiorniamo il modello logico per la nuova chat
-                st.session_state.selected_model = selected
-                st.session_state.last_model_for_chat = selected
-
-                # 👉 IMPORTANTISSIMO: registriamo subito il modello per la sidebar
-                st.session_state.chat_models[new_chat_id] = selected
-
-                st.query_params.chat = new_chat_id
-                st.session_state.messages = []
-                st.rerun()
-
-    # Se non è cambiato, manteniamo selected_model allineato
-    st.session_state.selected_model = selected
-
-    return selected
 
 # -------------------------------
 # --- Threading & Log Helpers ---
 # -------------------------------
 
-def _call_assistant_thread(prompt: str, selected_model: str, assistant, username: str, stop_event: threading.Event, result_queue: queue.Queue, chat_id, request_id, storage = None) -> None:
-    """
-    Wrapper to run the heavy assistant logic in a thread.
-
-    IMPORTANT:
-    - Non usare st.session_state dentro i thread.
-    - Passiamo 'storage' dal main thread per leggere documenti e loggare.
-    """
+def _call_assistant_thread(user_msg: Dict, stop_event: threading.Event, result_queue: queue.Queue) -> None:
     try:
-        response = _call_model(prompt, selected_model, assistant, username, chat_id, request_id,storage)
+        response = _call_model(user_msg)
         result_queue.put(response)
     except Exception as e:
         result_queue.put({"result": f"Error: {str(e)}"})
     finally:
         stop_event.set()
 
-def _load_case_documents(assistant, username: str, storage = None) -> List[Dict[str, str]]:
-    """
-    Recupera i documenti utente da Mongo tramite storage (thread-safe).
-    NON usa st.session_state.
-    """
+def _load_case_documents(user_msg: Dict = None) -> List[Dict[str, str]]:
     docs: List[Dict[str, str]] = []
 
-    raw_docs = storage.get_all_documents("vitali") if storage else st.session_state.storage.get_all_documents("vitali")
+    raw_docs = user_msg["storage"].get_all_documents(user_msg["source_id"])
     
     if not raw_docs:
         raw_docs = []
@@ -450,7 +414,7 @@ def _load_case_documents(assistant, username: str, storage = None) -> List[Dict[
         text = next((doc.get(k, "").strip() for k in TEXT_KEYS if doc.get(k)), "")
 
         if not text:
-            continue  # documento vuoto → skip
+            continue
 
         label = (
             f"{type_doc} ({name})" if type_doc and name
@@ -465,12 +429,8 @@ def _load_case_documents(assistant, username: str, storage = None) -> List[Dict[
 
     return docs
 
-def _build_docs_block(assistant, username: str, storage = None) -> str:
-    """
-    Costruisce il blocco di testo con elenco e contenuto completo
-    dei documenti di caso dell'utente. (thread-safe)
-    """
-    case_docs = _load_case_documents(assistant, username, storage)
+def _build_docs_block(user_msg) -> str:
+    case_docs = _load_case_documents(user_msg)
 
     if not case_docs:
         return "Nessun documento giudiziario disponibile per l'utente corrente."
@@ -491,8 +451,45 @@ def _build_docs_block(assistant, username: str, storage = None) -> str:
 # --- Model calls (thread-safe)
 # -------------------------------
 
+def _ask_dql(user_msg: Dict) -> Dict:
+    payload = {
+        "prompt": user_msg["content"],
+        "user_id": user_msg["user_id"],
+        "chat_id": user_msg["chat_id"],
+        "request_id": user_msg["request_id"],
+        "source_id": user_msg["source_id"]
+    }
+    
+    try:
+        response = requests.post("http://localhost:9000/api/v2/chat", json=payload)
+        response.raise_for_status()
+        
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        return {
+            "role": "assistant",
+            "time": datetime.now().isoformat(),
+            "model": "DQL",
+            
+            "id": user_msg["request_id"],
+            
+            "ids": {
+                "user": user_msg["user_id"],
+                "session": user_msg["chat_id"],
+                "request": user_msg["request_id"],
+            },
+            
+            "content": "Errore durante la chiamata al modello DQL. Per favore riprova più tardi.",
+            "result": "Errore durante la chiamata al modello DQL. Per favore riprova più tardi.",
+            
+            "details": {
+                "prompt": user_msg["content"], 
+                "prompt_process": "Errore durante la chiamata al modello DQL.",
+                "tasks": []
+            }
+        }
 
-def _ask_gpt(prompt: str, assistant, username: str, storage = None) -> Dict:
+def _ask_gpt(user_msg: Dict) -> Dict:
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return {
@@ -505,7 +502,7 @@ def _ask_gpt(prompt: str, assistant, username: str, storage = None) -> Dict:
     try:
         client = OpenAI(api_key=api_key)
 
-        docs_block = _build_docs_block(assistant, username, storage)
+        docs_block = _build_docs_block(user_msg)
 
         base_system = (
             "Sei un assistente legale integrato nell'interfaccia DQL.\n"
@@ -518,7 +515,7 @@ def _ask_gpt(prompt: str, assistant, username: str, storage = None) -> Dict:
         user_content = (
             f"{docs_block}\n\n"
             "Ora rispondi alla seguente domanda dell'utente, basandoti solo sui documenti sopra:\n"
-            f"DOMANDA: {prompt}"
+            f"DOMANDA: {user_msg['content']}"
         )
 
         messages = [
@@ -538,83 +535,20 @@ def _ask_gpt(prompt: str, assistant, username: str, storage = None) -> Dict:
         return {"result": f"❌ Errore chiamando GPT: {e}"}
 
 
-def _ask_notebooklm(prompt: str, assistant, username: str, storage) -> Dict:
-    """
-    Implementazione attuale di NotebookLM nel tuo sistema:
-    - legge i documenti da Mongo
-    - usa OpenAI come backend
-    - ma con uno stile/istruzioni simili a NotebookLM.
-    """
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        return {
-            "result": (
-                "⚠️ OPENAI_API_KEY non impostata.\n"
-                "NotebookLM non può essere usato senza chiave OpenAI (implementazione attuale)."
-            )
-        }
-
-    try:
-        client = OpenAI(api_key=api_key)
-
-        docs_block = _build_docs_block(storage, username)
-
-        system_msg = (
-            "Sei una versione 'NotebookLM-like' dell'assistente.\n"
-            "Lavori SOLO sui documenti forniti dall'utente (atti, memorie, sentenza, ecc.).\n"
-            "Il tuo obiettivo è:\n"
-            "- sintetizzare, spiegare e mettere in relazione i documenti,\n"
-            "- proporre schemi, riassunti, mappe concettuali,\n"
-            "- fare esplicito riferimento alle parti dei documenti da cui trai le informazioni.\n"
-            "Non introdurre conoscenze esterne: resta sempre ancorato alle fonti fornite."
-        )
-
-        user_content = (
-            f"{docs_block}\n\n"
-            "Ora comportati come un taccuino di ricerca (NotebookLM):\n"
-            "- se la domanda è generica, proponi una panoramica strutturata dei documenti;\n"
-            "- se la domanda è specifica, cita i punti rilevanti delle fonti.\n\n"
-            f"DOMANDA DELL'UTENTE: {prompt}"
-        )
-
-        messages = [
-            {"role": "system", "content": system_msg},
-            {"role": "user", "content": user_content},
-        ]
-
-        completion = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=messages,
-        )
-
-        text = completion.choices[0].message.content
-        return {"result": text}
-
-    except Exception as e:
-        return {"result": f"❌ Errore chiamando NotebookLM (implementazione attuale): {e}"}
-
-
-def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id, request_id, storage) -> Dict:
-    """
-    Modalità Battle:
-    - sceglie 2 modelli diversi a caso tra DQL, GPT, NotebookLM
-    - genera due risposte
-    - se anonymized=True: l'utente vede solo Risposta A / Risposta B
-    - se anonymized=False: l'utente vede anche il modello (GPT / NotebookLM / DQL)
-    """
+def _ask_battle(user_msg: Dict, anonymized: bool) -> Dict:
     if len(BATTLE_MODELS) < 2:
         return {"result": "⚠️ Non ci sono abbastanza modelli per la modalità Battle."}
 
     model_a, model_b = random.sample(BATTLE_MODELS, 2)
 
-    ans_a = _run_single_model_for_battle(model_a, prompt, assistant, username, chat_id, request_id, storage)
-    ans_b = _run_single_model_for_battle(model_b, prompt, assistant, username, chat_id, request_id, storage)
+    ans_a = _run_single_model_for_battle(model_a, user_msg)
+    ans_b = _run_single_model_for_battle(model_b, user_msg)
 
     mode = "anon" if anonymized else "labeled"
 
     battle_payload = {
         "mode": mode,
-        "prompt": prompt,
+        "prompt": user_msg['content'],
         "answers": [
             {
                 "id": "A",
@@ -634,29 +568,13 @@ def _ask_battle(prompt: str, assistant, username: str, anonymized: bool, chat_id
     return {"result": battle_payload}
 
 
-def _run_single_model_for_battle( model_key: str, prompt: str, assistant, username: str, chat_id, request_id, storage) -> Dict[str, str]:
-    """
-    Esegue un singolo modello (DQL / GPT / NotebookLM) e restituisce
-    un dict con:
-      - text: testo della risposta
-      - model_key: chiave interna (es. 'GPT')
-      - model_label: etichetta per l'UI (es. 'GPT' o 'NotebookLM')
-    """
-    if model_key == "DQL":
-        print(prompt, username, chat_id, request_id)
-        resp = assistant.chat(prompt, username, chat_id, request_id)
-        text = resp.get("result", "")
-
-    elif model_key == "GPT":
-        resp = _ask_gpt(prompt, assistant, username, storage)
-        resp = _ask_gpt(prompt, assistant, username, storage)
-        text = resp.get("result", "")
-
-    elif model_key == "NotebookLM":
-        resp = _ask_notebooklm(prompt, assistant, username, storage)
-        text = resp.get("result", "")
-
-    else:
+def _run_single_model_for_battle(model_key: str, user_msg: Dict) -> Dict[str, str]: 
+    new_user_msg = deepcopy(user_msg)
+    new_user_msg["model"] = model_key  
+     
+    try:
+        text = _call_model(new_user_msg).get("result", "")
+    except Exception as e:
         text = f"⚠️ Modello '{model_key}' non supportato in modalità Battle."
         model_key = "UNKNOWN"
 
@@ -667,29 +585,20 @@ def _run_single_model_for_battle( model_key: str, prompt: str, assistant, userna
     }
 
 
-def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_id, request_id, storage) -> Dict:
-    """
-    Dispatcher per decidere quale motore usare in base al modello selezionato.
-
-    IMPORTANT:
-    - In thread non bisogna usare st.session_state.
-    - Passiamo 'storage' per recuperare documenti (GPT/NotebookLM) e per Battle.
-    """
+def _call_model(user_msg) -> Dict:
+    selected_model = user_msg.get("model", DEFAULT_MODEL)
+    
     if selected_model == "DQL":
-        print(prompt, username, chat_id, request_id)
-        return assistant.chat(prompt, username, chat_id, request_id)
+        return _ask_dql(user_msg)
 
     elif selected_model == "GPT":
-        return _ask_gpt(prompt, assistant, username, storage)
-
-    elif selected_model == "NotebookLM":
-        return _ask_notebooklm(prompt, assistant, username, storage)
+        return _ask_gpt(user_msg)
 
     elif selected_model == "BattleAnon":
-        return _ask_battle(prompt, assistant, username, True, chat_id, request_id, storage)
+        return _ask_battle(user_msg, True)
 
     elif selected_model == "BattleLabeled":
-        return _ask_battle(prompt, assistant, username, False, chat_id, request_id, storage)
+        return _ask_battle(user_msg, False)
 
     else:
         return {"result": f"⚠️ Modello '{selected_model}' non riconosciuto."}
@@ -699,12 +608,6 @@ def _call_model(prompt: str, selected_model: str, assistant, username:str, chat_
 # -------------------------------
 
 def _stream_logs_to_ui(placeholder, stop_event: threading.Event, request_id: str) -> List[str]:
-    """
-    Follows the log file and updates the UI placeholder until the stop_event is set.
-
-    Returns:
-        List[str]: Collected log lines.
-    """
     log_file = os.path.join(
         st.session_state.config.project_root,
         "logs",
@@ -718,16 +621,13 @@ def _stream_logs_to_ui(placeholder, stop_event: threading.Event, request_id: str
         placeholder.markdown("\n\n".join(log_list).strip())
 
         if stop_event.is_set():
-            placeholder.markdown("")  # Clear logs from main view when done
+            placeholder.markdown("")
             break
 
     return log_list
 
 
 def _follow_log_generator(file_path: str, stop_event: threading.Event, wait_time: float = 0) -> Generator[str, None, None]:
-    """
-    Generator that reads a log file like 'tail -f'.
-    """
     while not (os.path.exists(file_path) or stop_event.is_set()):
         time.sleep(wait_time)
 
@@ -752,7 +652,6 @@ def _follow_log_generator(file_path: str, stop_event: threading.Event, wait_time
 
 
 def _typewriter_effect(text: str, placeholder) -> None:
-    """Simulates typing effect for the assistant response."""
     typed_text = ""
     for char in text:
         typed_text += char
@@ -764,18 +663,11 @@ def _typewriter_effect(text: str, placeholder) -> None:
 # -------------------------------
 
 def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: str) -> None:
-    """
-    Mostra due risposte in modalità 'Battle'.
-
-    Logging voto:
-    - usa st.session_state.storage.log_battle_vote(...)
-    - 1 voto per battle_id per utente (upsert nello Storage)
-    """
     if not battle_payload:
         st.markdown("⚠️ Nessuna risposta ricevuta in modalità Battle.")
         return
 
-    mode = battle_payload.get("mode", "anon")  # "anon" | "labeled"
+    mode = battle_payload.get("mode", "anon")
     answers = battle_payload.get("answers", [])
     if len(answers) < 2:
         st.markdown("⚠️ Modalità Battle richiede almeno due risposte.")
@@ -784,7 +676,7 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
     battle_id = battle_payload.get("battle_id", "default")
 
     base_key = f"battle_{chat_id}_{battle_id}"
-    focus_key = f"{base_key}_focus"  # "A", "B" oppure None
+    focus_key = f"{base_key}_focus"
 
     focus = st.session_state.get(focus_key)
 
@@ -837,7 +729,6 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
 
     st.markdown("### ⚔️ Modalità Battle")
 
-    # FASE 2: una risposta scelta
     if focus in ("A", "B"):
         current_idx = 0 if focus == "A" else 1
         current_answer = answers[current_idx]
@@ -864,7 +755,6 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
         _render_answer_card(current_answer, f"Risposta {focus}", mode)
         return
 
-    # FASE 1: nessuna scelta ancora
     colA, colB = st.columns(2)
 
     with colA:
@@ -886,9 +776,6 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
 # ------------------------------
 
 def _show_expander(message: Dict) -> None:
-    """
-    Renders the details expander containing input structure, operations, and logs.
-    """
     details = message.get("details", {}) if message else {}
 
     prompt = details.get("prompt", "")
@@ -937,7 +824,6 @@ def _show_expander(message: Dict) -> None:
 
 
 def _display_task(tasks: list) -> None:
-    """Renders a single operation detail block."""
     for index, task in enumerate(tasks, start=1):
         prompt_task = task.get("prompt", "")
         structured_prompt = task.get("structured_prompt", {})
@@ -987,7 +873,6 @@ def _display_task(tasks: list) -> None:
 
 
 def _display_operation(index: int, operation: Dict) -> List[str]:
-    """Renders a single operation detail block."""
     structured_prompt = operation.get("structured_prompt", {})
 
     display_dict = {
@@ -1020,7 +905,6 @@ def _display_operation(index: int, operation: Dict) -> List[str]:
 
 
 def _save_messages(messages: List[Dict]) -> None:
-    """Helper to persist messages to storage."""
     if "storage" in st.session_state and st.session_state.username:
         for message in messages:
             st.session_state.storage.add_chat_message(
@@ -1034,9 +918,6 @@ def _save_messages(messages: List[Dict]) -> None:
 # -------------------
 
 def show_home():
-    """
-    Main page entry point.
-    """
     required_keys = ["config", "username", "storage"]
     if not all(hasattr(st.session_state, k) and getattr(st.session_state, k) for k in required_keys) or not st.query_params.get("chat"):
         st.warning("Inizializzazione della configurazione in corso... Ricarica se il messaggio persiste.")

@@ -1,16 +1,16 @@
 import re
 
-from logic.bot.executor.tools.retrieval import Retrieval
-from logic.bot.executor.tools.analizza import analizza
-from logic.bot.executor.tools.cerca import cerca
-from logic.bot.executor.tools.classifica import classifica
-from logic.bot.executor.tools.confronta import confronta
-from logic.bot.executor.tools.estrai_logico import estrai_logico
-from logic.bot.executor.tools.estrai_semantico import estrai_semantico
-from logic.bot.executor.tools.integra import integra
-from logic.bot.executor.tools.riassumi import riassumi
-from logic.bot.executor.tools.riorganizza import riorganizza
-from logic.bot.executor.tools.verifica import verifica
+from api.dqlEngine.executor.tools.retrieval import Retrieval
+from api.dqlEngine.executor.tools.analizza import analizza
+from api.dqlEngine.executor.tools.cerca import cerca
+from api.dqlEngine.executor.tools.classifica import classifica
+from api.dqlEngine.executor.tools.confronta import confronta
+from api.dqlEngine.executor.tools.estrai_logico import estrai_logico
+from api.dqlEngine.executor.tools.estrai_semantico import estrai_semantico
+from api.dqlEngine.executor.tools.integra import integra
+from api.dqlEngine.executor.tools.riassumi import riassumi
+from api.dqlEngine.executor.tools.riorganizza import riorganizza
+from api.dqlEngine.executor.tools.verifica import verifica
 
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
@@ -131,9 +131,6 @@ class Executor:
                 self._logger.info(f"Processing document {i+1} of {len(docs)} for command '{command}'")
                 sub_result = self._call_tools(command, [doc], structured_prompt)
                 sub_results.append({"name": doc["name"], "text": sub_result, "type": doc["type"]})
-                
-                if i == 5:
-                    break
             
             self._logger.info(f"Processing sub-results for command '{command}' with 'integra' to combine them into a single output.")
             return self._call_tools("integra", sub_results, structured_prompt)

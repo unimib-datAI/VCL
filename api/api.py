@@ -6,7 +6,7 @@ from typing import Optional
 
 # Assumiamo l'import della tua pipeline
 from utils.config import Config
-from logic.orchestrator import Orchestrator 
+from api.dqlEngine.orchestrator.orchestrator import Orchestrator 
 
 class ChatRequest(BaseModel):
     prompt: str

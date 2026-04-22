@@ -1,4 +1,4 @@
-from logic.bot.executor.tools.converters import check_limit_result, format_conditions, format_context
+from api.dqlEngine.executor.tools.converters import check_limit_result, format_conditions, format_context
 
 def classifica(context: list, query: dict, llm, language) -> str:
     if not context:

@@ -3,10 +3,10 @@ import threading
 
 from copy import deepcopy
 
-from logic.bot.translator.sources_extractor import SourcesExtractor
-from logic.bot.translator.command_classifier import CommandClassifier
-from logic.bot.translator.what_extractor import WhatExtractor
-from logic.bot.translator.conditions_extractor import ConditionsExtractor
+from api.dqlEngine.translator.sources_extractor import SourcesExtractor
+from api.dqlEngine.translator.command_classifier import CommandClassifier
+from api.dqlEngine.translator.what_extractor import WhatExtractor
+from api.dqlEngine.translator.conditions_extractor import ConditionsExtractor
 
 from utils.config import Config
 

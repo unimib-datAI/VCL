@@ -1,5 +1,5 @@
-from logic.bot.preprocessor.rephraser import Rephraser
-from logic.bot.preprocessor.decomposer import Decomposer
+from api.dqlEngine.preprocessor.rephraser import Rephraser
+from api.dqlEngine.preprocessor.decomposer import Decomposer
 from utils.config import Config
 
 

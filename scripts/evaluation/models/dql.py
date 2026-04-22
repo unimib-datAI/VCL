@@ -1,6 +1,6 @@
 from copy import deepcopy
 
-from logic.orchestrator import Orchestrator
+from api.dqlEngine.orchestrator.orchestrator import Orchestrator
 from utils.config import Config
 
 class DQLModel():

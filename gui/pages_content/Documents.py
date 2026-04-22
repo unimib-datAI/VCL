@@ -28,7 +28,7 @@ def _display_header():
             options=options,
             format_func=lambda option: option.capitalize(),
             selection_mode="single",
-            default="user",
+            default="vitali",
             key="source_pill_widget"
         )
 

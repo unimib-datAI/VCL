@@ -16,10 +16,10 @@ from datetime import datetime
 
 from utils.config import Config
 from utils.file_manager import FileHandler
-from logic.bot.preprocessor.preprocessor import Preprocessor
-from logic.bot.translator.translator import Translator
-from logic.bot.planner.planner import Planner
-from logic.bot.executor.executor import Executor
+from api.dqlEngine.preprocessor.preprocessor import Preprocessor
+from api.dqlEngine.translator.translator import Translator
+from api.dqlEngine.planner.planner import Planner
+from api.dqlEngine.executor.executor import Executor
 
 
 class Orchestrator:

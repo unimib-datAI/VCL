@@ -206,7 +206,7 @@ if st.session_state.auth_status:
     
     # Synchronize chat context and language specs
     if "chat" not in st.query_params or not st.query_params.chat:
-        st.query_params.chat = str(int(time.time()))
+        st.query_params.chat = st.session_state.storage.create_new_chat(st.session_state.username)
         
     if "language" not in st.query_params or not st.session_state.language:
         st.session_state.language = st.session_state.config.get_DQL(st.session_state.username)
