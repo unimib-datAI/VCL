@@ -6,16 +6,15 @@ PAGE_TITLE = "Visualizza i tuoi documenti giudiziari"
 
 def _initialize_docs(username_input):
     """Sincronizza i documenti basandosi sull'utente selezionato."""
-    if username_input in ["vitali", "salomone"]:
-        user_id = username_input
-    else:
-        user_id = st.session_state.get("username", "user")
-                
+    user_id = username_input if username_input in ["vitali", "salomone"] else st.session_state.get("username", "user")
+    
+    print(user_id)
+    
     if hasattr(st.session_state, 'storage'):
         docs = st.session_state.storage.get_all_documents(user_id)
         
-        st.session_state.docs = docs
-        st.session_state.current_doc = docs[0] if docs else None
+        st.session_state.docs = docs if docs else []
+        st.session_state.current_doc = docs[0] if docs else {}
 
 def _display_header():
     col1, col2, col3 = st.columns([2, 1, 1])
@@ -28,13 +27,12 @@ def _display_header():
             options=options,
             format_func=lambda option: option.capitalize(),
             selection_mode="single",
-            default="vitali",
             key="source_pill_widget"
         )
 
-        if selected_source != st.session_state.source_id:
-            selected_source = st.session_state.username if selected_source not in ["salomone", "vitali"] else selected_source
-            st.session_state.source_id = selected_source
+        # CORREZIONE 1: Evitiamo il trigger su None e manteniamo il valore letterale
+        if selected_source is not None and selected_source != st.session_state.active_source:
+            st.session_state.active_source = selected_source
             _initialize_docs(selected_source)
             st.rerun()
     
@@ -72,18 +70,19 @@ def _display_header():
                     )
 
             st.success("Documenti caricati con successo.")
-            _initialize_docs(st.session_state.source_id)
+            _initialize_docs(st.session_state.active_source)
             st.session_state.show_uploader = False
             st.rerun()
         
     with col3:
-        if st.session_state.get("current_doc") and st.session_state.username == st.session_state.source_id:
+        # CORREZIONE 2: Verifichiamo che la fonte attiva sia l'opzione "user"
+        if st.session_state.get("current_doc") and st.session_state.active_source == "user":
             doc_to_del = st.session_state.current_doc.get("_id", None)
             if doc_to_del:
                 if st.button("🗑️ Elimina Documento Corrente", width='stretch', type="secondary"):
                     if st.session_state.storage.delete_document(st.session_state.username, doc_to_del):
                         st.success("Documento eliminato con successo.")
-                        _initialize_docs(st.session_state.source_id)
+                        _initialize_docs(st.session_state.active_source)
                         st.rerun()
                     else:
                         st.error("Errore durante l'eliminazione del documento.")
@@ -153,13 +152,13 @@ def show_documents():
     if not all(hasattr(st.session_state, k) for k in required_keys):
         return 
     
-    if "source_id" not in st.session_state or not st.session_state.source_id:
-        st.session_state.source_id = "vitali"
+    if "active_source" not in st.session_state or not st.session_state.active_source:
+        st.session_state.active_source = "vitali"
 
     st.title(PAGE_TITLE)
 
     if "docs" not in st.session_state:
-        _initialize_docs(st.session_state.source_id)
+        _initialize_docs(st.session_state.active_source)
         
     if "show_uploader" not in st.session_state:
         st.session_state.show_uploader = False

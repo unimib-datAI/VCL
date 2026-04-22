@@ -1,8 +1,4 @@
 import streamlit as st
-import time
-
-from copy import deepcopy
-from tomlkit import value
 from typing import Dict, Callable
 
 # Page component imports
@@ -160,10 +156,10 @@ def _render_sidebar() -> None:
         if st.button("📁 Visualizza Documenti", width='stretch'):
             change_page("Documents")
                 
-        if st.button("Informazioni Linguaggio", width='stretch'):
+        if st.button("ℹ️ Informazioni Linguaggio", width='stretch'):
             change_page("Info")
 
-        if st.button("Tracking Domande", width='stretch'):
+        if st.button("❓ Tracking Domande", width='stretch'):
             change_page("QuestionTracking")
         
         if st.button("⚙️ Impostazioni", width='stretch'):

@@ -96,9 +96,9 @@ def _display_chat_history() -> None:
                     current_chat_id,
                 )
             else:
-                st.markdown(message["content"])
+                st.markdown(message.get("content", "Errore!"))
 
-            if message.get("role", "assistant") == "assistant" and message["content"] != "Ciao! Come posso aiutarti oggi?" and label:
+            if message.get("role", "assistant") == "assistant" and message.get("content", "Errore!") != "Ciao! Come posso aiutarti oggi?" and label:
                 st.markdown(
                     f"<span style='font-size:0.75rem; opacity:0.7;'>🔌 Risposta generata con: <b>{label}</b></span>",
                     unsafe_allow_html=True,
@@ -453,7 +453,7 @@ def _build_docs_block(user_msg) -> str:
 
 def _ask_dql(user_msg: Dict) -> Dict:
     payload = {
-        "prompt": user_msg["content"],
+        "prompt": user_msg.get("content", "Errore!"),
         "user_id": user_msg["user_id"],
         "chat_id": user_msg["chat_id"],
         "request_id": user_msg["request_id"],
@@ -483,7 +483,7 @@ def _ask_dql(user_msg: Dict) -> Dict:
             "result": "Errore durante la chiamata al modello DQL. Per favore riprova più tardi.",
             
             "details": {
-                "prompt": user_msg["content"], 
+                "prompt": user_msg.get("content", "Errore!"), 
                 "prompt_process": "Errore durante la chiamata al modello DQL.",
                 "tasks": []
             }
