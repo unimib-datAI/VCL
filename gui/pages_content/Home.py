@@ -461,7 +461,7 @@ def _ask_dql(user_msg: Dict) -> Dict:
     }
     
     try:
-        response = requests.post("http://localhost:9000/api/v2/chat", json=payload)
+        response = requests.post("http://localhost:9000/api/answer", json=payload)
         response.raise_for_status()
         
         return response.json()
