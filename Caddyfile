@@ -1,6 +1,11 @@
 https://vm.chronos.disco.unimib.it {
-
     tls internal
-    reverse_proxy dql-system:8501
-	
+
+    handle_path /api/* {
+        reverse_proxy dql-system:9000
+    }
+
+    handle {
+        reverse_proxy dql-system:8501
+    }
 }

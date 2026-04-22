@@ -51,15 +51,12 @@ class Orchestrator:
     # --- Public Methods ---
     # ----------------------
     
-    def chat(self, prompt: str, user_id: str, chat_id: str, request_id: str = None, source_id: str = None) -> dict:
+    def answer(self, request: dict) -> dict:
         """
         Entry point for processing a user query. Orchestrates the 4-step pipeline.
 
         Args:
-            prompt (str): The user's query.
-            user_id (str): The ID of the user initiating the request.
-            chat_id (str): The ID of the chat session.
-            source_id (str): The ID of the source corpus.
+            request (dict): A dictionary containing the user's query and associated metadata.
 
         Returns:
             dict: A comprehensive response object containing:
@@ -67,21 +64,21 @@ class Orchestrator:
                 - details: Technical breakdown (tasks, DQL commands, logs).
                 - metadata: Request ID, timestamp, and model used.
         """
-        self._language = self._CFG.get_DQL(user_id)
+        self._language = self._CFG.get_DQL(request["user_id"])
         
         status = {}
         
-        request_id = request_id if request_id else self._get_request_id(user_id)
+        request_id = request.get("request_id") if request.get("request_id") else self._get_request_id(request["user_id"])
         
         # Lazy initialization of specialized components for the current request
         self._logger = self._CFG.get_logger("Orchestrator", request_id)
-        self._preprocessor = Preprocessor(self._CFG, user_id, request_id)
-        self._translator = Translator(self._CFG, user_id, request_id)
-        self._planner = Planner(self._CFG, user_id, request_id)
-        self._executor = Executor(self._CFG, user_id, request_id)
+        self._preprocessor = Preprocessor(self._CFG, request["user_id"], request_id)
+        self._translator = Translator(self._CFG, request["user_id"], request_id)
+        self._planner = Planner(self._CFG, request["user_id"], request_id)
+        self._executor = Executor(self._CFG, request["user_id"], request_id)
 
         try:
-            if not prompt or prompt.strip() == "":
+            if not request.get("prompt") or request["prompt"].strip() == "":
                 raise ValueError("No prompt provided in the request status.")
             
             status = {
@@ -92,13 +89,13 @@ class Orchestrator:
                 "id": request_id,
                 
                 "ids": {
-                    "user": user_id,
-                    "session": chat_id,
+                    "user": request["user_id"],
+                    "session": request["chat_id"],
                     "request": request_id,
                 },
                 
                 "details": {
-                    "prompt": prompt
+                    "prompt": request["prompt"]
                 }
             }
             
@@ -108,10 +105,10 @@ class Orchestrator:
 
             # --- Pipeline Execution Flow ---
             self._logger.info(f"Starting processing for request ID \"{status['id']}\".")
-            self._logger.info(f"Request received \"{prompt}\".")
+            self._logger.info(f"Request received \"{request['prompt']}\".")
             
             # Step 1: Clean input and split into logical tasks
-            prompt_process, tasks = self._preprocess(prompt)
+            prompt_process, tasks = self._preprocess(request["prompt"])
             
             # Step 2: Map tasks to structured DQL (JSON-like commands)
             structured_tasks = self._translate(tasks)
@@ -120,13 +117,13 @@ class Orchestrator:
             structured_tasks = self._plan(structured_tasks)
             
             # Step 4: Execute RAG (Retrieval Augmented Generation) and merge results
-            result, last_result = self._execute(structured_tasks, user_id, chat_id, source_id)
+            result, last_result = self._execute(structured_tasks, request["user_id"], request["chat_id"], request["source_id"])
             
             self._logger.info(f"Processing completed correctly.")
         
         except Exception as e:
             # Critical error handling: provide a safe fallback for the UI
-            prompt_process = prompt
+            prompt_process = request["prompt"]
             result = []
             last_result = f"{self.error_msg}: ({e})"
             self._logger.error(f"Processing failed with error: {e}")

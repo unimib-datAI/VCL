@@ -15,23 +15,16 @@ class ChatRequest(BaseModel):
     request_id: Optional[str] = None
     source_id: Optional[str] = None
 
-app = FastAPI(title="DQL Orchestrator API")
+app = FastAPI(title="DQL Orchestrator API", root_path="/api")
 
 cfg = Config.get_instance()
 orchestrator = Orchestrator(cfg)
 
-@app.post("/api/v2/chat")
+@app.post("/answer")
 def chat_endpoint(request: ChatRequest):
     try:
-        source_id = (request.source_id or "").strip() or "vitali"
-        
-        return orchestrator.chat(
-            prompt=request.prompt,
-            user_id=request.user_id,
-            chat_id=request.chat_id,
-            request_id=request.request_id,
-            source_id=source_id
-        )
+        request.source_id = (request.source_id or "").strip() or "vitali"
+        return orchestrator.answer(dict(request))
     except Exception as e:
         raise HTTPException(
             status_code=500, 
