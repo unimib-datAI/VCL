@@ -2,9 +2,6 @@ import argparse
 import sys
 import subprocess
 import time
-from pathlib import Path
-
-from scripts.evaluation.main import evaluation
 
 def parse_args() -> argparse.Namespace:
     """
@@ -27,10 +24,15 @@ def parse_args() -> argparse.Namespace:
     opts, _ = parser.parse_known_args()
     return opts
 
+# sys.argv[1:] contains all the raw arguments passed by the user
+# We forward them exactly as they are to the API script
+def _launch_evaluation() -> subprocess.Popen:
+    print("Starting evaluation...")
+    cmd = [sys.executable, "scripts/evaluation/main.py"] + sys.argv[1:]
+    return subprocess.Popen(cmd)
+
 def _launch_api() -> subprocess.Popen:
     print("Starting Uvicorn API...")
-    # sys.argv[1:] contains all the raw arguments passed by the user
-    # We forward them exactly as they are to the API script
     cmd = [sys.executable, "run_api.py"] + sys.argv[1:]
     return subprocess.Popen(cmd)
 
@@ -45,12 +47,17 @@ def main() -> None:
     print("Starting Docker containers...")
     subprocess.run(["docker", "compose", "up", "-d", "--build"], check=True)
     
+    evaluation_process = None
     api_process = None
     ui_process = None
     
     try:
         if opts.evaluation_mode:
-            evaluation()
+            # 1. Start Evaluation Subprocess
+            evaluation_process = _launch_evaluation()
+            
+            # 2. Wait for the evaluation process to complete
+            evaluation_process.wait()
         else:
             # 1. Start API Subprocess
             api_process = _launch_api()
@@ -68,11 +75,15 @@ def main() -> None:
         print("\nManual interruption (CTRL+C) detected. Shutting down...")
     
     finally:
-        if ui_process is not None:
+        if evaluation_process is not None and evaluation_process.poll() is None:
+            print("Stopping evaluation process...")
+            evaluation_process.terminate()
+        
+        if ui_process is not None and ui_process.poll() is None:
             print("Stopping Streamlit...")
             ui_process.terminate()
             
-        if api_process is not None:
+        if api_process is not None and api_process.poll() is None:
             print("Stopping Uvicorn API...")
             api_process.terminate()
 

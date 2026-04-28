@@ -4,7 +4,8 @@ from api.dqlEngine.orchestrator.orchestrator import Orchestrator
 from utils.config import Config
 
 class DQLModel():
-    def __init__(self, username, same_chat = False):
+    def __init__(self, llm, username, same_chat = False):
+        self.llm = llm
         self.username = username
         self.config = deepcopy(Config.get_instance())
         
@@ -13,13 +14,12 @@ class DQLModel():
 
     @property
     def name(self):
-        return self.username
+        return f"DQL ({self.llm})"
 
     def initialize(self, _):
-        user = "LDQL-U" if "LDQL-U" in self.username else self.username
-        self.config.get_storage().register_user(user, f"{user}@gmail.com", f"Admin123!")
+        self.config.get_storage().register_user(self.username, f"{self.username}@gmail.com", f"Admin123!")
         
-        self.config.handle_login(user.lower(), "Altro")
+        self.config.handle_login(self.username.lower(), "Altro")
         self.config.set_sources_id("vitali")
 
     def query(self, question: str) -> str:
