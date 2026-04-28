@@ -37,7 +37,7 @@ class Retrieval:
             operations (list[dict], optional): Results from previously executed 
                 operations in the current session, enabling cross-task references.
         """
-        self._client = Elasticsearch(cfg.DB_URL)
+        # self._client = Elasticsearch(cfg.DB_URL)
         self._storage = cfg.get_storage()
         self._user_id = user_id
         self._chat_id = chat_id
@@ -104,7 +104,7 @@ class Retrieval:
             ("MongoDB (DOC)", self._get_doc_from_mongo),
             ("MongoDB (CHAT)", self._get_chat_from_mongo),
             ("LocalSystem", self._get_from_local_system),
-            ("ElasticSearch", self._get_from_elastic_search)
+            # ("ElasticSearch", self._get_from_elastic_search)
         ]
 
         for label, method in retrieval_methods:
@@ -124,18 +124,21 @@ class Retrieval:
         """
         result = []
         
+        done = False
         for op in self._operations:
-            # Check top-level operations for matching ID
             if op.get("id") == doc_name:
-                if "result" in op and op.get("structured_prompt", {}).get("from"):
-                    result.append({"name": doc_name, "text": op["result"], "type": op["structured_prompt"]["from"][0]})
-            
+                result.append({"name": doc_name, "text": op.get("result", ""), "type": op.get("structured_prompt", {}).get("from", ["UNKNOWN"])[0]})
+                done = True
+                
             # Recurse into sub-operations if present
             if "operations" in op:
                 for o in op["operations"]:
                     if o.get("id") == doc_name:
-                        if "result" in o and o.get("structured_prompt", {}).get("from"):
-                            result.append({"name": doc_name, "text": o["result"], "type": o["structured_prompt"]["from"][0]})
+                        result.append({"name": doc_name, "text": o.get("result", ""), "type": o.get("structured_prompt", {}).get("from", ["UNKNOWN"])[0]})
+                        done = True
+            
+            if done:
+                break
         
         return result
 

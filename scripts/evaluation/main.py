@@ -37,7 +37,7 @@ def parse_arguments():
         "--gen-llm", 
         type=str, 
         default="gpt-4o-mini", 
-        help="OpenAI's LLM to use for generation (default: gpt-4o)"
+        help="OpenAI's LLM to use for generation (default: gpt-4o-mini)"
     )
     parser.add_argument(
         "--eval-llm", 

@@ -88,8 +88,6 @@ class Executor:
         Returns:
             list[dict]: The operations list enriched with 'result' strings for each task.
         """
-        # Initialize retrieval with current operations to enable cross-task referencing
-        self._retrieval = Retrieval(self._cfg, tasks, user_id, chat_id, source_id)
         
         for task in tasks:
             self._logger.info(f"Executing task: {task['id']}")
@@ -99,7 +97,10 @@ class Executor:
                 new_operations = []
                 for o in task["operations"]:
                     self._logger.info(f"Processing sub-task: {o['id']}")
+                    # Initialize retrieval with current operations to enable cross-task referencing
+                    self._retrieval = Retrieval(self._cfg, tasks, user_id, chat_id, source_id)
                     new_tasks = self._execute(deepcopy(o))
+                    o["result"] = new_tasks[-1]["result"]  # Update sub-task result only for retrieval
                     new_operations.extend(new_tasks)
                     
                 task["operations"] = new_operations
