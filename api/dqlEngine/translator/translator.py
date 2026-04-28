@@ -156,9 +156,9 @@ class Translator:
         for i in range(len(command_parameters)):
             if how_parameters[i]:
                 tasks[i]["structured_prompt"]["how"] = how_parameters[i]
-                # Clean up temporary field used for context passing
-                if "from" in tasks[i]:
-                    del tasks[i]["from"]
+            # Clean up temporary field used for context passing
+            if "from" in tasks[i]:
+                del tasks[i]["from"]
 
         return tasks
     

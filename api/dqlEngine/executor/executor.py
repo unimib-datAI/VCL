@@ -1,5 +1,7 @@
 import re
 
+from copy import deepcopy
+
 from api.dqlEngine.executor.tools.retrieval import Retrieval
 from api.dqlEngine.executor.tools.analizza import analizza
 from api.dqlEngine.executor.tools.cerca import cerca
@@ -72,7 +74,7 @@ class Executor:
     # --- Public Methods ---
     # ----------------------
     
-    def generate(self, operations: list[dict], user_id: str, chat_id: str, source_id: str) -> list[dict]:
+    def generate(self, tasks: list[dict], user_id: str, chat_id: str, source_id: str) -> list[dict]:
         """
         Processes a sequence of planned operations to generate final results.
 
@@ -87,23 +89,31 @@ class Executor:
             list[dict]: The operations list enriched with 'result' strings for each task.
         """
         # Initialize retrieval with current operations to enable cross-task referencing
-        self._retrieval = Retrieval(self._cfg, operations, user_id, chat_id, source_id)
+        self._retrieval = Retrieval(self._cfg, tasks, user_id, chat_id, source_id)
         
-        for op in operations:
-            self._logger.info(f"Executing operation sequence: {op['id']}")
+        for task in tasks:
+            self._logger.info(f"Executing task: {task['id']}")
             
             # Recursive check for nested sub-operations
-            if "operations" in op:
-                for o in op["operations"]:
+            if "operations" in task:
+                new_operations = []
+                for o in task["operations"]:
                     self._logger.info(f"Processing sub-task: {o['id']}")
-                    o["result"] = self._execute(o)
+                    new_tasks = self._execute(deepcopy(o))
+                    new_operations.extend(new_tasks)
+                    
+                task["operations"] = new_operations
                 # The primary operation result inherits from its last sub-task
-                op["result"] = op["operations"][-1]["result"]
+                task["result"] = task["operations"][-1]["result"]
             else:
-                # Direct execution for simple atomic operations
-                op["result"] = self._execute(op)
+                new_operations = self._execute(deepcopy(task))
+                
+                if len(new_operations) > 1:
+                    task["operations"] = new_operations
+                
+                task["result"] = new_operations[-1]["result"]
             
-        return operations
+        return tasks
     
     def _execute(self, op: dict) -> str:
         """
@@ -124,18 +134,31 @@ class Executor:
         self._logger.info(f"Invoking tool handler for command: '{command}'")
         
         if len(docs) > 1 and command not in ["confronta", "integra"]:
-            sub_results = []
+            sub_operations = []
+            
             self._logger.info(f"Multiple documents retrieved for command '{command}': we need more execution of the command.")
             
             for i, doc in enumerate(docs):
+                sub_operations.append(deepcopy(op))
+                
+                sub_op = sub_operations[-1]
+                sub_op["id"] = f"{op['id']}_{i+1}"
+                sub_op["structured_prompt"]["from"] = f"{sub_op['structured_prompt'].get('from', [''])[0]}_{i+1}"
+                
                 self._logger.info(f"Processing document {i+1} of {len(docs)} for command '{command}'")
-                sub_result = self._call_tools(command, [doc], structured_prompt)
-                sub_results.append({"name": doc["name"], "text": sub_result, "type": doc["type"]})
+                sub_op["result"] = self._call_tools(command, [doc], structured_prompt)
+                
+            sub_results = [{"name": docs[i]["name"], "text": sub_op.get("result", ""), "type": docs[i]["type"]} for i, sub_op in enumerate(sub_operations)]
             
             self._logger.info(f"Processing sub-results for command '{command}' with 'integra' to combine them into a single output.")
-            return self._call_tools("integra", sub_results, structured_prompt)
+            op["structured_prompt"]["command"] = "integra"
+            op["structured_prompt"]["from"] = [sub_op["structured_prompt"].get("from", f"doc_{i+1}") for i, sub_op in enumerate(sub_operations)]
+            op["result"] = self._call_tools("integra", sub_results, structured_prompt)
+            sub_operations.append(deepcopy(op))
+            return sub_operations
 
-        return self._call_tools(command, docs, structured_prompt)
+        op["result"] = self._call_tools(command, docs, structured_prompt)
+        return [op]
         
     def _call_tools(self, command: str, docs: list, structured_prompt: dict):
         try:
