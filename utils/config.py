@@ -1,3 +1,5 @@
+"""Global configuration and shared service factory for the DQL application."""
+
 import argparse
 import os
 import logging

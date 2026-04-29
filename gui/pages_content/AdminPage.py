@@ -1,3 +1,5 @@
+"""Administrative Streamlit page for users and Battle score dashboards."""
+
 import streamlit as st
 import pandas as pd
 from copy import deepcopy
@@ -15,17 +17,13 @@ MODEL_LABELS = {
 
 def _scores_summary_to_df(scores: dict) -> pd.DataFrame:
     """
-    Atteso:
-    {
-      "by_model": {
-        "DQL": {"wins": 10, "losses": 6, "matches": 16, "win_rate": 0.625},
-        ...
-      },
-      "total_matches": 16
-    }
+    Convert a Battle score summary into a sorted dataframe for display.
     """
+    # Accept malformed or missing score payloads without breaking the page.
     by_model = (scores or {}).get("by_model", {}) if isinstance(scores, dict) else {}
     rows = []
+
+    # Flatten nested model statistics into table rows.
     for model_key, stats in by_model.items():
         rows.append({
             "Model": MODEL_LABELS.get(model_key, model_key),
@@ -37,17 +35,23 @@ def _scores_summary_to_df(scores: dict) -> pd.DataFrame:
 
     df = pd.DataFrame(rows)
     if not df.empty:
+        # Best-performing models should appear at the top of the dashboard.
         df = df.sort_values(["Win rate (%)", "Wins", "Matches"], ascending=False)
     return df
 
 
 def show_user_info():
+    """
+    Render the registered users table and admin action buttons.
+    """
     st.subheader("Elenco Utenti Registrati")
 
+    # Work on a copy so UI formatting cannot mutate storage data by accident.
     users = deepcopy(st.session_state.storage.get_all_users())
 
     col1, col2, col3 = st.columns([1, 1, 1])
 
+    # Admin actions are modeled as state transitions and rendered below.
     with col1:
         if st.button("Ricarica Utenti", width='stretch'):
             st.rerun()
@@ -62,6 +66,7 @@ def show_user_info():
             st.session_state.admin_action = "delete_user"
             st.rerun()
 
+    # Strip internal Mongo fields and expose only admin-relevant user data.
     users = [{
         "Username": u["username"],
         "Email": u["email"],
@@ -72,8 +77,12 @@ def show_user_info():
 
 
 def show_user_registration():
+    """
+    Render the admin form used to create a new user.
+    """
     st.subheader("Aggiungi Nuovo Utente")
 
+    # A form keeps the user data together and submits it atomically.
     with st.form("Registrati"):
         username = st.text_input("Username")
         email = st.text_input("Email")
@@ -81,6 +90,7 @@ def show_user_registration():
         role = st.radio("Qual è il tuo ruolo?", ["Giudice", "Avvocato", "Admin", "Altro"])
 
         if st.form_submit_button("Registrati"):
+            # Trim values before passing them to storage validation.
             username = username.strip()
             email = email.strip()
             password = password.strip()
@@ -88,6 +98,7 @@ def show_user_registration():
             result, user = st.session_state.storage.register_user(username, email, password, role)
 
             if result and user:
+                # Reset the admin action so the users list is shown again.
                 st.success("Registrazione avvenuta con successo!")
                 del st.session_state.admin_action
                 st.rerun()
@@ -99,8 +110,12 @@ def show_user_registration():
 
 
 def show_delete_user():
+    """
+    Render the admin flow for deleting another user.
+    """
     st.subheader("Rimuovi Utente")
 
+    # Build the selectbox directly from current storage state.
     users = st.session_state.storage.get_all_users()
     usernames = [user["username"] for user in users]
 
@@ -108,6 +123,7 @@ def show_delete_user():
 
     if st.button("Rimuovi Utente", width='stretch'):
         if selected_user:
+            # Avoid deleting the account that owns the current session.
             if selected_user == st.session_state.username:
                 st.error("Non puoi rimuovere te stesso.")
             else:
@@ -123,10 +139,14 @@ def show_delete_user():
 
 
 def _show_battle_scores_admin():
+    """
+    Render global and per-user Battle score dashboards for admins.
+    """
     st.subheader("📊 Battle Scores (tutti gli utenti)")
 
     storage = st.session_state.storage
 
+    # Older storage implementations may not include the Battle summary API.
     if not hasattr(storage, "get_battle_scores_summary"):
         st.warning(
             "Lo Storage non espone ancora `get_battle_scores_summary(...)`.\n"
@@ -136,7 +156,7 @@ def _show_battle_scores_admin():
 
     mode_ui = st.selectbox("Modalità", ["All", "BattleAnon", "BattleLabeled"], index=0)
 
-    # Mapping UI -> storage (tu salvi 'anon' / 'labeled')
+    # Map UI labels to the compact values stored in MongoDB.
     if mode_ui == "All":
         mode_filter = None
     elif mode_ui == "BattleAnon":
@@ -144,7 +164,7 @@ def _show_battle_scores_admin():
     else:
         mode_filter = "labeled"
 
-    # ---- Globale ----
+    # Global score table.
     scores_global = storage.get_battle_scores_summary(user_id=None, mode=mode_filter)
     total_global = scores_global.get("total_matches", 0)
     st.caption(f"Totale match registrati: {total_global}")
@@ -152,7 +172,7 @@ def _show_battle_scores_admin():
 
     st.divider()
 
-    # ---- Per utente ----
+    # Per-user score table.
     st.subheader("👤 Breakdown per utente")
 
     users = storage.get_all_users() or []
@@ -162,6 +182,7 @@ def _show_battle_scores_admin():
         st.info("Nessun utente disponibile.")
         return
 
+    # The second table reuses the same dataframe conversion for one selected user.
     selected_user = st.selectbox("Seleziona utente", usernames, index=0)
 
     scores_user = storage.get_battle_scores_summary(user_id=selected_user, mode=mode_filter)
@@ -171,8 +192,12 @@ def _show_battle_scores_admin():
 
 
 def show_admin():
+    """
+    Entry point for the admin page with role-based access control.
+    """
     st.title(PAGE_TITLE)
 
+    # Guard against direct page access before login/session initialization.
     required_keys = ["config", "username", "role"]
     if not all(k in st.session_state for k in required_keys):
         st.error("Sessione non inizializzata.")
@@ -182,6 +207,7 @@ def show_admin():
         st.error("Accesso negato. Solo gli amministratori possono accedere a questa pagina.")
         return
 
+    # Split user management and Battle analytics into independent tabs.
     tab_users, tab_scores = st.tabs(["👥 Utenti", "📊 Battle Scores"])
 
     with tab_users:

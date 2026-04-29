@@ -1,3 +1,5 @@
+"""Source extractor for explicit, implicit, and history-based references."""
+
 import re
 
 from utils.config import Config
@@ -147,6 +149,9 @@ class SourcesExtractor:
         return documents
     
     def filtra_duplicati(self, couples):
+        """
+        Remove duplicate aliases while preferring user-owned document references.
+        """
         temp_dict = {}
         
         for first, second in couples:
@@ -228,7 +233,7 @@ class SourcesExtractor:
     
     def _documents_parsing(self, query: str) -> list:
         """
-        Parses Documents Label.
+        Parse document names and synonyms directly from the query text.
         """
         documents = [[src, src] for src in self._src_info.keys() if src.lower() in query.lower()]
         

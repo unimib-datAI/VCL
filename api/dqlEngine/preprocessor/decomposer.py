@@ -1,3 +1,5 @@
+"""Query decomposer that orders sub-tasks with a dependency graph."""
+
 import networkx as nx
 import os
 import threading

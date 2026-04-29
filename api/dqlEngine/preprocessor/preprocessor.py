@@ -1,3 +1,5 @@
+"""Preprocessing stage for query rewriting and task decomposition."""
+
 from api.dqlEngine.preprocessor.rephraser import Rephraser
 from api.dqlEngine.preprocessor.decomposer import Decomposer
 from utils.config import Config

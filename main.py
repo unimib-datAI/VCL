@@ -1,3 +1,5 @@
+"""Top-level launcher for Docker services, API, UI, and evaluation mode."""
+
 import argparse
 import sys
 import subprocess
@@ -27,21 +29,25 @@ def parse_args() -> argparse.Namespace:
 # sys.argv[1:] contains all the raw arguments passed by the user
 # We forward them exactly as they are to the API script
 def _launch_evaluation() -> subprocess.Popen:
+    """Start the evaluation script as a child process."""
     print("Starting evaluation...")
     cmd = [sys.executable, "scripts/evaluation/main.py"] + sys.argv[1:]
     return subprocess.Popen(cmd)
 
 def _launch_api() -> subprocess.Popen:
+    """Start the FastAPI backend as a child process."""
     print("Starting Uvicorn API...")
     cmd = [sys.executable, "run_api.py"] + sys.argv[1:]
     return subprocess.Popen(cmd)
 
 def _launch_streamlit() -> subprocess.Popen:
+    """Start the Streamlit UI as a child process."""
     print("Starting Streamlit UI...")
     cmd = [sys.executable, "run_streamlit.py"]
     return subprocess.Popen(cmd)
 
 def main() -> None:
+    """Run the requested DQL service mode and clean up processes on exit."""
     opts = parse_args()
     
     print("Starting Docker containers...")

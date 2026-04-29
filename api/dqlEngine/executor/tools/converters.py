@@ -1,3 +1,5 @@
+"""Formatting and validation helpers shared by executor tools."""
+
 from utils.file_manager import FileHandler
 
 def format_context(docs: list[dict]) -> str:
@@ -105,7 +107,7 @@ def format_conditions(how: dict, command: str) -> str:
     return "\n".join(conditions) if len(conditions) > 1 else "Non sono presenti condizioni aggiuntive"
 
 def format_limit_condition(limit: dict) -> str:
-    # Specialized formatting for numerical constraints (words, characters, paragraphs)
+    """Render a numerical limit as an instruction for the LLM."""
     sign = limit.get('sign', '~')
     unit = limit.get('unit', 'parole')
     number = limit.get('number', 50)
@@ -126,6 +128,9 @@ def format_limit_condition(limit: dict) -> str:
 # --------------------------
 
 def check_limit_result(result: str, context: str, query, llm, dql) -> str:
+    """
+    Retry answer generation when the response violates the requested length limit.
+    """
     if query.get("how", {}).get("limit", None) is None:
         return result
     
@@ -157,12 +162,13 @@ def check_limit_result(result: str, context: str, query, llm, dql) -> str:
             f"[CONTESTO ORIGINALE PER RIFERIMENTO]\n{new_context}"
         )
         
-        # Richiamiamo il tool specifico per la lunghezza
+        # Reuse the rephrasing prompt to adjust only the response length.
         result = riformula(new_context, query, llm, dql)
         
     return result
 
 def riformula(context: list, query: dict, llm, language) -> str:
+    """Ask the LLM to rewrite an answer so it respects the extracted limits."""
     if not context:
         return "Non è stato possibile rispondere alla tua richiesta perché non ho trovato i documenti richiesti."
     

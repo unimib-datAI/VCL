@@ -1,3 +1,5 @@
+"""Intent classifier for mapping natural language to DQL commands."""
+
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
 

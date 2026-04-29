@@ -1,3 +1,5 @@
+"""Planning stage that expands structured DQL tasks into executable steps."""
+
 from copy import deepcopy
 from typing import List, Dict, Any
 

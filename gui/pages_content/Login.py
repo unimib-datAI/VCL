@@ -1,3 +1,5 @@
+"""Streamlit login page for starting an authenticated DQL session."""
+
 import streamlit as st
 
 # Application constant for the login page title

@@ -1,3 +1,5 @@
+"""Streamlit page for personal question tracking and Battle results."""
+
 import streamlit as st
 import pandas as pd
 
@@ -10,6 +12,9 @@ MODEL_LABELS = {
 }
 
 def _scores_summary_to_df(scores: dict) -> pd.DataFrame:
+    """
+    Convert a Battle score summary into a sorted dataframe for display.
+    """
     by_model = (scores or {}).get("by_model", {}) if isinstance(scores, dict) else {}
     rows = []
     for model_key, stats in by_model.items():
@@ -27,6 +32,9 @@ def _scores_summary_to_df(scores: dict) -> pd.DataFrame:
 
 
 def _render_questions_log():
+    """
+    Render the current user's tracked questions from the audit collection.
+    """
     st.subheader("🧾 Storico domande (tutti i modelli)")
 
     try:
@@ -53,6 +61,9 @@ def _render_questions_log():
 
 
 def _render_battle_scores():
+    """
+    Render the current user's Battle scores and latest vote history.
+    """
     st.subheader("⚔️ Punteggi Battle (solo tue domande)")
 
     storage = st.session_state.storage
@@ -62,7 +73,7 @@ def _render_battle_scores():
 
     mode_ui = st.selectbox("Modalità Battle", ["All", "BattleAnon", "BattleLabeled"], index=0)
 
-    # Mapping UI -> storage mode (tu salvi 'anon' / 'labeled')
+    # Map UI labels to the compact values stored in MongoDB.
     if mode_ui == "All":
         mode_filter = None
     elif mode_ui == "BattleAnon":
@@ -87,7 +98,7 @@ def _render_battle_scores():
         st.info("Nessun voto battle registrato.")
         return
 
-    # pulizia campi per UI
+    # Normalize fields before showing them in the table.
     table = []
     for r in results:
         ts = r.get("timestamp")
@@ -115,6 +126,9 @@ def _render_battle_scores():
 
 
 def show_questions_tracking():
+    """
+    Entry point for the question tracking page.
+    """
     st.title("📊 Tracking delle Domande")
 
     required_keys = ["config", "username", "storage"]
@@ -132,6 +146,7 @@ def show_questions_tracking():
 
 
 def show_page():
+    """Compatibility wrapper used by direct script execution."""
     show_questions_tracking()
 
 

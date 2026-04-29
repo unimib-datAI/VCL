@@ -1,3 +1,5 @@
+"""Contextual query rephraser used before DQL translation."""
+
 import networkx as nx
 import os
 import threading

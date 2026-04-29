@@ -1,3 +1,5 @@
+"""Launch script for the FastAPI backend."""
+
 import argparse
 import uvicorn
 from pathlib import Path
@@ -28,6 +30,7 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 def main():
+    """Initialize configuration and start Uvicorn."""
     opts = parse_args()
     
     # Bootstrap the configuration singleton for the API process

@@ -1,3 +1,5 @@
+"""RAGAS-based judge for claim extraction, correctness, and faithfulness."""
+
 import json
 import numpy as np
 import asyncio
@@ -9,8 +11,12 @@ from ragas.metrics.collections import FactualCorrectness, Faithfulness
 from collections import defaultdict
 
 class GPTJudge:
+    """
+    Evaluate generated answers against references using OpenAI-backed RAGAS metrics.
+    """
 
     def __init__(self, model: str, atomicity: str ="low", coverage: str = "low"):
+        """Create the judge and configure the RAGAS metrics."""
         if "gpt" not in model:
             raise ValueError("Model not supported!")
 
@@ -37,6 +43,7 @@ class GPTJudge:
     # Initialization
     # -------------------------
     def initialize(self, paths):
+        """Load document texts that will be used as faithfulness context."""
         self.context = []
         for path in paths:
             with open(path, "r", encoding="utf-8") as f:
@@ -45,6 +52,7 @@ class GPTJudge:
                 )
 
     async def start_prompt(self):
+        """Adapt judge prompts to Italian before scoring starts."""
         self.faithfulness.statement_generator_prompt = await self.faithfulness.statement_generator_prompt.adapt(
             target_language="italian",
             llm=self.llm_default,
@@ -73,6 +81,7 @@ class GPTJudge:
     # Claims extraction
     # -------------------------
     async def extract_claims(self, text):
+        """Split a response into factual claims with the RAGAS metric helper."""
         return await self.factualcorrectness._decompose_claims(text)
 
     # -------------------------
@@ -85,6 +94,9 @@ class GPTJudge:
         response_text,
         reference_text,
     ):
+        """
+        Compare response claims with reference claims and compute precision/recall/F1.
+        """
         # Precision: response → reference
         resp_ref = await self.factualcorrectness._verify_claims(
             response_claims, reference_text
@@ -148,6 +160,9 @@ class GPTJudge:
     # Faithfulness (single corpus)
     # -------------------------
     async def evaluate_faithfulness(self, statements):
+        """
+        Measure whether statements are supported by the combined corpus context.
+        """
         context_str = "\n".join(self.context)
         verdicts = await self.faithfulness._create_verdicts(
             statements, context_str
@@ -176,6 +191,9 @@ class GPTJudge:
     # Faithfulness (multi-doc)
     # -------------------------
     async def evaluate_faithfulness_multi(self, statements):
+        """
+        Measure faithfulness by checking each statement against each document.
+        """
         per_statement = defaultdict(list)
 
         for doc in self.context:
@@ -224,6 +242,9 @@ class GPTJudge:
     # Consistency
     # -------------------------
     def evaluate_consistency(self, results: dict):
+        """
+        Estimate answer consistency from variance across repeated generations.
+        """
         values = list(results.values())
         metrics = [
             k for k in values[0].keys() if "claims" not in k
@@ -259,6 +280,9 @@ class GPTJudge:
         reference_text,
         response_claims
     ):
+        """
+        Score one generated answer against one reference answer.
+        """
         r1 = await self.evaluate_precision_recall_f1(
             response_claims,
             reference_claims,
@@ -280,6 +304,9 @@ class GPTJudge:
     # Main judge (ASYNC)
     # -------------------------
     async def judge(self, question, responses, reference, responses_claims = None, reference_claims = None):
+        """
+        Judge one or more responses and optionally compute consistency.
+        """
         if not self.context:
             raise Exception("Need to initialize context!")
         

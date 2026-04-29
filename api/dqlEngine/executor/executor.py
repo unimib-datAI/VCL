@@ -1,3 +1,5 @@
+"""Execution stage for planned DQL operations."""
+
 import re
 
 from copy import deepcopy
@@ -162,6 +164,9 @@ class Executor:
         return [op]
         
     def _call_tools(self, command: str, docs: list, structured_prompt: dict):
+        """
+        Dispatch a command to the matching tool and normalize Markdown headings.
+        """
         try:
             result = self.FUNCTION_MAP.get(command, None)(
                 docs,

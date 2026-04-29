@@ -1,3 +1,5 @@
+"""Evaluation adapter for OpenAI File Search."""
+
 import re
 
 from openai import OpenAI
@@ -5,16 +7,23 @@ from openai import OpenAI
 client = OpenAI()
 
 class GPTModel():
+    """Wrap OpenAI File Search so it matches the evaluation model interface."""
+
     def __init__(self, model):
+        """Store model settings and delayed vector store state."""
         self.vector_store_id = None
         self.model = model
         self.file_paths = []
 
     @property
     def name(self):
+        """Return the display name used in evaluation outputs."""
         return f"{self.model} + FileSearch"
     
     def extract_sources(self, info):
+        """
+        Extract cited filenames from the raw OpenAI response metadata.
+        """
         pattern = r"filename='([^']*)'"
         
         try:
@@ -26,6 +35,9 @@ class GPTModel():
         return { "sources": used_doc }
 
     def initialize(self, paths):
+        """
+        Upload documents to a vector store before querying.
+        """
         return
         self.file_paths = paths
 
@@ -40,6 +52,9 @@ class GPTModel():
                 )
 
     def query(self, question: str):
+        """
+        Ask the configured OpenAI model with File Search enabled.
+        """
         return
         if not self.vector_store_id:
             raise ValueError("You must execute initialize() before.")

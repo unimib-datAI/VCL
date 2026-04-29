@@ -1,3 +1,5 @@
+"""Streamlit page for browsing, uploading, and deleting case documents."""
+
 import json
 import markdown
 import streamlit as st
@@ -5,18 +7,23 @@ import streamlit as st
 PAGE_TITLE = "Visualizza i tuoi documenti giudiziari"
 
 def _initialize_docs(username_input):
-    """Sincronizza i documenti basandosi sull'utente selezionato."""
+    """Synchronize documents based on the selected source."""
+    # Shared corpora keep their literal IDs; "user" maps to the logged-in user.
     user_id = username_input if username_input in ["vitali", "salomone"] else st.session_state.get("username", "user")
     
     print(user_id)
     
     if hasattr(st.session_state, 'storage'):
+        # Store both the complete document list and the initial selected document.
         docs = st.session_state.storage.get_all_documents(user_id)
         
         st.session_state.docs = docs if docs else []
         st.session_state.current_doc = docs[0] if docs else {}
 
 def _display_header():
+    """
+    Render source selection, upload controls, and delete controls.
+    """
     col1, col2, col3 = st.columns([2, 1, 1])
     
     with col1:
@@ -30,13 +37,14 @@ def _display_header():
             key="source_pill_widget"
         )
 
-        # CORREZIONE 1: Evitiamo il trigger su None e manteniamo il valore letterale
+        # Ignore empty pill values and keep the selected source literal.
         if selected_source is not None and selected_source != st.session_state.active_source:
             st.session_state.active_source = selected_source
             _initialize_docs(selected_source)
             st.rerun()
     
     with col2:
+        # The upload widget is revealed only after the explicit upload action.
         if st.button("💾 Carica Documenti", width='stretch'):
             st.session_state.show_uploader = True
 
@@ -50,12 +58,14 @@ def _display_header():
             )
             
         if st.session_state.show_uploader and st.button("Conferma upload"):
+            # Prevent an empty confirmation from clearing the uploader state.
             if not files:
                 st.warning("Seleziona almeno un file.")
                 st.stop()
 
             with st.spinner("Caricamento documenti in corso..."):
                 for file in files:
+                    # JSON files keep their structured payload; TXT files become raw text.
                     raw = file.read().decode("utf-8", errors="ignore")
 
                     if file.name.lower().endswith(".json"):
@@ -69,13 +79,14 @@ def _display_header():
                         file.name
                     )
 
+            # Refresh the view so the newly uploaded documents appear immediately.
             st.success("Documenti caricati con successo.")
             _initialize_docs(st.session_state.active_source)
             st.session_state.show_uploader = False
             st.rerun()
         
     with col3:
-        # CORREZIONE 2: Verifichiamo che la fonte attiva sia l'opzione "user"
+        # Deletion is allowed only for documents owned by the current user.
         if st.session_state.get("current_doc") and st.session_state.active_source == "user":
             doc_to_del = st.session_state.current_doc.get("_id", None)
             if doc_to_del:
@@ -99,6 +110,7 @@ def _display_buttons():
         st.info("Nessun documento disponibile.")
         return
 
+    # Keep document buttons on a single horizontal row with overflow scrolling.
     st.markdown("""
         <style>
         div[data-testid="stHorizontalBlock"] {
@@ -118,6 +130,7 @@ def _display_buttons():
 
     for i, doc in enumerate(st.session_state.docs):
         with cols[i]:
+            # Highlight the current document while keeping other options available.
             current_id = st.session_state.current_doc.get("_id") if st.session_state.current_doc else None
             is_selected = (current_id == doc.get("_id"))
             
@@ -129,10 +142,11 @@ def _display_buttons():
                 st.rerun()
 
 def _display_text():
-    """Visualizza il contenuto del documento selezionato."""
+    """Display the content of the currently selected document."""
     if not st.session_state.get("current_doc"):
         return
 
+    # Markdown conversion preserves headings and lists inside uploaded documents.
     st.divider()
     doc = st.session_state.current_doc
     st.subheader(f"{doc.get('type_doc', '')} ({doc.get('name', '')})")
@@ -148,6 +162,10 @@ def _display_text():
     )
 
 def show_documents():
+    """
+    Entry point for the documents page.
+    """
+    # The page depends on the authenticated shell initializing these objects.
     required_keys = ["config", "username", "storage"]
     if not all(hasattr(st.session_state, k) for k in required_keys):
         return 
@@ -163,6 +181,7 @@ def show_documents():
     if "show_uploader" not in st.session_state:
         st.session_state.show_uploader = False
 
+    # Render controls first, then show the selected document body.
     _display_header()
 
     if st.session_state.get("docs") and len(st.session_state.docs) > 0:

@@ -1,3 +1,5 @@
+"""File I/O and lightweight text analysis helpers."""
+
 import json
 import os
 import spacy
@@ -16,6 +18,7 @@ class FileHandler:
     directory creation when writing files.
     """
     def __init__(self):
+        """Create an instance with a lazily loaded spaCy pipeline."""
         self.nlp = None
 
     @staticmethod
@@ -90,7 +93,7 @@ class FileHandler:
                 )
                 
     def _load_spacy(self):
-        # Load the Italian spaCy model
+        """Load the Italian spaCy model, installing it if it is missing."""
         if not self.nlp:
             try:
                 self.nlp = spacy.load("it_core_news_sm")

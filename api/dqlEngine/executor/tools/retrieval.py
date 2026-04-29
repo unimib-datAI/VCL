@@ -1,3 +1,5 @@
+"""Document retrieval helpers for MongoDB, local files, and prior operations."""
+
 import os
 from elasticsearch import Elasticsearch
 from elasticsearch.exceptions import (

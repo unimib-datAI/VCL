@@ -1,3 +1,5 @@
+"""DQL language manager for grammar, prompts, examples, and role context."""
+
 import os
 import re
 import threading
@@ -121,9 +123,17 @@ class DQLLanguage:
         return self._full_language
     
     # Grammar accessors
-    def get_commands(self) -> list: return self._commands
-    def get_sources(self) -> list: return self._sources
-    def get_what(self) -> list: return self._what
+    def get_commands(self) -> list:
+        """Return the configured command definitions."""
+        return self._commands
+
+    def get_sources(self) -> list:
+        """Return the configured document source definitions."""
+        return self._sources
+
+    def get_what(self) -> list:
+        """Return the configured target element definitions."""
+        return self._what
 
     def set_language(self, language: dict) -> bool:
         """
@@ -238,7 +248,9 @@ class DQLLanguage:
         self._default_command = default_commands[0] if default_commands else {}
 
     @property
-    def default_command(self) -> dict: return self._default_command
+    def default_command(self) -> dict:
+        """Return the fallback command used when no specific command matches."""
+        return self._default_command
         
     def _build_what_maps(self):
         """Builds lookup for entity definitions."""
@@ -326,6 +338,7 @@ class DQLLanguage:
 
             # Local helper for non-repeating placeholder replacement
             def choose_replacement(category, element):
+                """Choose a valid replacement while avoiding repeats in one example."""
                 available = categories[category]
                 used_set = used[category]
                 if element in available and element not in used_set:

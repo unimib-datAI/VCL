@@ -1,3 +1,5 @@
+"""Streamlit page that documents the active DQL language configuration."""
+
 import streamlit as st
 
 # Application constant for the page header

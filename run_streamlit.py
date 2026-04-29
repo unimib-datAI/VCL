@@ -1,3 +1,5 @@
+"""Launch script for the Streamlit frontend."""
+
 import sys
 import streamlit.web.cli as stcli
 from pathlib import Path

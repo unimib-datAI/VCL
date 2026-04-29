@@ -1,3 +1,5 @@
+"""Condition extractor for limits, ordering, classes, and extra filters."""
+
 from copy import deepcopy
 
 from utils.config import Config
@@ -123,6 +125,9 @@ class ConditionsExtractor:
             return not conditions
 
     def extraction(self, query: str, name = "ConditionsRouter") -> dict:
+        """
+        Run one condition extraction prompt and normalize the returned payload.
+        """
         status = "Error"
 
         try:

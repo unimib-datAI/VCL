@@ -1,7 +1,12 @@
+"""Helpers for finding evaluation documents on disk."""
+
 import json
 import os
 
 def retrieve_doc_paths(project_root: str, owner: str = "vitali"):
+    """
+    Return JSON corpus file paths owned by the requested source user.
+    """
     paths = []
     
     documents_folder = os.path.join(project_root, "documents", "corpus", owner)

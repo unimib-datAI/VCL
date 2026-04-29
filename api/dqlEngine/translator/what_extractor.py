@@ -1,3 +1,5 @@
+"""Extractor for the target element requested by a DQL task."""
+
 from utils.config import Config
 from utils.DQL_language import DQLLanguage
 
@@ -118,6 +120,9 @@ class WhatExtractor:
         return what
     
     def _disambiguate_concept(self, query: str) -> str:
+        """
+        Resolve a generic concept request into the concrete text element to search.
+        """
         query_dict = {
             "query": query
         }
@@ -158,6 +163,9 @@ class WhatExtractor:
         return what
     
     def _disambiguate_phrase(self, query: str) -> str:
+        """
+        Resolve a generic phrase request into a phrase type and element pair.
+        """
         query_dict = {
             "query": query
         }

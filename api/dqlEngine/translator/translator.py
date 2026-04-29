@@ -1,3 +1,5 @@
+"""Translation stage that maps text tasks into structured DQL prompts."""
+
 import queue
 import threading
 

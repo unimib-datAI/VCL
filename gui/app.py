@@ -1,3 +1,5 @@
+"""Streamlit application router and authenticated sidebar shell."""
+
 import streamlit as st
 from typing import Dict, Callable
 

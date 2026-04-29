@@ -1,3 +1,5 @@
+"""MongoDB persistence layer for users, documents, chats, and battle votes."""
+
 import bcrypt
 import os
 import re
@@ -76,12 +78,12 @@ class Storage:
         # --- Battle votes collection ---
         # -------------------------------
         self._battle_votes = db["battle_votes"]
-        # Indici utili (velocizza query e previene doppi voti se usi upsert)
+        # Indexes speed up dashboards and prevent duplicate votes during upsert.
         self._battle_votes.create_index("battle_id")
         self._battle_votes.create_index([("user", 1), ("battle_id", 1)], unique=True)
         self._battle_votes.create_index("chosen_model")
         self._battle_votes.create_index([("timestamp", -1)])
-        # ✅ NEW: indicizza la modalità (anon/labeled) per filtri veloci
+        # Mode index supports quick filtering between anonymous and labeled battles.
         self._battle_votes.create_index([("mode", 1)])
 
         # --- Memory Caching Layer ---
@@ -557,11 +559,10 @@ class Storage:
         timestamp: Optional[datetime] = None
     ) -> None:
         """
-        Salva il voto dell'utente in modalità Battle.
+        Save a user's Battle vote with one record per user and battle.
 
-        Implementazione: 1 voto per battle (per utente) tramite upsert.
-        - Se l'utente riclicca o Streamlit fa rerun, NON duplichi.
-        - Se l'utente cambia idea (A->B), aggiorna il record.
+        The upsert prevents duplicates during Streamlit reruns and updates the
+        existing record if the user changes their choice.
         """
         ts = timestamp or datetime.utcnow()
 
@@ -589,13 +590,13 @@ class Storage:
 
     def get_battle_scores(self, user_id: Optional[str] = None) -> List[dict]:
         """
-        Ritorna punteggi aggregati (numero di vittorie) per modello.
+        Return aggregated win counts per model.
 
         Args:
-            user_id: se passato, filtra solo voti di quell'utente. Se None -> globale.
+            user_id: Optional filter for one user. If None, returns global scores.
 
         Returns:
-            List[dict]: [{"model": "GPT", "score": 10}, ...] ordinati desc.
+            List[dict]: [{"model": "GPT", "score": 10}, ...] sorted descending.
         """
         pipeline = []
         if user_id:
@@ -620,8 +621,12 @@ class Storage:
         limit: int = 200
     ) -> List[dict]:
         """
-        Ritorna la lista degli eventi battle.
-        mode: "anon" | "labeled" | None
+        Return recent Battle vote events.
+
+        Args:
+            user_id: Optional user filter.
+            mode: Optional battle mode filter: "anon", "labeled", or None.
+            limit: Maximum number of events to return.
         """
         query: Dict[str, Any] = {}
         if user_id:
@@ -636,18 +641,18 @@ class Storage:
             print(f"[WARN] get_battle_results failed: {e}")
             return []
 
-    # ✅ NEW: punteggi completi (wins/losses/matches/win_rate)
+    # Full score summary with wins, losses, matches, and win rate.
     def get_battle_scores_summary(
         self,
         user_id: Optional[str] = None,
         mode: Optional[str] = None
     ) -> Dict[str, Any]:
         """
-        Calcola statistiche complete:
-        - wins/losses/matches per modello
-        - win_rate
+        Calculate complete Battle statistics per model.
 
-        mode: "anon" | "labeled" | None
+        Args:
+            user_id: Optional user filter.
+            mode: Optional battle mode filter: "anon", "labeled", or None.
         """
         query: Dict[str, Any] = {}
         if user_id:
@@ -674,15 +679,15 @@ class Storage:
 
                 loser = b if winner == a else a
 
-                # init
+                # Ensure both models have a statistics bucket.
                 for m in (a, b):
                     by_model.setdefault(m, {"wins": 0, "losses": 0, "matches": 0})
 
-                # matches
+                # Each vote counts as one match for both participating models.
                 by_model[a]["matches"] += 1
                 by_model[b]["matches"] += 1
 
-                # wins/losses
+                # Record the selected winner and inferred loser.
                 by_model[winner]["wins"] += 1
                 by_model[loser]["losses"] += 1
 
@@ -692,7 +697,7 @@ class Storage:
             print(f"[WARN] get_battle_scores_summary failed: {e}")
             return {"by_model": {}, "total_matches": 0}
 
-        # win_rate
+        # Derive the win rate after all counts are complete.
         for m, stats in by_model.items():
             matches = stats.get("matches", 0) or 0
             wins = stats.get("wins", 0) or 0

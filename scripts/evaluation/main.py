@@ -1,3 +1,5 @@
+"""Batch evaluation script for comparing DQL and baseline model answers."""
+
 import json
 import os
 import asyncio
@@ -205,6 +207,9 @@ def evaluate_models(registry, judge, question, final_results, question_data, k):
             }
 
 def main():
+    """
+    Run the full evaluation pipeline for every input question file.
+    """
     args = parse_arguments()
     
     print("[INFO] Starting evaluation pipeline...")

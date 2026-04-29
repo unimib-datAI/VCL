@@ -1,3 +1,5 @@
+"""Command-line helper for creating a user in the DQL database."""
+
 import argparse
 import sys
 

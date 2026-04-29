@@ -1,3 +1,5 @@
+"""LangChain-based LLM wrapper and response parsing helpers."""
+
 import ast
 import json
 import os

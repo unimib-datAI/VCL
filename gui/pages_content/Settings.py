@@ -1,3 +1,5 @@
+"""Streamlit settings page for editing DQL language definitions."""
+
 import pandas as pd
 import streamlit as st
 import time

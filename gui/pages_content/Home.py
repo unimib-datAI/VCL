@@ -1,3 +1,5 @@
+"""Streamlit chat page for DQL, GPT, and Battle model interactions."""
+
 import os
 import json
 import html
@@ -211,7 +213,7 @@ def _display_gui_components() -> None:
 
 def _render_model_selector() -> str:
     """
-    Rende il selettore del modello da interrogare.
+    Render the model selector used for the current chat.
     """
     if "selected_model" not in st.session_state:
         st.session_state.selected_model = DEFAULT_MODEL
@@ -259,6 +261,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
     handles log streaming, and saves results.
     """
     # --- 1. Display user's message ---
+    # The user message is added immediately so the UI feels responsive.
     user_msg = {
         "role": "user",
         "content": prompt,
@@ -272,12 +275,14 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
     user_info["chat_id"] = st.query_params.get("chat", "default")
     user_info["user_id"] = st.session_state.username
     user_info["request_id"] = st.session_state.config.generate_request_id(st.session_state.username)
-    
+
+    # Resolve the active document source before dispatching the model call.
     if hasattr(st.session_state, "active_source") and st.session_state.active_source and st.session_state.active_source in ["salomone", "vitali"]:
         user_info["source_id"] = st.session_state.active_source
     else:
         user_info["source_id"] = st.session_state.username
-    
+
+    # Pass storage through the thread payload for non-DQL model context building.
     user_info["storage"] = st.session_state.storage
     
     # --- USER QUESTION TRACKING ---
@@ -299,6 +304,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         stop_event = threading.Event()
         result_queue = queue.Queue()
 
+        # Run model generation outside the main Streamlit rendering flow.
         thread = threading.Thread(
             target=_call_assistant_thread,
             args=(user_info, stop_event, result_queue),
@@ -322,6 +328,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         # --- Modalità BATTLE -----
         # -------------------------
         if selected_model in ("BattleAnon", "BattleLabeled"):
+            # Battle responses are stored as structured payloads, not plain text.
             battle_id = datetime.now().isoformat()
 
             if isinstance(raw_result, dict):
@@ -357,11 +364,13 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
         # --- Modalità normale (non Battle)
         # ------------------------------
         else:
+            # Normal mode always renders a single textual assistant answer.
             text = raw_result if isinstance(raw_result, str) else str(raw_result)
 
             _typewriter_effect(text, placeholder)
 
             if selected_model == "DQL":
+                # DQL responses already contain rich details from the backend.
                 assistant_msg = result
                 if "details" not in assistant_msg or assistant_msg["details"] is None:
                     assistant_msg["details"] = {}
@@ -369,6 +378,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
                     assistant_msg["details"]["logs"] = log_list[1:]
                 _show_expander(assistant_msg)
             else:
+                # Baseline models are wrapped into the same chat message shape.
                 assistant_msg = {
                     "role": "assistant",
                     "content": text,
@@ -381,6 +391,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
             st.session_state.messages.append(assistant_msg)
 
     # --- 3. Persist messages ---
+    # Store only the last user/assistant pair to avoid duplicating history.
     _save_messages(st.session_state.messages[-2:])
 
 # -------------------------------
@@ -388,6 +399,9 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
 # -------------------------------
 
 def _call_assistant_thread(user_msg: Dict, stop_event: threading.Event, result_queue: queue.Queue) -> None:
+    """
+    Call the selected model in a background thread and signal completion.
+    """
     try:
         response = _call_model(user_msg)
         result_queue.put(response)
@@ -397,6 +411,9 @@ def _call_assistant_thread(user_msg: Dict, stop_event: threading.Event, result_q
         stop_event.set()
 
 def _load_case_documents(user_msg: Dict = None) -> List[Dict[str, str]]:
+    """
+    Load documents for the selected source and normalize their display fields.
+    """
     docs: List[Dict[str, str]] = []
 
     raw_docs = user_msg["storage"].get_all_documents(user_msg["source_id"])
@@ -409,6 +426,7 @@ def _load_case_documents(user_msg: Dict = None) -> List[Dict[str, str]]:
     TYPE_KEYS = ["type_doc", "tipo_documento", "tipo"]
 
     for doc in raw_docs:
+        # Accept multiple possible schemas for uploaded or seeded documents.
         type_doc = next((doc.get(k, "").strip() for k in TYPE_KEYS if doc.get(k)), "")
         name = next((doc.get(k, "").strip() for k in NAME_KEYS if doc.get(k)), "")
         text = next((doc.get(k, "").strip() for k in TEXT_KEYS if doc.get(k)), "")
@@ -430,6 +448,9 @@ def _load_case_documents(user_msg: Dict = None) -> List[Dict[str, str]]:
     return docs
 
 def _build_docs_block(user_msg) -> str:
+    """
+    Build the full document context sent to non-DQL models.
+    """
     case_docs = _load_case_documents(user_msg)
 
     if not case_docs:
@@ -452,6 +473,9 @@ def _build_docs_block(user_msg) -> str:
 # -------------------------------
 
 def _ask_dql(user_msg: Dict) -> Dict:
+    """
+    Send the prompt to the local DQL API and normalize API failures.
+    """
     payload = {
         "prompt": user_msg.get("content", "Errore!"),
         "user_id": user_msg["user_id"],
@@ -490,6 +514,9 @@ def _ask_dql(user_msg: Dict) -> Dict:
         }
 
 def _ask_gpt(user_msg: Dict) -> Dict:
+    """
+    Ask OpenAI directly using the selected case documents as context.
+    """
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         return {
@@ -502,6 +529,7 @@ def _ask_gpt(user_msg: Dict) -> Dict:
     try:
         client = OpenAI(api_key=api_key)
 
+        # Build a closed-book context from the same documents available to DQL.
         docs_block = _build_docs_block(user_msg)
 
         base_system = (
@@ -523,6 +551,7 @@ def _ask_gpt(user_msg: Dict) -> Dict:
             {"role": "user", "content": user_content},
         ]
 
+        # Use a deterministic lightweight GPT model for the baseline answer.
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=messages,
@@ -536,9 +565,13 @@ def _ask_gpt(user_msg: Dict) -> Dict:
 
 
 def _ask_battle(user_msg: Dict, anonymized: bool) -> Dict:
+    """
+    Generate two model answers for side-by-side Battle comparison.
+    """
     if len(BATTLE_MODELS) < 2:
         return {"result": "⚠️ Non ci sono abbastanza modelli per la modalità Battle."}
 
+    # Randomize sides so users compare answer quality rather than fixed order.
     model_a, model_b = random.sample(BATTLE_MODELS, 2)
 
     ans_a = _run_single_model_for_battle(model_a, user_msg)
@@ -569,6 +602,9 @@ def _ask_battle(user_msg: Dict, anonymized: bool) -> Dict:
 
 
 def _run_single_model_for_battle(model_key: str, user_msg: Dict) -> Dict[str, str]: 
+    """
+    Execute one model inside Battle mode and wrap its label metadata.
+    """
     new_user_msg = deepcopy(user_msg)
     new_user_msg["model"] = model_key  
      
@@ -586,6 +622,9 @@ def _run_single_model_for_battle(model_key: str, user_msg: Dict) -> Dict[str, st
 
 
 def _call_model(user_msg) -> Dict:
+    """
+    Route a user message to the selected backend model implementation.
+    """
     selected_model = user_msg.get("model", DEFAULT_MODEL)
     
     if selected_model == "DQL":
@@ -608,6 +647,9 @@ def _call_model(user_msg) -> Dict:
 # -------------------------------
 
 def _stream_logs_to_ui(placeholder, stop_event: threading.Event, request_id: str) -> List[str]:
+    """
+    Stream request logs into the assistant placeholder while generation runs.
+    """
     log_file = os.path.join(
         st.session_state.config.project_root,
         "logs",
@@ -628,6 +670,9 @@ def _stream_logs_to_ui(placeholder, stop_event: threading.Event, request_id: str
 
 
 def _follow_log_generator(file_path: str, stop_event: threading.Event, wait_time: float = 0) -> Generator[str, None, None]:
+    """
+    Yield new log lines until the worker thread finishes.
+    """
     while not (os.path.exists(file_path) or stop_event.is_set()):
         time.sleep(wait_time)
 
@@ -652,6 +697,9 @@ def _follow_log_generator(file_path: str, stop_event: threading.Event, wait_time
 
 
 def _typewriter_effect(text: str, placeholder) -> None:
+    """
+    Render the final assistant answer with a simple typing animation.
+    """
     typed_text = ""
     for char in text:
         typed_text += char
@@ -663,6 +711,9 @@ def _typewriter_effect(text: str, placeholder) -> None:
 # -------------------------------
 
 def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: str) -> None:
+    """
+    Render Battle answers, voting buttons, and focused answer navigation.
+    """
     if not battle_payload:
         st.markdown("⚠️ Nessuna risposta ricevuta in modalità Battle.")
         return
@@ -681,6 +732,7 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
     focus = st.session_state.get(focus_key)
 
     def _render_answer_card(answer: dict, title_prefix: str, mode_: str):
+        """Render one Battle answer panel."""
         title = title_prefix
         if mode_ == "labeled":
             label = answer.get("model_label") or answer.get("model_key", "")
@@ -704,6 +756,7 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
         st.markdown("</div>", unsafe_allow_html=True)
 
     def _log_vote(chosen_side: str):
+        """Persist the selected Battle winner for later score dashboards."""
         try:
             storage = st.session_state.storage
             chat = st.query_params.get("chat", "")
@@ -730,6 +783,7 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
     st.markdown("### ⚔️ Modalità Battle")
 
     if focus in ("A", "B"):
+        # After a vote, show one focused answer with navigation between sides.
         current_idx = 0 if focus == "A" else 1
         current_answer = answers[current_idx]
 
@@ -755,6 +809,7 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
         _render_answer_card(current_answer, f"Risposta {focus}", mode)
         return
 
+    # Before a vote, show both answers side by side.
     colA, colB = st.columns(2)
 
     with colA:
@@ -776,6 +831,9 @@ def _render_battle_answers(battle_payload: dict, selected_model: str, chat_id: s
 # ------------------------------
 
 def _show_expander(message: Dict) -> None:
+    """
+    Render technical details for a generated DQL answer.
+    """
     details = message.get("details", {}) if message else {}
 
     prompt = details.get("prompt", "")
@@ -824,6 +882,9 @@ def _show_expander(message: Dict) -> None:
 
 
 def _display_task(tasks: list) -> None:
+    """
+    Render translated tasks and their optional sub-operations.
+    """
     for index, task in enumerate(tasks, start=1):
         prompt_task = task.get("prompt", "")
         structured_prompt = task.get("structured_prompt", {})
@@ -873,6 +934,9 @@ def _display_task(tasks: list) -> None:
 
 
 def _display_operation(index: int, operation: Dict) -> List[str]:
+    """
+    Format a single planned operation as an expandable HTML block.
+    """
     structured_prompt = operation.get("structured_prompt", {})
 
     display_dict = {
@@ -905,6 +969,9 @@ def _display_operation(index: int, operation: Dict) -> List[str]:
 
 
 def _save_messages(messages: List[Dict]) -> None:
+    """
+    Persist the latest chat messages through the storage layer.
+    """
     if "storage" in st.session_state and st.session_state.username:
         for message in messages:
             st.session_state.storage.add_chat_message(
@@ -918,6 +985,9 @@ def _save_messages(messages: List[Dict]) -> None:
 # -------------------
 
 def show_home():
+    """
+    Entry point for the chat page.
+    """
     required_keys = ["config", "username", "storage"]
     if not all(hasattr(st.session_state, k) and getattr(st.session_state, k) for k in required_keys) or not st.query_params.get("chat"):
         st.warning("Inizializzazione della configurazione in corso... Ricarica se il messaggio persiste.")
