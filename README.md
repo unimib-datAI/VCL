@@ -162,6 +162,10 @@ This section provides a compact but detailed description of each major component
 * **Role:** Store and serve documents/history chat to the executor/GUI.
 * **Implementation:** MongoDB/Elasticsearch
 
+Here is the corrected and fully translated version of your README section. The formatting has been improved, the Italian text has been translated to English, and typos/inconsistencies have been fixed for a more professional tone.
+
+***
+
 # 5. Installation
 
 ## 1) Clone repository
@@ -170,6 +174,7 @@ This section provides a compact but detailed description of each major component
 git clone https://github.com/unimib-datAI/VCL.git
 cd VCL
 ```
+
 ## 2) Python environment
 
 ```bash
@@ -186,72 +191,168 @@ pip install -r requirements.txt
 
 ## 4) Create `.env` file
 
-Create a `.env` file in the repo root with the variables you need:
+Create a `.env` file in the repo root with the variables you need. A `.env.example` file is provided as a reference with the main parameters.
 
+## 5) Insert corpus files
+
+You must store your documents in the `documents/corpus` directory. The directory should be structured as follows:
+
+```text
+VCL
+├── ...
+├── documents
+│   ├── ...
+│   └── corpus
+│       ├── <name_corpus_1>
+│       │   ├── <file_1>.json
+│       │   ├── <file_2>.json
+│       │   ├── ...
+│       │   └── <file_n>.json
+│       ├── <name_corpus_2>
+│       ├── ...
+│       └── <name_corpus_m>
+└── ...
 ```
-# Example .env
-OPENAI_API_KEY=sk-...
-GOOGLE_API_KEY=...
-HUGGINGFACEHUB_API_TOKEN=...
-MONGO_URI=...
-MONGO_INITDB_ROOT_USERNAME=...
-MONGO_INITDB_ROOT_PASSWORD=...
+
+Download the *Vitali + Salomone + UDA* corpus at the following link (available only with a UniMiB account): [Drive Link](https://drive.google.com/file/d/1Y70yRqSiD-8TTFILIej9CetEX-f41dpG/view?usp=sharing)
+
+Alternatively, custom individual JSON files must have the following structure:
+
+```json
+{
+  "type_doc": "<label_present_in_the_ontology>",
+  "text": "<document_text>",
+  "name": "<file_name>",
+  "owner": "<user_with_access>"
+}
 ```
 
-## 5) Insert files
+For evaluations, inside the `scripts/evaluation/questions` directory, you must have two folders:
+*   `input`: Place the JSON files containing the questions here.
+*   `output`: The directory where the scripts will save the results.
 
-In `documents` directory you must store your documents.
-Each document is a JSON file containing three keys:
+```text
+VCL
+├── ...
+├── scripts
+│   ├── ...
+│   └── evaluation
+│       ├── ...
+│       ├── questions
+│       │   ├── input
+│       │   |   ├── <file_1>.json
+│       │   |   ├── <file_2>.json
+│       │   |   ├── ...
+│       │   |   └── <file_n>.json
+│       │   └── input
+│       └── ...
+└── ...
+```
 
-- *name*: the name of the file
-- *text*: the text content to be processed
-- *type_doc*: the label describing the document type
-- *owner*: the username of the file owner
+Download the *Batini questions on the Vitali case* at the following link (available only with a UniMiB account): [Drive Link](https://drive.google.com/file/d/1BfHRpb3xwrUvSIUbFdv10yCd9zz4jgZE/view?usp=sharing)
 
-# 6) Running the application
+Alternatively, custom question JSON files must follow this structure:
+
+```json
+{
+    "ID": "<question_id>",
+    "question": "<question_text>",
+    "ground_truth": {
+        "<annotator_1>": {
+            "text": [
+              "<sub_output_1>", 
+              "<sub_output_2>",
+              "...",
+              "<sub_output_n>",
+              "<final_output>"
+            ]
+        },
+        "<annotator_2>": {},
+        "...": {},
+        "<annotator_m>": {}
+    }
+}
+```
+*(Note: `<sub_output_i>` elements are not mandatory).*
+
+## 6) Use the correct docker-compose
+
+If you need to deploy VCL on Chronos, you must delete the default `docker-compose.yml` and rename `docker-compose-chronos.yml` to `docker-compose.yml`.
+
+## 7) Create the initial user
+
+During the container creation, the database will be empty. You must create at least one user to access the application. To do this, run the following commands from the root directory:
+
+```bash
+docker compose up -d --build
+python scripts/create_user.py --username <USER> --password <PASSWORD> --role Admin
+```
+
+*Optional parameters:*
+*   `--email <EMAIL>` (No emails are sent)
+
+**NB**
+
+* The **vitali** and **salomone** use cases are accessible to all users.
+* All other use cases require a user with a username matching the corpus name.
+
+
+## 8) Running the application
 
 ```bash
 python main.py
 ```
 
-Then:
-* Streamlit link: `http://localhost:8501`
-* FastAPI link: `http://0.0.0.0:8000/api/v2/chat`
+Then access the application via:
+*   **Streamlit link:** [http://localhost:8501](http://localhost:8501)
+*   **FastAPI link:** [http://0.0.0.0:9000](http://0.0.0.0:9000)
 
-The script accepts several optional flags (arguments) to customize its behavior.
+**NB**: The `docker compose us` and `docker compose down` operations are handled automatically in `main.py`.
 
-* `-api <KEY>`
+### Command Line Arguments
 
-    * **Description:** Provides the API key for the LLM.
+The script accepts several optional flags (arguments) to customize its behavior:
 
-* `-uri_db <URI>`
+*   `-api <KEY>`
+    *   **Description:** Provides the API key for the LLM.
 
-    * **Description:** Provides the connection URL for the database (e.g., MongoDB).
+*   `-uri_db <URI>`
+    *   **Description:** Provides the connection URL for the database (e.g., MongoDB).
 
-* `-provider <PROVIDER_NAME>`
+*   `-provider <PROVIDER_NAME>`
+    *   **Description:** Specifies which LLM provider to use.
+    *   **Default:** `google_genai`
+    *   **Choices:** `google_genai`, `openai`, `copilot`, `huggingface`.
 
-    * **Description:** Specifies which LLM provider to use.
-    * **Default:** `google_genai`
-    * **Choices:** `google_genai`, `openai`, `copilot`, `huggingface`.
+*   `-model_name <MODEL_NAME>`
+    *   **Description:** Specifies the exact LLM model name to use.
+    *   **Default:** `gemini-2.5-flash`
+    *   **Examples:** `gpt-4o-mini`, `claude-3-5-sonnet`, `mistralai/Mistral-7B-Instruct-v0.2`.
 
-* `-model_name <MODEL_NAME>`
+*   `-wait_seconds <NUMBER>`
+    *   **Description:** Sets the number of seconds to wait after each LLM call.
+    *   **Default:** `0`
 
-    * **Description:** Specifies the exact LLM model name to use.
-    * **Default:** `gemini-2.5-flash`
-    * **Examples:** `gpt-4o-mini`, `claude-3-5-sonnet`, `mistralai/Mistral-7B-Instruct-v0.2`.
+*   `-evaluation_mode`
+    *   **Description:** If present, the Streamlit application is not started, and the experimentation script is executed instead.
+    *   **Usage:** Just add the flag; it does not require a value.
 
-* `-wait_seconds <NUMBER>`
+#### Evaluation Mode Parameters
+If you use the `-evaluation_mode` flag, you must also configure the following parameters:
 
-    * **Description:** Sets the number of seconds to wait after each LLM call.
-    * **Default:** `0`
+*   `-models <LIST>`
+    *   **Description:** List of models to evaluate.
+    *   **Choices:** `FileSearch`, `RAG`, `Copilot`, `NotebookLM`, `DQL`
+    *   **Default:** all models
 
-* `-evaluation_mode`
+*   `-gen-llm <MODEL_NAME>`
+    *   **Description:** OpenAI's LLM to use for generation in RAG and FileSearch.
+    *   **Default:** `gpt-4o-mini`
 
-    * **Description:** If present, the Streamlit application is not started, but the experimentation script is started
-    * **Usage:** Just add the flag; it does not require a value
+*   `-eval-llm <MODEL_NAME>`
+    *   **Description:** OpenAI's LLM to use for evaluation/judge.
+    *   **Default:** `gpt-4o-mini`
 
-**Example**
-
-```bash
-python main.py -api sk-XXXX -provider openai -model_name gpt-4o-mini -uri_db mongodb://localhost:27017/dql
-```
+*   `-k <NUMBER>`
+    *   **Description:** Number of iterations/answers per model.
+    *   **Default:** `1`
