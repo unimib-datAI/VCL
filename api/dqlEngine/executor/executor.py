@@ -146,7 +146,7 @@ class Executor:
                 
                 sub_op = sub_operations[-1]
                 sub_op["id"] = f"{op['id']}_{i+1}"
-                sub_op["structured_prompt"]["from"] = f"{sub_op['structured_prompt'].get('from', [''])[0]}_{i+1}"
+                sub_op["structured_prompt"]["from"] = f"{sub_op['structured_prompt'].get('from', [''])[0]}_{doc.get('name', '')}"
                 
                 self._logger.info(f"Processing document {i+1} of {len(docs)} for command '{command}'")
                 sub_op["result"] = self._call_tools(command, [doc], structured_prompt)

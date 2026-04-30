@@ -886,7 +886,6 @@ def _display_task(tasks: list) -> None:
     Render translated tasks and their optional sub-operations.
     """
     for index, task in enumerate(tasks, start=1):
-        prompt_task = task.get("prompt", "")
         structured_prompt = task.get("structured_prompt", {})
 
         display_dict = {
@@ -903,9 +902,9 @@ def _display_task(tasks: list) -> None:
 
         html_code = [
             '<details style="margin-left:20px; margin-top:10px;">',
-            "\t" + f"<summary>Task {index}: {prompt_task}</summary>",
+            "\t" + f"<summary>Task {index}: {display_dict['command']}</summary>",
             "\t<p></p>",
-            "\tIl Task è stato trodotto in DQL nel seguente modo:"
+            "\tIl Task è stato rappresentato in DQL nel seguente modo:"
             "\t<p></p>",
             "\t" + f'<pre><code class="language-json">{task_json}</code></pre>',
             "\t<p></p>",
