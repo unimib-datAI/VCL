@@ -58,19 +58,19 @@ def main() -> None:
     ui_process = None
     
     try:
+        # 1. Start API Subprocess
+        api_process = _launch_api()
+        
+        # Allow the API time to bind to the port
+        time.sleep(10) 
+            
         if opts.evaluation_mode:
-            # 1. Start Evaluation Subprocess
+            # 2. Start Evaluation Subprocess
             evaluation_process = _launch_evaluation()
             
-            # 2. Wait for the evaluation process to complete
+            # 3. Wait for the evaluation process to complete
             evaluation_process.wait()
         else:
-            # 1. Start API Subprocess
-            api_process = _launch_api()
-            
-            # Allow the API time to bind to port 8000
-            time.sleep(2) 
-            
             # 2. Start Streamlit Subprocess
             ui_process = _launch_streamlit()
 

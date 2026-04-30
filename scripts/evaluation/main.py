@@ -29,20 +29,27 @@ def parse_arguments():
     parser = argparse.ArgumentParser(description="LLM models evaluation script.")
     
     parser.add_argument(
-        "--models", 
+        "-models", 
         nargs="+", 
-        choices=["GPT", "RAG", "Copilot", "NotebookLM", "DQL"], 
-        required=True,
-        help="List of models to evaluate (e.g., --models GPT RAG)"
+        choices=["FileSearch", "RAG", "Copilot", "NotebookLM", "DQL"], 
+        required=False,
+        default=["FileSearch", "RAG", "Copilot", "NotebookLM", "DQL"],
+        help="List of models to evaluate (e.g., --models RAG)"
     )
     parser.add_argument(
-        "--gen-llm", 
+        "-usecase", 
+        required=False,
+        default="vitali",
+        help="Which corpus the models need to use."
+    )
+    parser.add_argument(
+        "-gen-llm", 
         type=str, 
         default="gpt-4o-mini", 
-        help="OpenAI's LLM to use for generation (default: gpt-4o-mini)"
+        help="OpenAI's LLM to use for generation in RAG and FileSearch (default: gpt-4o-mini)"
     )
     parser.add_argument(
-        "--eval-llm", 
+        "-eval-llm", 
         type=str, 
         default="gpt-4o-mini", 
         help="OpenAI's LLM to use for evaluation/judge (default: gpt-4o-mini)"
@@ -71,17 +78,17 @@ def save_json(data, output_path):
         json.dump(data, o, ensure_ascii=False, indent=4, default=serialize)
     print(f"[INFO] File saved to {output_path}")
 
-def initialize_models_and_judge(selected_models, gen_llm, eval_llm, documents):
+def initialize_models_and_judge(selected_models, gen_llm, eval_llm, documents, usecase):
     """Registers the requested models and initializes the judge."""
     registry = ModelRegistry()
     
     # Available models mapping
     available_models = {
-        "GPT": lambda: GPTModel(gen_llm),
+        "FileSearch": lambda: GPTModel(gen_llm),
         "RAG": lambda: RAGModel(gen_llm),
         "Copilot": lambda: CopilotModel(),
         "NotebookLM": lambda: NotebookLMModel(),
-        "DQL": lambda: DQLModel(gen_llm, "DQL")
+        "DQL": lambda: DQLModel(gen_llm, usecase)
     }
 
     # Model registration
@@ -223,11 +230,11 @@ def main():
                               global_start_time.isoformat().replace(":", "").replace(".", ""))
     os.makedirs(output_dir, exist_ok=True)
 
-    documents = retrieve_doc_paths(project_root)
+    documents = retrieve_doc_paths(project_root, args.usecase)
     print(f"[INFO] Retrieved {len(documents)} document paths")
 
     # 1. Register models and initialize judge
-    registry, judge = initialize_models_and_judge(args.models, args.gen_llm, args.eval_llm, documents)
+    registry, judge = initialize_models_and_judge(args.models, args.gen_llm, args.eval_llm, documents, args.usecase)
 
     for question_file in sorted(os.listdir(input_dir)):
         if not question_file.endswith(".json"):
