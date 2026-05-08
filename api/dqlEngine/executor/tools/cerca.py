@@ -2,6 +2,7 @@
 
 from api.dqlEngine.executor.tools.converters import check_limit_result, format_conditions, format_context
 
+
 def cerca(context: list, query: dict, llm, language) -> str:
     """Search the retrieved context for the requested target."""
     # Retrieval must provide at least one document before search can run.
@@ -13,11 +14,35 @@ def cerca(context: list, query: dict, llm, language) -> str:
     if command != "cerca":
         raise ValueError("Error: The command provided does not match 'cerca'.")
 
-    # The translator stores the search target as the first 'what' item.
+    # Support both single and multi-what flows.
+    whats = query.get("what", [])
+    if not isinstance(whats, list):
+        whats = [whats]
+
+    if len(whats) > 1:
+        results = []
+
+        for what in whats:
+            sub_query = dict(query)
+            sub_query["what"] = [what]
+
+            result = cerca(context, sub_query, llm, language)
+            if result:
+                results.append(result)
+
+        return "\n\n".join(results)
+
+    # Single target selection.
     try:
-        what = query.get("what", [])[0]
-    except Exception:
+        what = whats[0]
+    except (IndexError, TypeError):
         what = {}
+
+    if not isinstance(what, dict):
+        if isinstance(what, str):
+            what = {"name": what}
+        else:
+            what = {}
 
     what_name = what.get("name", None)
 
@@ -34,12 +59,15 @@ def cerca(context: list, query: dict, llm, language) -> str:
         return cerca_frase(what, context, language, llm)
     elif what_name == "concetto":
         prompt = language.prompts.get("it", {}).get("CercaConcetto.json")
-        what_name = what.get("element")
+        concept = what.get("element", None)
+
+        if not concept:
+            return "Non è stato possibile rispondere alla tua richiesta perché non ho capito cosa cercare."
 
         state = {
             "how": format_conditions(query.get("how", {}), command),
             "context": format_context(context),
-            "what": what_name
+            "what": concept,
         }
     else:
         prompt = language.prompts.get("it", {}).get("Cerca.json")
@@ -48,7 +76,7 @@ def cerca(context: list, query: dict, llm, language) -> str:
             "how": format_conditions(query.get("how", {}), command),
             "context": format_context(context),
             "what": what_name,
-            "description_what": language.get_description_from_what(what_name)
+            "description_what": language.get_description_from_what(what_name),
         }
 
     if not prompt:
@@ -58,9 +86,12 @@ def cerca(context: list, query: dict, llm, language) -> str:
     result = llm.invoke(prompt, state)
     return result
 
+
 def cerca_frase(what, context, language, llm):
     """Find a phrase and ask the LLM for the surrounding sentence."""
     what_name = what.get("element")
+    if not what_name:
+        return "Non è stato possibile rispondere alla tua richiesta perché non ho capito cosa cercare."
 
     f_context = format_context(context)
 
@@ -68,7 +99,7 @@ def cerca_frase(what, context, language, llm):
     if what_name not in f_context:
         state = {
             "context": f_context,
-            "what": what.get("element")
+            "what": what.get("element"),
         }
 
         prompt = language.prompts.get("it", {}).get("CercaFrase1.json")
@@ -80,7 +111,6 @@ def cerca_frase(what, context, language, llm):
     else:
         result = what_name
 
-    # After disambiguation, the selected phrase must still exist in the context.
     if result not in f_context:
         return f"L'elemento \"{what_name}\" non è presente nel testo."
 
@@ -97,7 +127,7 @@ def cerca_frase(what, context, language, llm):
     prompt = language.prompts.get("it", {}).get("CercaFrase2.json")
     state = {
         "context": f_context_window,
-        "what": what.get("element")
+        "what": what.get("element"),
     }
 
     if not prompt:

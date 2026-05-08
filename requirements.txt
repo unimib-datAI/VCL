@@ -16,7 +16,7 @@ langchain-google-genai
 
 # Required for 'openai' (GPT Models)
 langchain-openai
-openai
+openai>=1.0.0
 tiktoken  # For OpenAI token counting
 
 # Required for 'huggingface'
