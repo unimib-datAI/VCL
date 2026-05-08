@@ -54,9 +54,6 @@
           "id": "1",
           "prompt": "ESTRAI nomi, importi e date DA sentenza di tribunale",
           "dependences": []
-          "id": "2",
-          "prompt": "ESTRAI testi di Y e Z DA #1",
-          "dependences": ["1"]
         }
       ]
     },
