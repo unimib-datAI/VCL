@@ -1,119 +1,101 @@
 {
-  "commands": [
-    {
-      "key": "a",
-      "command": "cerca",
-      "description": "Estrazione puntuale: identifica entità e concetti chiave. Per ogni elemento, riporta la citazione testuale esatta (verbatim) e spiega perché è rilevante."
-    },
-    {
-      "key": "b",
-      "command": "riassumi",
-      "description": "Sintesi densa: elimina ripetizioni e dettagli minori. Mantieni solo i punti informativi essenziali e i passaggi decisivi."
-    },
-    {
-      "key": "c",
-      "command": "estrai semantico",
-      "description": "Filtro tematico: isola e raggruppa solo le parti del testo che trattano l'argomento specifico indicato."
-    },
-    {
-      "key": "d",
-      "command": "estrai logico",
-      "description": "Analisi strutturale: individua ed estrai le singole tesi, argomentazioni o catene di ragionamento presenti."
-    },
-    {
-      "key": "e",
-      "command": "confronta",
-      "description": "Comparazione: analizza due o più elementi evidenziando in modo preciso somiglianze, differenze e punti di contatto."
-    },
-    {
-      "key": "f",
-      "command": "integra",
-      "description": "Fusione dati: unisci più testi in un unico output coerente, eliminando i doppioni e risolvendo eventuali contrasti tra le informazioni."
-    },
-    {
-      "key": "k",
-      "command": "altro",
-      "description": "Task libero: esegui qualsiasi altra operazione richiesta non specificata sopra.",
-      "default": true,
-      "atomic": ["*"]
-    }
-  ],
-  "sources": [
-    {
-      "name": "ricorso",
-      "synonyms": ["r2", "appello", "ricorso giuridico"],
-      "description": "Documento di impugnazione: contiene le critiche alla sentenza precedente e la richiesta di modifica."
-    },
-    {
-      "name": "comparsa di costituzione e risposta",
-      "synonyms": ["m2", "memoria difensiva", "risposta", "memoria"],
-      "description": "Documento di difesa: espone le ragioni per cui la domanda della controparte deve essere respinta."
-    },
-    {
-      "name": "sentenza di tribunale",
-      "synonyms": ["s1", "primo grado", "sentenza trib"],
-      "description": "Decisione iniziale del giudice: contiene i fatti accertati, i motivi legali e il verdetto (P.Q.M.)."
-    },
-    {
-      "name": "sentenza di corte d'appello",
-      "synonyms": ["s2", "secondo grado", "sentenza appello"],
-      "description": "Decisione di secondo livello: conferma, riforma o annulla la decisione del primo giudice."
-    }
-  ],
-  "what": [
-    {
-      "name": "sillogismo",
-      "definition": "La struttura logica: Norma applicata (legge) + Fatto (cosa è successo) = Conclusione (decisione).",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["estrai logico"]
-    },
-    {
-      "name": "importi economici",
-      "definition": "Dati numerici e finanziari: risarcimenti, debiti, spese legali e somme liquidate.",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["cerca"]
-    },
-    {
-      "name": "passaggio logico",
-      "definition": "Snodi del ragionamento: le deduzioni fondamentali che giustificano la decisione o la difesa.",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["estrai logico"]
-    },
-    {
-      "name": "articoli del codice civile (c.c.)",
-      "definition": "L'utente vuole tutti i riferimenti degli articoli del codice civile (c.c)",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["cerca"]
-    },
-    {
-      "name": "dispositivo",
-      "definition": "la sezione che contiene la decisione pratica del giudice o la richiesta finale della parte.",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["estrai semantico"]
-    },
-    {
-      "name": "argomentazioni giuridiche",
-      "definition": "Motivazioni: la spiegazione dettagliata dei motivi di fatto e di diritto.",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["estrai semantico"]
-    },
-    {
-      "name": "date",
-      "definition": "Date esplicite e puntuali presenti nel testo, espresse con giorno, mese e anno, solo mese e anno, oppure giorno/mese/anno numerico. Include udienze, decorrenze, depositi, accordi e sentenze. Esclude periodi, durate, intervalli temporali, anni isolati e formule vaghe.",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["cerca"]
-    },
-    {
-      "name": "luoghi",
-      "definition": "Luoghi geografici o istituzionali esplicitamente citati nel testo, come città, sedi, tribunali, uffici o località. Esclude contesti astratti o dedotti se non accompagnati da un luogo esplicito.",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["cerca"]
-    },
-    {
-      "name": "persone",
-      "definition": "Nomi propri espliciti di persone fisiche o enti giuridici presenti nel testo. Esclude ruoli generici o categorie come giudice, lavoratore, dipendente, attore, convenuto, parte, sindacati o datore di lavoro se non accompagnati da un nome proprio.",
-      "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
-      "relative_command": ["cerca"]
-    }
-  ]
+    "commands": [
+        {
+            "key": "a",
+            "command": "cerca",
+            "description": "Estrazione puntuale: identifica entità e concetti chiave. Per ogni elemento, riporta la citazione testuale esatta (verbatim) e spiega perché è rilevante."
+        },
+        {
+            "key": "b",
+            "command": "riassumi",
+            "description": "Sintesi densa: elimina ripetizioni e dettagli minori. Mantieni solo i punti informativi essenziali e i passaggi decisivi."
+        },
+        {
+            "key": "c",
+            "command": "estrai semantico",
+            "description": "Filtro tematico: isola e raggruppa solo le parti del testo che trattano l'argomento specifico indicato."
+        },
+        {
+            "key": "d",
+            "command": "estrai logico",
+            "description": "Analisi strutturale: individua ed estrai le singole tesi, argomentazioni o catene di ragionamento presenti."
+        },
+        {
+            "key": "e",
+            "command": "confronta",
+            "description": "Comparazione: analizza due o più elementi evidenziando in modo preciso somiglianze, differenze e punti di contatto."
+        },
+        {
+            "key": "f",
+            "command": "integra",
+            "description": "Fusione dati: unisci più testi in un unico output coerente, eliminando i doppioni e risolvendo eventuali contrasti tra le informazioni."
+        },
+        {
+            "key": "k",
+            "command": "altro",
+            "description": "Task libero: esegui qualsiasi altra operazione richiesta non specificata sopra.",
+            "default": true,
+            "atomic": ["*"]
+        }
+    ],
+    "sources": [
+        {
+            "name": "ricorso",
+            "synonyms": ["r2", "appello", "ricorso giuridico"],
+            "description": "Documento di impugnazione: contiene le critiche alla sentenza precedente e la richiesta di modifica."
+        },
+        {
+            "name": "comparsa di costituzione e risposta",
+            "synonyms": ["m2", "memoria difensiva", "risposta", "memoria"],
+            "description": "Documento di difesa: espone le ragioni per cui la domanda della controparte deve essere respinta."
+        },
+        {
+            "name": "sentenza di tribunale",
+            "synonyms": ["s1", "primo grado", "sentenza trib"],
+            "description": "Decisione iniziale del giudice: contiene i fatti accertati, i motivi legali e il verdetto (P.Q.M.)."
+        },
+        {
+            "name": "sentenza di corte d'appello",
+            "synonyms": ["s2", "secondo grado", "sentenza appello"],
+            "description": "Decisione di secondo livello: conferma, riforma o annulla la decisione del primo giudice."
+        }
+    ],
+    "what": [
+        {
+            "name": "sillogismo",
+            "definition": "La struttura logica: Norma applicata (legge) + Fatto (cosa è successo) = Conclusione (decisione).",
+            "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
+            "relative_command": ["estrai logico"]
+        },
+        {
+            "name": "importi economici",
+            "definition": "Dati numerici e finanziari: risarcimenti, debiti, spese legali e somme liquidate.",
+            "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
+            "relative_command": ["cerca"]
+        },
+        {
+            "name": "passaggio logico",
+            "definition": "Snodi del ragionamento: le deduzioni fondamentali che giustificano la decisione o la difesa.",
+            "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
+            "relative_command": ["estrai logico"]
+        },
+        {
+            "name": "articoli del codice civile (c.c.)",
+            "definition": "L'utente vuole tutti i riferimenti degli articoli del codice civile (c.c)",
+            "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
+            "relative_command": ["cerca"]
+        },
+        {
+            "name": "dispositivo",
+            "definition": "la sezione che contiene la decisione pratica del giudice o la richiesta finale della parte.",
+            "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
+            "relative_command": ["estrai semantico"]
+        },
+        {
+            "name": "argomentazioni giuridiche",
+            "definition": "Motivazioni: la spiegazione dettagliata dei motivi di fatto e di diritto.",
+            "available": ["ricorso", "comparsa di costituzione e risposta", "sentenza di tribunale", "sentenza di corte d'appello"],
+            "relative_command": ["estrai semantico"]
+        }
+    ]
 }

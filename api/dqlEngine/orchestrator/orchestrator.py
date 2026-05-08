@@ -68,15 +68,13 @@ class Orchestrator:
         
         status = {}
         
-        # Always generate a fresh request id to keep each API call traceable
-        # and avoid log interleaving under the same static client-provided id.
-        request_id = self._CFG.generate_request_id(request["user_id"])
+        request_id = request.get("request_id") if request.get("request_id") else self._get_request_id(request["user_id"])
         
         # Lazy initialization of specialized components for the current request
         self._logger = self._CFG.get_logger("Orchestrator", request_id)
         self._preprocessor = Preprocessor(self._CFG, request["user_id"], request_id)
         self._translator = Translator(self._CFG, request["user_id"], request_id)
-        self._planner = Planner(self._CFG, request["user_id"], request_id, what_strategy="multiple_whats")
+        self._planner = Planner(self._CFG, request["user_id"], request_id)
         self._executor = Executor(self._CFG, request["user_id"], request_id)
 
         try:

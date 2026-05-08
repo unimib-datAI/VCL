@@ -12,28 +12,10 @@ def estrai_semantico(context: list, query: dict, llm, language) -> str:
     command = query.get("command")
     if command != "estrai semantico":
         raise ValueError("Error: The command provided does not match 'estrai semantico'.")
-    
-    whats = query.get("what", [])
 
-    if not isinstance(whats, list):
-        whats = [whats]
-
-    if len(whats) > 1:
-        results = []
-
-        for what in whats:
-            sub_query = dict(query)
-            sub_query["what"] = [what]
-
-            result = estrai_semantico(context, sub_query, llm, language)
-
-            if result:
-                results.append(result)
-
-        return "\n\n".join(results)
-
+    # Read the specific target that should be extracted.
     try:
-        what = whats[0]
+        what = query.get("what", [])[0]
     except Exception:
         what = ""
 

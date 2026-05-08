@@ -66,14 +66,10 @@ class Storage:
         db = client["auth_db"]
         self._users = db["users"]
         self._documents = db["documents"]
-        self._document_items = db["document_items"]
 
         # Enforce unique constraints on usernames for integrity
         self._users.create_index("username", unique=True)
         self._documents.create_index("username", unique=True)
-        self._document_items.create_index("username")
-        self._document_items.create_index([("username", 1), ("doc_id", 1)], unique=True)
-        self._document_items.create_index([("username", 1), ("persisted_doc.type_doc", 1)])
 
         # Audit collection for tracking individual user queries
         self._questions = db["user_questions"]
@@ -222,8 +218,7 @@ class Storage:
             persisted_doc["text"] = str(persisted_doc)
 
         if "_id" not in persisted_doc:
-            stable_id = persisted_doc.get("name") or persisted_doc.get("type_doc")
-            persisted_doc["_id"] = str(stable_id) if stable_id else str(ObjectId())
+            persisted_doc["_id"] = str(ObjectId())
 
         if "type_doc" not in persisted_doc:
             persisted_doc["type_doc"] = "UNKNOWN"
@@ -235,15 +230,14 @@ class Storage:
             persisted_doc["owner"] = username
 
         try:
-            result = self._document_items.update_one(
-                {"username": username, "doc_id": str(persisted_doc["_id"])},
-                {"$setOnInsert": {"persisted_doc": persisted_doc}},
-                upsert=True
+            result = self._documents.update_one(
+                {"username": username},
+                {"$push": {"data.persisted_docs": persisted_doc}}
             )
 
             self._invalidate_cache(username, self._docs_cache, self._docs_cache_lock)
 
-            return bool(result.upserted_id) or result.matched_count > 0
+            return result.modified_count == 1
         except Exception as e:
             print(f"Upload document failed: {e}")
             return False
@@ -253,22 +247,14 @@ class Storage:
         Removes a document from the user's document collection by its unique ID.
         """
         try:
-            item_result = self._document_items.delete_one(
-                {"username": username, "doc_id": str(doc_id)}
+            result = self._documents.update_one(
+                {"username": username},
+                {"$pull": {"data.persisted_docs": {"_id": doc_id}}}
             )
-
-            deleted = item_result.deleted_count > 0
-
-            if not deleted:
-                result = self._documents.update_one(
-                    {"username": username},
-                    {"$pull": {"data.persisted_docs": {"_id": doc_id}}}
-                )
-                deleted = result.modified_count > 0
 
             self._invalidate_cache(username, self._docs_cache, self._docs_cache_lock)
 
-            return deleted
+            return result.modified_count > 0
         except Exception as e:
             print(f"Delete document failed: {e}")
             return False
@@ -299,7 +285,6 @@ class Storage:
         Wipes a user record, their associated documents, and clears all internal caches.
         """
         self._documents.delete_one({"username": user_id})
-        self._document_items.delete_many({"username": user_id})
         result = self._users.delete_one({"username": user_id})
 
         # Consistency: ensure stale data is removed from memory
@@ -319,14 +304,6 @@ class Storage:
         Searches for a specific document inside arrays, automatically
         selecting the correct collection (users vs documents).
         """
-        if key[0] == "persisted_docs":
-            item = self._document_items.find_one(
-                {"username": user_id, f"persisted_doc.{key[1]}": value},
-                {"persisted_doc": 1, "_id": 0}
-            )
-            if item and "persisted_doc" in item:
-                return item["persisted_doc"]
-
         # Determine source collection based on the data key
         collection = self._documents if key[0] == "persisted_docs" else self._users
 
@@ -347,23 +324,6 @@ class Storage:
         """
         Retrieves the user's document list with cache-first lookup.
         """
-        with self._docs_cache_lock:
-            if user_id in self._docs_cache:
-                return self._docs_cache[user_id]
-
-        item_docs = list(
-            self._document_items.find(
-                {"username": user_id},
-                {"persisted_doc": 1, "_id": 0}
-            )
-        )
-
-        if item_docs:
-            docs = [d.get("persisted_doc") for d in item_docs if d.get("persisted_doc") is not None]
-            with self._docs_cache_lock:
-                self._docs_cache[user_id] = docs
-            return docs
-
         return self._get_cached_data(
             user_id,
             self._docs_cache,
@@ -411,29 +371,24 @@ class Storage:
         doc.setdefault("updated_at", datetime.utcnow())
         doc_type = doc["type_doc"]
 
-        # Phase 1: Try to update an existing item document by type
-        result = self._document_items.update_one(
-            {"username": user_id, "persisted_doc.type_doc": doc_type},
-            {"$set": {"persisted_doc": doc}}
+        # Phase 1: Try to update an existing entry within the array
+        result = self._documents.update_one(
+            {"username": user_id, "data.persisted_docs.type_doc": doc_type},
+            {"$set": {"data.persisted_docs.$": doc}}
         )
 
         # Phase 2: If no entry existed, append to the array
         if result.matched_count == 0:
-            if "_id" not in doc:
-                stable_id = doc.get("name") or doc.get("type_doc")
-                doc["_id"] = str(stable_id) if stable_id else str(ObjectId())
-
-            result = self._document_items.update_one(
-                {"username": user_id, "doc_id": str(doc["_id"])},
-                {"$setOnInsert": {"persisted_doc": doc}},
-                upsert=True
+            result = self._documents.update_one(
+                {"username": user_id},
+                {"$push": {"data.persisted_docs": doc}}
             )
 
         # Clear cache to reflect the new state in the next read
         if result.modified_count > 0 or result.matched_count > 0:
             self._invalidate_cache(user_id, self._docs_cache, self._docs_cache_lock)
 
-        return result.modified_count > 0 or bool(result.upserted_id)
+        return result.modified_count > 0
 
     # --------------------------------
     # --- Cache Helper Methods ---

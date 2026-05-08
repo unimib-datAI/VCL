@@ -18,14 +18,6 @@
     "- CRITERI DI FORMATTAZIONE: Casi come \"Evidenziare anche\", \"individuare anche\", \"aggiungere anche\" \"aggiungere se\" sono situazioni di formattazione di fonti o testi (es. abbreviazioni, limiti di parole, elenchi). Queste situazioni sono sempre da considerare Criteri.",
     "- MOTIVAZIONI: Se una query richiede le motivazioni di un'azione, NON creare task a parte. È un'operazione implicita da non includere nel task.",
     "- CONCISIONE: Non usare cortesia. Rispetta rigorosamente la sintassi senza aggiungere testo libero al di fuori di essa.",
-    "- AZIONI AMMESSE: CERCA, ESTRAI, RIASSUMI, CONFRONTA, INTEGRA.",
-    "- Per CERCA ed ESTRAI: [AZIONE] <oggetto> DA <fonte> [criteri]",
-    "- Per RIASSUMI, CONFRONTA, INTEGRA: [AZIONE] #ID [criteri]",
-    "- Se una query chiede più oggetti con la stessa azione e dalla stessa fonte (es. 'A e B'), NON creare task distinti: mantienili nello stesso task.",
-    "- Se in una query viene posto di \"evidenziare\" un elemento oltre a <oggetto> è un Criterio e anche tutte le regole di formattazione di questi elementi sono Criteri",
-    "- Se in una query viene posto di \"individuare\" un elemento è un Criterio e anche tutte le regole di formattazione di questi elementi sono Criteri",
-    "- Se una query richiede anche le motivazioni di un'azione, NON creare un altro task. Elimina il riferimento è già un'operazione implicita in ogni risposta",
-    "- CONCISIONE: Non usare cortesia. Non ripetere il contenuto del task precedente, usa solo l'#ID.",
     "- FORMATO OUTPUT: Restituisci esclusivamente un array JSON di oggetti.",
     "",
     "### SCHEMA JSON",
@@ -36,24 +28,15 @@
   ],
   "examples": [
     {
-      "input": "Cerca nella conclusione del doc X i testi di Y e Z.",
-      "reasoning": "Richiede più oggetti con la stessa azione e la stessa fonte. Devono restare nello stesso task.",
+      "input": "Estrai nella conclusione del doc X i testi di Y e Z.",
+      "reasoning": "Viene specificata una sottosezione del documento ('la conclusione'). Serve un primo task per isolare la conclusione e un secondo task per estrarre gli oggetti da essa (sovrapposizione completa su Y e Z).",
       "output": [
         {
           "id": "1",
           "prompt": "ESTRAI conclusione DA doc X",
           "dependences": []
-        }
-      ]
-    },
-    {
-      "input": "Estrai nomi, importi e date da sentenza di tribunale.",
-      "reasoning": "Richiede più oggetti con la stessa azione e la stessa fonte. Devono restare nello stesso task.",
-      "output": [
+        },
         {
-          "id": "1",
-          "prompt": "ESTRAI nomi, importi e date DA sentenza di tribunale",
-          "dependences": []
           "id": "2",
           "prompt": "ESTRAI testi di Y e Z DA #1",
           "dependences": ["1"]
