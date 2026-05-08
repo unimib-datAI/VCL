@@ -2,6 +2,7 @@
 
 from api.dqlEngine.executor.tools.converters import check_limit_result, format_conditions, format_context
 
+
 def cerca(context: list, query: dict, llm, language) -> str:
     """Search the retrieved context for the requested target."""
     # Retrieval must provide at least one document before search can run.
@@ -13,10 +14,28 @@ def cerca(context: list, query: dict, llm, language) -> str:
     if command != "cerca":
         raise ValueError("Error: The command provided does not match 'cerca'.")
 
-    # The translator stores the search target as the first 'what' item.
+    whats = query.get("what", [])
+
+    if not isinstance(whats, list):
+        whats = [whats]
+
+    if len(whats) > 1:
+        results = []
+
+        for what in whats:
+            sub_query = dict(query)
+            sub_query["what"] = [what]
+
+            result = cerca(context, sub_query, llm, language)
+
+            if result:
+                results.append(result)
+
+        return "\n\n".join(results)
+
     try:
-        what = query.get("what", [])[0]
-    except Exception:
+        what = whats[0]
+    except (IndexError, TypeError):
         what = {}
 
     what_name = what.get("name", None)
@@ -30,8 +49,10 @@ def cerca(context: list, query: dict, llm, language) -> str:
 
     # Route each target type to the prompt that best matches its semantics.
     state = {}
+
     if what_name == "frase":
         return cerca_frase(what, context, language, llm)
+
     elif what_name == "concetto":
         prompt = language.prompts.get("it", {}).get("CercaConcetto.json")
         what_name = what.get("element")
@@ -41,6 +62,7 @@ def cerca(context: list, query: dict, llm, language) -> str:
             "context": format_context(context),
             "what": what_name
         }
+
     else:
         prompt = language.prompts.get("it", {}).get("Cerca.json")
 
@@ -57,6 +79,7 @@ def cerca(context: list, query: dict, llm, language) -> str:
     # Execute the selected prompt and return the search result.
     result = llm.invoke(prompt, state)
     return result
+
 
 def cerca_frase(what, context, language, llm):
     """Find a phrase and ask the LLM for the surrounding sentence."""

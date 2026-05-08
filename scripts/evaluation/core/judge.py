@@ -4,7 +4,10 @@ import json
 import numpy as np
 import asyncio
 
-from openai import AsyncOpenAI
+try:
+    from openai import AsyncOpenAI
+except ImportError:
+    AsyncOpenAI = None
 from ragas.llms import llm_factory
 from ragas.metrics.collections import FactualCorrectness, Faithfulness
 
@@ -21,11 +24,17 @@ class GPTJudge:
             raise ValueError("Model not supported!")
 
         self.model = model
-        self.client = AsyncOpenAI()
-        
-        self.llm_default = llm_factory(
-            self.model, client=self.client, max_tokens=16384
-        )
+        self.client = AsyncOpenAI() if AsyncOpenAI is not None else None
+
+        if self.client is not None:
+            self.llm_default = llm_factory(
+                self.model, client=self.client, max_tokens=16384
+            )
+        else:
+            # Fallback for old openai package versions where AsyncOpenAI is unavailable.
+            self.llm_default = llm_factory(
+                self.model, max_tokens=16384
+            )
         
         self.factualcorrectness = FactualCorrectness(
             llm=self.llm_default,

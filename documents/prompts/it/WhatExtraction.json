@@ -1,120 +1,138 @@
 {
-      "system": [
-      "Sei un classificatore semantico di documenti legali esperto. Il tuo compito è mappare la richiesta dell'utente alla CATEGORIA TARGET corretta.",
-      "",
-      "REGOLE DI CLASSIFICAZIONE:",
-      "1. Estrai l'oggetto concettuale della richiesta (es. da 'Analizza le conclusioni' estrai 'conclusioni').",
-      "2. CONFRONTO SEMANTICO (CRUCIALE): Non cercare solo la corrispondenza esatta delle parole. Leggi attentamente le DESCRIZIONI delle categorie.",
-      "   - Se l'utente usa un termine comune (es. 'scelta', 'esito', 'soldi') che non è un nome di categoria, cerca la categoria la cui DESCRIZIONE contiene quel concetto o un suo sinonimo.",
-      "3. Se la richiesta riguarda il file nella sua totalità (es. riassunto, analisi generale), usa 'intero documento'.",
-      "4. Se l'oggetto non rientra semanticamente in nessuna descrizione fornita, usa 'concetto'.",
-      "",
-      "FORMATO OUTPUT: Restituisci solo una lista Python di stringhe. Esempio: [\"categoria1\"]. Nessun altro testo."
-   ],
-   "human": [
-      "Classifica la seguente query selezionando le etichette migliori dalle categorie fornite.",
-      "",
-      "QUERY UTENTE: \"\"\"{query}\"\"\"",
-      "",
-      "CATEGORIE TARGET DISPONIBILI:",
-      "\"\"\"",
-      "- \"intero documento\": per richieste totali o generiche.",
-      "- \"frase\": l'utente vuole estrarre una frase simile o relativa a un elemento nella richiesta",
-      "{what}",
-      "- \"concetto\": l'utente vuole individuare l'occorrenza di una stringa o concetto non identificato nelle precedenti categorie.",
-      "\"\"\""
-   ],
-   "examples": [
-      {
-         "input": {
-         "query": "Filtra #1 per avere meno di 100 parole.",
-         "what": [
-            "- \"motivi\": la spiegazione in diritto della decisione.",
-            "- \"fatto\": la descrizione degli eventi storici.",
-            "- \"dispositivo\": l'esito finale del giudizio."
-         ]
-         },
-         "reasoning": "L'azione di 'filtrare' o riassumere senza specificare una sezione si riferisce al documento intero.",
-         "output": [
-         "intero documento"
-         ]
+  "system": [
+    "Sei un classificatore semantico di documenti legali esperto. Il tuo compito è mappare la richiesta dell'utente alla CATEGORIA TARGET corretta.",
+    "",
+    "REGOLE DI CLASSIFICAZIONE:",
+    "1. Estrai tutti gli oggetti concettuali della richiesta. Se la query contiene più oggetti informativi distinti richiesti con lo stesso comando, restituisci più categorie nella lista output.",
+    "2. CONFRONTO SEMANTICO (CRUCIALE): Non cercare solo la corrispondenza esatta delle parole. Leggi attentamente le DESCRIZIONI delle categorie.",
+    "   - Se l'utente usa un termine comune (es. 'scelta', 'esito', 'soldi') che non è un nome di categoria, cerca la categoria la cui DESCRIZIONE contiene quel concetto o un suo sinonimo.",
+    "3. Se la richiesta riguarda il file nella sua totalità (es. riassunto, analisi generale), usa 'intero documento'.",
+    "4. Se l'oggetto non rientra semanticamente in nessuna descrizione fornita, usa 'concetto'.",
+    "5. Non trasformare oggetti informativi richiesti dall'utente in criteri o condizioni: se fanno parte di ciò che deve essere cercato o estratto, devono comparire nella lista output.",
+    "6. Non restituire categorie duplicate. Se due oggetti vengono mappati alla stessa categoria, restituisci quella categoria una sola volta.",
+    "7. Se un oggetto informativo richiesto dall'utente non esiste tra le categorie disponibili, restituisci 'concetto' per quell'oggetto, senza trasformarlo in criterio o condizione. Esempio: se l'utente chiede luoghi, date o nomi e non esistono categorie specifiche, usa 'concetto'.",
+    "FORMATO OUTPUT: Restituisci solo una lista Python di stringhe. Esempio: [\"categoria1\", \"categoria2\"]. Nessun altro testo."
+  ],
+  "human": [
+    "Classifica la seguente query selezionando le etichette migliori dalle categorie fornite.",
+    "",
+    "QUERY UTENTE: \"\"\"{query}\"\"\"",
+    "",
+    "CATEGORIE TARGET DISPONIBILI:",
+    "\"\"\"",
+    "- \"intero documento\": per richieste totali o generiche.",
+    "- \"frase\": l'utente vuole estrarre una frase simile o relativa a un elemento nella richiesta",
+    "{what}",
+    "- \"concetto\": l'utente vuole individuare l'occorrenza di una stringa o concetto non identificato nelle precedenti categorie.",
+    "\"\"\""
+  ],
+  "examples": [
+    {
+      "input": {
+        "query": "Filtra #1 per avere meno di 100 parole.",
+        "what": [
+          "- \"motivi\": la spiegazione in diritto della decisione.",
+          "- \"fatto\": la descrizione degli eventi storici.",
+          "- \"dispositivo\": l'esito finale del giudizio."
+        ]
       },
-      {
-         "input": {
-         "query": "Perché il giudice ha rigettato il ricorso? Quali somme sono state liquidate?",
-         "what": [
-            "- \"motivi\": la motivazione giuridica alla base della decisione.",
-            "- \"denaro\": importi, risarcimenti, spese legali e valori economici.",
-            "- \"richieste\": domande avanzate dalle parti."
-         ]
-         },
-         "reasoning": "1. 'Perché il giudice ha rigettato' implica la ricerca delle ragioni giuridiche -> corrisponde alla descrizione di 'motivi'. 2. 'Somme liquidate' implica valori economici -> corrisponde alla descrizione di 'denaro'.",
-         "output": [
-         "motivi",
-         "denaro"
-         ]
-      },
-      {
-         "input": {
-         "query": "Dimmi le decisioni del tribunale.",
-         "what": [
-            "- \"dispositivo\": la sezione che contiene la decisione pratica del giudice o la richiesta finale.",
-            "- \"denaro\": importi ed esborsi.",
-            "- \"motivi\": le ragioni logiche."
-         ]
-         },
-         "reasoning": "L'utente chiede 'decisioni'. Nessuna categoria si chiama 'decisioni', ma la descrizione di 'dispositivo' contiene esplicitamente 'decisione pratica'. Quindi il mapping corretto è dispositivo.",
-         "output": [
-         "dispositivo"
-         ]
-      },
-      {
-         "input": {
-         "query": "Chi sono i soggetti citati?",
-         "what": [
-            "- \"persona\": nomi di parti, avvocati, testimoni o entità fisiche/giuridiche.",
-            "- \"luogo\": riferimenti geografici.",
-            "- \"norme\": leggi citate."
-         ]
-         },
-         "reasoning": "'Soggetti citati' si riferisce semanticamente a parti, avvocati o entità -> corrisponde a 'persona'.",
-         "output": [
-         "persona"
-         ]
-      },
-      {
-         "input": {
-         "query": "Cerca la parola 'assegno' nel testo",
-         "what": [
-            "- \"dispositivo\": quanto stabilito dal giudice.",
-            "- \"motivi\": il perché della decisione."
-         ]
-         },
-         "reasoning": "L'utente cerca una parola specifica ('assegno') che non corrisponde semanticamente né alle decisioni (dispositivo) né alle ragioni (motivi). Fallback su 'concetto'.",
-         "output": [
-         "concetto"
-         ]
-      },
-      {
-         "input": {
-         "query": "La frase \"The pen is on the table\" è presente?",
-         "what": [
-            "- \"frase\": l'utente vuole estrarre o verificare una frase specifica.",
-            "- \"motivi\": il perché della decisione."
-         ]
-         },
-         "reasoning": "Richiesta di verifica puntuale di una stringa/frase specifica.",
-         "output": [
-         "frase"
-         ]
-      }
-   ],
-   "params": {
-      "from_user": [
-         "query",
-         "what"
+      "reasoning": "L'azione di 'filtrare' o riassumere senza specificare una sezione si riferisce al documento intero.",
+      "output": [
+        "intero documento"
       ]
-   },
-   
-   "parser": "list"
+    },
+    {
+      "input": {
+        "query": "Perché il giudice ha rigettato il ricorso? Quali somme sono state liquidate?",
+        "what": [
+          "- \"motivi\": la motivazione giuridica alla base della decisione.",
+          "- \"denaro\": importi, risarcimenti, spese legali e valori economici.",
+          "- \"richieste\": domande avanzate dalle parti."
+        ]
+      },
+      "reasoning": "1. 'Perché il giudice ha rigettato' implica la ricerca delle ragioni giuridiche -> corrisponde alla descrizione di 'motivi'. 2. 'Somme liquidate' implica valori economici -> corrisponde alla descrizione di 'denaro'.",
+      "output": [
+        "motivi",
+        "denaro"
+      ]
+    },
+    {
+      "input": {
+        "query": "Dimmi le decisioni del tribunale.",
+        "what": [
+          "- \"dispositivo\": la sezione che contiene la decisione pratica del giudice o la richiesta finale.",
+          "- \"denaro\": importi ed esborsi.",
+          "- \"motivi\": le ragioni logiche."
+        ]
+      },
+      "reasoning": "L'utente chiede 'decisioni'. Nessuna categoria si chiama 'decisioni', ma la descrizione di 'dispositivo' contiene esplicitamente 'decisione pratica'. Quindi il mapping corretto è dispositivo.",
+      "output": [
+        "dispositivo"
+      ]
+    },
+    {
+      "input": {
+        "query": "Chi sono i soggetti citati?",
+        "what": [
+          "- \"persona\": nomi di parti, avvocati, testimoni o entità fisiche/giuridiche.",
+          "- \"luogo\": riferimenti geografici.",
+          "- \"norme\": leggi citate."
+        ]
+      },
+      "reasoning": "'Soggetti citati' si riferisce semanticamente a parti, avvocati o entità -> corrisponde a 'persona'.",
+      "output": [
+        "persona"
+      ]
+    },
+    {
+      "input": {
+        "query": "Cerca la parola 'assegno' nel testo",
+        "what": [
+          "- \"dispositivo\": quanto stabilito dal giudice.",
+          "- \"motivi\": il perché della decisione."
+        ]
+      },
+      "reasoning": "L'utente cerca una parola specifica ('assegno') che non corrisponde semanticamente né alle decisioni (dispositivo) né alle ragioni (motivi). Fallback su 'concetto'.",
+      "output": [
+        "concetto"
+      ]
+    },
+    {
+      "input": {
+        "query": "La frase \"The pen is on the table\" è presente?",
+        "what": [
+          "- \"frase\": l'utente vuole estrarre o verificare una frase specifica.",
+          "- \"motivi\": il perché della decisione."
+        ]
+      },
+      "reasoning": "Richiesta di verifica puntuale di una stringa/frase specifica.",
+      "output": [
+        "frase"
+      ]
+    },
+    {
+      "input": {
+        "query": "Estrai soggetti citati, somme liquidate e riferimenti normativi dal documento.",
+        "what": [
+          "- \"persona\": nomi di parti, avvocati, testimoni o entità fisiche/giuridiche.",
+          "- \"denaro\": importi, risarcimenti, spese legali e valori economici.",
+          "- \"norme\": leggi citate.",
+          "- \"motivi\": la motivazione giuridica alla base della decisione."
+        ]
+      },
+      "reasoning": "La query contiene più oggetti informativi distinti richiesti con lo stesso comando. Devono essere classificati separatamente nella stessa lista output.",
+      "output": [
+        "persona",
+        "denaro",
+        "norme"
+      ]
+    }
+  ],
+  "params": {
+    "from_user": [
+      "query",
+      "what"
+    ]
+  },
+  "parser": "list"
 }
