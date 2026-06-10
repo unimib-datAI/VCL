@@ -43,6 +43,7 @@ class LLM:
     _PROVIDER_ENV_MAP = {
         "google_genai": "GOOGLE_API_KEY",
         "openai": "OPENAI_API_KEY",
+        "azure_openai": "AZURE_OPENAI_API_KEY",
         "copilot": "GITHUB_COPILOT_API_KEY",
         "huggingface": "HUGGINGFACEHUB_API_TOKEN",
     }

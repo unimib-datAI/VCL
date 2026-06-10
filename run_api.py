@@ -22,7 +22,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("-wait_seconds", action="store", dest="seconds", type=int, required=False, default=0, help="Number of seconds to wait after each LLM call.")
     parser.add_argument("-parsers", action="store_true", dest="parsers", help="Enable to avoid llm when possible")
     parser.add_argument("-model_name", action="store", dest="model_name", required=False, default="gemini-2.5-flash", help="Specify the LLM model name.")
-    parser.add_argument("-provider", action="store", dest="provider", required=False, default="google_genai", choices=["google_genai", "openai", "copilot", "huggingface"], help="Specify the LLM provider.")
+    parser.add_argument("-provider", action="store", dest="provider", required=False, default="google_genai", choices=["google_genai", "openai", "azure_openai", "copilot", "huggingface"], help="Specify the LLM provider.")
     
     # We include evaluation_mode here just so argparse doesn't throw an error if it's passed
     parser.add_argument("-evaluation_mode", action="store_true", dest="evaluation_mode", help=argparse.SUPPRESS)

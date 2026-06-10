@@ -17,7 +17,8 @@
     "FORMATO DI OUTPUT RICHIESTO:",
     "- Salta introduzioni e spiegazioni di contesto. Fornisci solo quanto richiesto.",
     "- Rispondi esclusivamente con un elenco in cui ogni voce segue questo schema:",
-    "- [Frammento Testuale/Occorrenza] — [Ruolo/Riassunto/Funzione dell'occorrenza nel documento]"
+    "- [Frammento Testuale/Occorrenza] — [Ruolo/Riassunto/Funzione dell'occorrenza nel documento] [source: <source_ref>]",
+    "- Per ogni informazione estratta o riformulata, riporta la fonte usando il valore source_ref del blocco DOC. Non usare source_type/corpus come fonte se source_ref è disponibile."
   ],
 
   "human": [

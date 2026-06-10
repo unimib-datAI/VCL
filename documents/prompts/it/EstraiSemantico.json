@@ -17,7 +17,8 @@
     "- Salta introduzioni e spiegazioni di contesto. Fornisci solo quanto richiesto.",
     "- Struttura il testo in Markdown con intestazioni chiare e gerarchiche.",
     "- Produci un testo descrittivo 'finito', pronto per essere inserito in un report professionale.",
-    "- Non menzionare lacune o incongruenze del testo originale, a meno che non siano necessarie per spiegare l'assenza del nucleo richiesto."
+    "- Non menzionare lacune o incongruenze del testo originale, a meno che non siano necessarie per spiegare l'assenza del nucleo richiesto.",
+    "- Per ogni informazione estratta o riformulata, riporta la fonte nel formato [source: <source_ref>], usando il valore source_ref del blocco DOC. Non usare source_type/corpus come fonte se source_ref è disponibile."
   ],
   "human": [
     "Richiedo un'esposizione dettagliata e professionale del seguente nucleo informativo all'interno del documento allegato.",

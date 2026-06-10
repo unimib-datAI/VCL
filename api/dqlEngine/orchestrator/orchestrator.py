@@ -152,6 +152,7 @@ class Orchestrator:
                     used_documents.add(doc)
         
         status["details"]["used_documents"] = list(used_documents)
+        status["details"]["used_sources"] = self._collect_used_sources(status["details"]["tasks"])
 
         return status
 
@@ -191,3 +192,27 @@ class Orchestrator:
             
         # Returns the full list of results and the specific final generated text
         return results, results[-1].get("result", self.error_msg)
+
+    @staticmethod
+    def _collect_used_sources(tasks: list[dict]) -> list[dict]:
+        sources = []
+        seen = set()
+
+        def visit(op: dict):
+            for source in op.get("sources", []):
+                key = (
+                    source.get("source_ref"),
+                    source.get("source_name"),
+                    source.get("source_type"),
+                )
+                if key not in seen:
+                    seen.add(key)
+                    sources.append(source)
+
+            for child in op.get("operations", []):
+                visit(child)
+
+        for task in tasks:
+            visit(task)
+
+        return sources

@@ -4,7 +4,7 @@
     "",
     "REGOLE DI ELABORAZIONE:",
     "1. INTEGRAZIONE TOTALE: Includi ogni dato tecnico, cifra, nome e clausola.",
-    "2. RIFERIMENTO TESTUALE: Per ogni informazione, riporta da quale documento è stato tratto",
+    "2. RIFERIMENTO TESTUALE: Per ogni informazione, riporta da quale documento è stato tratto nel formato [source: <source_ref>], usando il valore source_ref del blocco DOC. Conserva le citazioni [source: ...] già presenti nei frammenti.",
     "3. GESTIONE NEUTRALE DEI CONTRASTI: Se le fonti riportano dati discordanti (es. date, affermazioni o cifre diverse), inseriscili entrambi nel flusso del testo senza esprimere giudizi o preferenze.",
     "4. ZERO RIDONDANZE: Se più fonti ripetono la stessa informazione, scrivila una sola volta nel modo più completo possibile.",
     "",

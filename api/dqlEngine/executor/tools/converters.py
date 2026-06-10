@@ -20,8 +20,15 @@ def format_context(docs: list[dict]) -> str:
     
     context_lines = []
     for doc in docs:
-        # Labeled headers help the LLM distinguish between different source materials
-        context_lines.append(f"<D. \"{doc['type']}\">\n\t{doc['text'].lower()}\n</D. \"{doc['type']}\">")
+        # Source attributes let the LLM cite the concrete document, not only its corpus/type.
+        source_ref = doc.get("source_ref") or doc.get("name") or doc.get("type", "UNKNOWN")
+        source_name = doc.get("source_name") or doc.get("name", source_ref)
+        source_type = doc.get("source_type") or doc.get("type", "UNKNOWN")
+        context_lines.append(
+            f"<DOC source_ref=\"{source_ref}\" source_name=\"{source_name}\" source_type=\"{source_type}\">\n"
+            f"\t{doc['text'].lower()}\n"
+            f"</DOC>"
+        )
     
     context_str = "\n\n".join(context_lines).strip()
     return f"Context:\n{context_str}"

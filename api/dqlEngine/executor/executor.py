@@ -103,11 +103,13 @@ class Executor:
                     self._retrieval = Retrieval(self._cfg, tasks, user_id, chat_id, source_id)
                     new_tasks = self._execute(deepcopy(o))
                     o["result"] = new_tasks[-1]["result"]  # Update sub-task result only for retrieval
+                    o["sources"] = self._collect_sources(new_tasks)
                     new_operations.extend(new_tasks)
                     
                 task["operations"] = new_operations
                 # The primary operation result inherits from its last sub-task
                 task["result"] = task["operations"][-1]["result"]
+                task["sources"] = self._collect_sources(task["operations"])
             else:
                 new_operations = self._execute(deepcopy(task))
                 
@@ -115,6 +117,7 @@ class Executor:
                     task["operations"] = new_operations
                 
                 task["result"] = new_operations[-1]["result"]
+                task["sources"] = self._collect_sources(new_operations)
             
         return tasks
     
@@ -130,6 +133,7 @@ class Executor:
         
         # 1. Gather all necessary document context
         docs = self._retrieval.execute(structured_prompt)
+        op["sources"] = self._extract_sources(docs)
         
         if "limit" in structured_prompt.get("how", {}):
             structured_prompt.get("how", {})["limit"] = self._disamgiguate_percent_limit(structured_prompt.get("how", {}).get("limit", {}), str(docs))
@@ -150,13 +154,25 @@ class Executor:
                 
                 self._logger.info(f"Processing document {i+1} of {len(docs)} for command '{command}'")
                 sub_op["result"] = self._call_tools(command, [doc], structured_prompt)
+                sub_op["sources"] = self._extract_sources([doc])
                 
-            sub_results = [{"name": docs[i]["name"], "text": sub_op.get("result", ""), "type": docs[i]["type"]} for i, sub_op in enumerate(sub_operations)]
+            sub_results = []
+            for i, sub_op in enumerate(sub_operations):
+                sub_results.append({
+                    "name": docs[i]["name"],
+                    "text": sub_op.get("result", ""),
+                    "type": docs[i]["type"],
+                    "source_ref": docs[i].get("source_ref"),
+                    "source_name": docs[i].get("source_name"),
+                    "source_type": docs[i].get("source_type"),
+                    "sources": sub_op.get("sources", []),
+                })
             
             self._logger.info(f"Processing sub-results for command '{command}' with 'integra' to combine them into a single output.")
             op["structured_prompt"]["command"] = "integra"
             op["structured_prompt"]["from"] = [sub_op["structured_prompt"].get("from", f"doc_{i+1}") for i, sub_op in enumerate(sub_operations)]
             op["result"] = self._call_tools("integra", sub_results, structured_prompt)
+            op["sources"] = self._collect_sources(sub_operations)
             sub_operations.append(deepcopy(op))
             return sub_operations
 
@@ -179,6 +195,51 @@ class Executor:
             raise ValueError(f"Execution failed for command '{command}': {str(e)}")
         
         return re.sub(self._pattern, self._format_heading, result)
+
+    @staticmethod
+    def _extract_sources(docs: list[dict]) -> list[dict]:
+        """Keep only source metadata, leaving document text out of the response JSON."""
+        sources = []
+        for doc in docs:
+            nested_sources = doc.get("sources")
+            if nested_sources:
+                sources.extend(nested_sources)
+                continue
+
+            source_ref = doc.get("source_ref")
+            if not source_ref:
+                continue
+
+            sources.append({
+                "source_ref": source_ref,
+                "source_name": doc.get("source_name") or doc.get("name"),
+                "source_type": doc.get("source_type") or doc.get("type"),
+            })
+
+        return Executor._dedupe_sources(sources)
+
+    @staticmethod
+    def _collect_sources(operations: list[dict]) -> list[dict]:
+        sources = []
+        for op in operations:
+            sources.extend(op.get("sources", []))
+        return Executor._dedupe_sources(sources)
+
+    @staticmethod
+    def _dedupe_sources(sources: list[dict]) -> list[dict]:
+        deduped = []
+        seen = set()
+        for source in sources:
+            key = (
+                source.get("source_ref"),
+                source.get("source_name"),
+                source.get("source_type"),
+            )
+            if key in seen:
+                continue
+            seen.add(key)
+            deduped.append(source)
+        return deduped
     
     
     def _disamgiguate_percent_limit(self, limit_cfg: dict, context: str) -> dict:

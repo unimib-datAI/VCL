@@ -11,6 +11,36 @@ from utils.config import Config
 from utils.file_manager import FileHandler
 
 
+def _get_source_ref(doc: dict, fallback: str = "") -> str:
+    """Build a stable, dataset-agnostic reference for a retrieved document."""
+    raw_ref = doc.get("_id") or doc.get("name") or doc.get("type_doc") or fallback
+    raw_ref = str(raw_ref)
+    return os.path.splitext(raw_ref)[0] if "." in raw_ref else raw_ref
+
+
+def _normalize_doc(doc: dict, fallback_type: str) -> dict:
+    """Return the document shape expected by executor tools, including source metadata."""
+    source_ref = _get_source_ref(doc, fallback_type)
+    source_name = doc.get("name") or source_ref
+    source_type = doc.get("type_doc") or fallback_type
+
+    return {
+        "name": source_name,
+        "text": doc.get("text", ""),
+        "type": source_type,
+        "source_ref": source_ref,
+        "source_name": source_name,
+        "source_type": source_type,
+    }
+
+
+def _first_source_name(operation: dict) -> str:
+    source = operation.get("structured_prompt", {}).get("from", ["UNKNOWN"])
+    if isinstance(source, list):
+        return source[0] if source else "UNKNOWN"
+    return source or "UNKNOWN"
+
+
 class Retrieval:
     """
     Core retrieval engine responsible for fetching documents across multiple storage layers.
@@ -61,8 +91,7 @@ class Retrieval:
             request_id (str, optional): The ID of the current request for logging purposes.
 
         Returns:
-            list[dict]: A list of objects containing 'name', 'text', and 'type' for 
-                        every successfully retrieved document.
+            list[dict]: Retrieved documents with text and source metadata.
         """
         self._logger = self.get_logger("Retrieval", request_id)
         
@@ -117,7 +146,7 @@ class Retrieval:
 
         # Fallback mechanism: If no source contains the ID, treat it as a literal string input
         self._logger.warning(f"'{doc_name}' not found in any source. Casting to raw text document.")
-        return [{"name": f"doc_{doc_name}", "text": doc_name, "type": "text"}]
+        return [_normalize_doc({"name": f"doc_{doc_name}", "text": doc_name, "type_doc": "text"}, "text")]
 
     def _get_from_operations_list(self, doc_name: str) -> list[dict]:
         """
@@ -129,14 +158,36 @@ class Retrieval:
         done = False
         for op in self._operations:
             if op.get("id") == doc_name:
-                result.append({"name": doc_name, "text": op.get("result", ""), "type": op.get("structured_prompt", {}).get("from", ["UNKNOWN"])[0]})
+                sources = op.get("sources", [])
+                source_refs = ", ".join(src.get("source_ref", "") for src in sources if src.get("source_ref"))
+                source_type = _first_source_name(op)
+                result.append({
+                    "name": doc_name,
+                    "text": op.get("result", ""),
+                    "type": source_type,
+                    "source_ref": source_refs or doc_name,
+                    "source_name": doc_name,
+                    "source_type": source_type,
+                    "sources": sources,
+                })
                 done = True
                 
             # Recurse into sub-operations if present
             if "operations" in op:
                 for o in op["operations"]:
                     if o.get("id") == doc_name:
-                        result.append({"name": doc_name, "text": o.get("result", ""), "type": o.get("structured_prompt", {}).get("from", ["UNKNOWN"])[0]})
+                        sources = o.get("sources", [])
+                        source_refs = ", ".join(src.get("source_ref", "") for src in sources if src.get("source_ref"))
+                        source_type = _first_source_name(o)
+                        result.append({
+                            "name": doc_name,
+                            "text": o.get("result", ""),
+                            "type": source_type,
+                            "source_ref": source_refs or doc_name,
+                            "source_name": doc_name,
+                            "source_type": source_type,
+                            "sources": sources,
+                        })
                         done = True
             
             if done:
@@ -153,9 +204,13 @@ class Retrieval:
         # Sequential check: Try matching by document type first, then by filename
         for method in [self._storage.get_document_by_type,
                         self._storage.get_document_by_name]:
-            doc = method(self._sources_id, doc_name)
-            if doc and "text" in doc:
-                result.append({"name": doc["name"], "text": doc["text"], "type": doc_name})
+            docs = method(self._sources_id, doc_name)
+            if isinstance(docs, dict):
+                docs = [docs]
+
+            for doc in docs or []:
+                if doc and "text" in doc:
+                    result.append(_normalize_doc(doc, doc_name))
         
         return result
     
@@ -168,7 +223,7 @@ class Retrieval:
         doc = self._storage.get_message(self._user_id, self._chat_id, doc_name)
         
         if doc and "content" in doc:
-            result.append({"name": doc["id"], "text": doc["content"], "type": doc_name})
+            result.append(_normalize_doc({"name": doc["id"], "text": doc["content"], "type_doc": doc_name}, doc_name))
         
         return result
 
@@ -196,13 +251,7 @@ class Retrieval:
 
                     # Ownership and name/type validation
                     if (doc.get("name").lower() == doc_name.lower() or doc.get("type_doc").lower() == doc_name.lower()) and doc.get("owner") == self._sources_id:
-                        result.append(
-                            {
-                                "name": doc.get("name", ""),
-                                "text": doc.get("text", ""),
-                                "type": doc.get("type_doc", "task"),
-                            }
-                        )
+                        result.append(_normalize_doc(doc, doc_name))
                 except Exception as e:
                     self._logger.warning(f"Error parsing local file '{fname}': {e}")
         except FileNotFoundError:
@@ -227,7 +276,7 @@ class Retrieval:
             for hit in response.get("hits", {}).get("hits", []):
                 src = hit.get("_source", {})
                 if "name" in src and "text" in src:
-                    result.append({"name": src["name"], "text": src["text"], "type": doc_name})
+                    result.append(_normalize_doc(src, doc_name))
 
         except (NotFoundError, RequestError, AuthenticationException,
                 AuthorizationException, ConnectionTimeout, ConnectionError,
