@@ -37,6 +37,7 @@ class LLM:
     # Default settings
     model_name: str = "gemini-2.5-flash"
     provider: str = "google_genai"
+    request_timeout_seconds: int = 3600
     parser = StrOutputParser()
 
     # Mapping of logical provider names to their respective environment keys
@@ -76,6 +77,9 @@ class LLM:
             # Primary attempt: Initialize with user preferences
             self._initialize_llm(api_key, model_name, provider)
         except Exception as e:
+            if provider != "google_genai":
+                raise
+
             # Secondary attempt: Automatic fallback to highly available Gemini engine
             print(f"CRITICAL: Failed to initialize {provider}/{model_name}. Fallback triggered. Error: {e}")
             self._initialize_llm(None, "gemini-2.5-flash", "google_genai")
@@ -130,8 +134,39 @@ class LLM:
         # Inject key into os.environ for LangChain standard compatibility
         self._set_env_key(provider, api_key)
 
+        request_timeout = self._load_request_timeout()
+        kwargs = {
+            "temperature": 0,
+            "timeout": request_timeout,
+        }
+
+        if provider == "azure_openai":
+            model_name = os.getenv("AZURE_OPENAI_MODEL") or model_name
+            kwargs["azure_deployment"] = os.getenv("AZURE_OPENAI_DEPLOYMENT") or model_name
+
+            azure_endpoint = os.getenv("AZURE_OPENAI_ENDPOINT")
+            if azure_endpoint and "/openai/" in azure_endpoint:
+                os.environ["AZURE_OPENAI_ENDPOINT"] = azure_endpoint.split("/openai/")[0] + "/"
+
+            azure_api_version = os.getenv("OPENAI_API_VERSION") or os.getenv("AZURE_OPENAI_API_VERSION")
+            if azure_api_version:
+                os.environ["OPENAI_API_VERSION"] = azure_api_version
+        elif provider != "google_genai":
+            kwargs["seed"] = 42
+
         # Initialize the dynamic LangChain chat model wrapper
-        self._llm = init_chat_model(model_name, model_provider=provider, temperature=0, seed=42)
+        self._llm = init_chat_model(model_name, model_provider=provider, **kwargs)
+
+    def _load_request_timeout(self) -> int:
+        """
+        Returns the per-request LLM timeout in seconds.
+        Defaults to one hour to support long DQL executions.
+        """
+        try:
+            timeout = int(os.getenv("LLM_REQUEST_TIMEOUT_SECONDS", self.request_timeout_seconds))
+            return timeout if timeout > 0 else self.request_timeout_seconds
+        except (TypeError, ValueError):
+            return self.request_timeout_seconds
 
     def _set_env_key(self, provider: str, api_key: str):
         """
@@ -195,12 +230,15 @@ class LLM:
     @staticmethod
     def str_in_list(output: str) -> list:
         """
-        Safely extracts a list structure from a string using AST literal evaluation.
+        Safely extracts a list structure from a string using JSON or AST parsing.
         """
         try:
             # Isolate content within square brackets
             output = output[output.index("["): output.rfind("]") + 1]
-            return ast.literal_eval(output)
+            try:
+                return json.loads(output)
+            except json.JSONDecodeError:
+                return ast.literal_eval(output)
         except (ValueError, SyntaxError):
             return []
             

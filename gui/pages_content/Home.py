@@ -99,6 +99,7 @@ def _display_chat_history() -> None:
                 )
             else:
                 st.markdown(message.get("content", "Errore!"))
+                _render_tables(message)
 
             if message.get("role", "assistant") == "assistant" and message.get("content", "Errore!") != "Ciao! Come posso aiutarti oggi?" and label:
                 st.markdown(
@@ -368,6 +369,7 @@ def _submit_prompt(prompt: str, selected_model: str) -> None:
             text = raw_result if isinstance(raw_result, str) else str(raw_result)
 
             _typewriter_effect(text, placeholder)
+            _render_tables(result)
 
             if selected_model == "DQL":
                 # DQL responses already contain rich details from the backend.
@@ -705,6 +707,39 @@ def _typewriter_effect(text: str, placeholder) -> None:
         typed_text += char
         placeholder.markdown(typed_text)
         time.sleep(0.01)
+
+
+def _render_tables(message: Dict) -> None:
+    """
+    Render optional tabular payloads returned by DQL SQL mode.
+    """
+    for table in (message or {}).get("tables", []) or []:
+        rows = table.get("rows", [])
+        if not rows:
+            continue
+
+        title = table.get("title", "")
+        if title:
+            st.markdown(f"**{title}**")
+
+        columns = table.get("columns", [])
+        display_rows = (
+            [{col: _format_table_cell(row.get(col, "")) for col in columns} for row in rows]
+            if columns else [
+                {col: _format_table_cell(value) for col, value in row.items()}
+                for row in rows
+            ]
+        )
+        st.dataframe(display_rows, width='stretch', hide_index=True)
+
+
+def _format_table_cell(value):
+    """
+    Normalize table cells for Streamlit/Arrow rendering.
+    """
+    if value is None:
+        return ""
+    return str(value)
 
 # -------------------------------
 # --- Battle UI (main thread)

@@ -20,6 +20,7 @@ from api.dqlEngine.preprocessor.preprocessor import Preprocessor
 from api.dqlEngine.translator.translator import Translator
 from api.dqlEngine.planner.planner import Planner
 from api.dqlEngine.executor.executor import Executor
+from api.dqlEngine.sql.sql_engine import SqlEngine
 
 
 class Orchestrator:
@@ -108,6 +109,37 @@ class Orchestrator:
             # --- Pipeline Execution Flow ---
             self._logger.info(f"Starting processing for request ID \"{status['id']}\".")
             self._logger.info(f"Request received \"{request['prompt']}\".")
+
+            self._sql_engine = SqlEngine(self._CFG, request["user_id"], request_id)
+            if self._sql_engine.is_sql(request["prompt"]):
+                self._logger.info("Routing request to SQL mode.")
+                sql_status = self._sql_engine.answer(
+                    request["prompt"],
+                    request["user_id"],
+                    request["chat_id"],
+                    request["source_id"],
+                )
+                status["details"].update(sql_status.get("details", {}))
+                status["content"] = sql_status.get("content", self.error_msg)
+                status["result"] = sql_status.get("result", status["content"])
+                status["tables"] = sql_status.get("tables", [])
+                self._logger.info("SQL mode processing completed correctly.")
+                return status
+
+            nl_sql_status = self._sql_engine.answer_from_natural_language(
+                request["prompt"],
+                request["user_id"],
+                request["chat_id"],
+                request["source_id"],
+            )
+            if nl_sql_status is not None:
+                self._logger.info("Routing request to guided NL-to-SQL mode.")
+                status["details"].update(nl_sql_status.get("details", {}))
+                status["content"] = nl_sql_status.get("content", self.error_msg)
+                status["result"] = nl_sql_status.get("result", status["content"])
+                status["tables"] = nl_sql_status.get("tables", [])
+                self._logger.info("Guided NL-to-SQL processing completed correctly.")
+                return status
             
             # Step 1: Clean input and split into logical tasks
             prompt_process, tasks = self._preprocess(request["prompt"])
