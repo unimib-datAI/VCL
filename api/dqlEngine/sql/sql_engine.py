@@ -1,11 +1,11 @@
 """Minimal SQL mode over DQL document corpora."""
 
+import json
 import re
 import sqlite3
 from dataclasses import dataclass
 from typing import Any
 
-from api.dqlEngine.executor.tools.converters import format_context
 from utils.config import Config
 
 
@@ -17,19 +17,58 @@ class SqlPlan:
     select_columns: list[str]
     where: str
     where_columns: list[str]
+    group_by: str
+    group_columns: list[str]
     order_by: str
     order_columns: list[str]
     limit: int | None
+    has_aggregates: bool
 
 
 class SqlEngine:
     """Execute a safe, small SQL subset by extracting rows from unstructured docs."""
 
-    BASE_COLUMNS = {"doc_id", "name", "type_doc", "owner", "source_ref", "source_name", "source_type"}
+    BASE_COLUMNS = {"id", "doc_id", "name", "type_doc", "owner", "source_ref", "source_name", "source_type"}
     INTERNAL_COLUMNS = {"evidence"}
-    UNSUPPORTED = (" join ", " group by ", " having ", " union ", " intersect ", " except ", " with ")
+    ROW_PREFIX_METADATA_COLUMNS = ("id", "source_ref", "source_name")
+    ROW_SUFFIX_METADATA_COLUMNS = ("evidence",)
+    ROW_METADATA_COLUMNS = ROW_PREFIX_METADATA_COLUMNS + ROW_SUFFIX_METADATA_COLUMNS
+    AGGREGATE_FUNCTIONS = {"count", "sum", "avg", "min", "max"}
+    UNSUPPORTED = (" join ", " having ", " union ", " intersect ", " except ", " with ")
     NL_SQL_MODES = {"sql_table", "natural_answer", "needs_clarification"}
     WHERE_OPERATORS = {"=", "!=", "<>", ">", ">=", "<", "<=", "like"}
+    SQL_CONTEXT_REDACTIONS = (
+        r"\b(?:ignore|disregard|forget)\s+(?:all\s+)?(?:previous|prior|above)\s+(?:instructions?|prompts?)\b",
+        r"\b(?:ignore|disregard|forget)\s+(?:the\s+)?(?:system|developer|user|assistant)\s+(?:prompt|instructions?)\b",
+        r"\boverride\s+(?:the\s+)?(?:system|developer|user|assistant)\s+(?:prompt|instructions?)\b",
+        r"\b(?:do\s+not|don't)\s+follow\s+(?:the\s+)?(?:previous|prior|above)\s+(?:instructions?|prompts?)\b",
+        r"\b(?:reveal|print|show|dump)\s+(?:the\s+)?(?:system|developer)\s+(?:prompt|instructions?)\b",
+        r"\bjailbreak\b",
+        r"<\s*/?\s*(?:script|system|developer|assistant|user)\b[^>]*>",
+    )
+    STRICT_SQL_CONTEXT_MARKERS = (
+        "ignore previous",
+        "ignore all previous",
+        "disregard previous",
+        "forget previous",
+        "override system",
+        "override developer",
+        "do not follow previous",
+        "don't follow previous",
+        "system prompt",
+        "developer prompt",
+        "system:",
+        "developer:",
+        "assistant:",
+        "user:",
+        "jailbreak",
+        "prompt injection",
+        "previous instructions",
+        "prior instructions",
+        "above instructions",
+        "```",
+        "<script",
+    )
 
     def __init__(self, cfg: Config, user_id: str, request_id: str):
         self._cfg = cfg
@@ -70,7 +109,8 @@ class SqlEngine:
         mapped_columns, unmapped_columns = self._split_mapped_columns(semantic_columns)
         self._logger.info(f"Semantic columns: {semantic_columns}. Ontology mapped={mapped_columns}; dynamic={unmapped_columns}.")
 
-        rows = self._extract_rows(docs, semantic_columns, plan.where)
+        rows, extraction_warnings = self._extract_rows(docs, semantic_columns, plan.where)
+        warnings.extend(extraction_warnings)
         raw_row_count = len(rows)
         self._logger.info(f"Extracted {raw_row_count} raw rows before SQL filtering.")
 
@@ -101,6 +141,7 @@ class SqlEngine:
                 "what": [{"name": c} for c in needed_columns if c != "*"],
                 "how": {
                     "where": plan.where,
+                    "group_by": plan.group_by,
                     "order_by": plan.order_by,
                     "limit": plan.limit,
                 },
@@ -122,8 +163,10 @@ class SqlEngine:
                         "source": resolved_source,
                         "select_columns": plan.select_columns,
                         "where": plan.where,
+                        "group_by": plan.group_by,
                         "order_by": plan.order_by,
                         "limit": plan.limit,
+                        "has_aggregates": plan.has_aggregates,
                     },
                     "processed_documents": len(docs),
                     "raw_rows": raw_row_count,
@@ -501,7 +544,7 @@ class SqlEngine:
         if not lowered.lstrip().startswith("select "):
             raise ValueError("SQL mode supports only SELECT queries.")
         if any(token in lowered for token in self.UNSUPPORTED):
-            raise ValueError("SQL MVP supports SELECT/FROM/WHERE/ORDER BY/LIMIT only.")
+            raise ValueError("SQL MVP supports SELECT/FROM/WHERE/GROUP BY/ORDER BY/LIMIT only; joins, HAVING and set operations are not supported.")
         if ";" in sql:
             raise ValueError("Multiple SQL statements are not supported.")
 
@@ -513,17 +556,17 @@ class SqlEngine:
             raise ValueError("Could not parse SQL. Expected: SELECT ... FROM ...")
 
         select_part = match.group("select").strip()
-        if re.search(r"(?is)\b(count|sum|avg|min|max)\s*\(", select_part):
-            raise ValueError("SQL MVP does not support aggregate functions yet.")
 
         table = self._unquote_identifier(match.group("table").strip())
         rest = match.group("rest").strip()
 
-        where = self._section(rest, "where", ["order by", "limit"])
+        where = self._section(rest, "where", ["group by", "order by", "limit"])
+        group_by = self._section(rest, "group by", ["order by", "limit"])
         order_by = self._section(rest, "order by", ["limit"])
         limit_value = self._parse_limit(rest)
         select_columns = self._parse_select_columns(select_part)
         where_columns = self._columns_from_expression(where)
+        group_columns = self._columns_from_group(group_by)
         order_columns = self._columns_from_order(order_by)
         executable_sql = self._replace_from_table(sql)
 
@@ -534,9 +577,12 @@ class SqlEngine:
             select_columns=select_columns,
             where=where,
             where_columns=where_columns,
+            group_by=group_by,
+            group_columns=group_columns,
             order_by=order_by,
             order_columns=order_columns,
             limit=limit_value,
+            has_aggregates=self._has_aggregate(select_part),
         )
 
     @staticmethod
@@ -574,9 +620,27 @@ class SqlEngine:
             return ["*"]
         columns = []
         for raw in self._split_csv(select_part):
-            column = re.split(r"(?is)\s+as\s+", raw.strip())[0].strip()
-            columns.append(self._unquote_identifier(column))
+            columns.extend(self._columns_from_select_item(raw))
         return columns
+
+    def _columns_from_select_item(self, item: str) -> list[str]:
+        expression = re.split(r"(?is)\s+as\s+", item.strip())[0].strip()
+        aggregate_match = re.fullmatch(
+            r"(?is)(count|sum|avg|min|max)\s*\((.*?)\)",
+            expression,
+        )
+        if aggregate_match:
+            argument = re.sub(r"(?is)^\s*distinct\s+", "", aggregate_match.group(2).strip())
+            if argument == "*":
+                return []
+            return [self._unquote_identifier(argument)]
+
+        return [self._unquote_identifier(expression)]
+
+    @classmethod
+    def _has_aggregate(cls, select_part: str) -> bool:
+        functions = "|".join(sorted(cls.AGGREGATE_FUNCTIONS))
+        return bool(re.search(rf"(?is)\b({functions})\s*\(", select_part))
 
     @staticmethod
     def _split_csv(text: str) -> list[str]:
@@ -605,13 +669,22 @@ class SqlEngine:
                 columns.append(column)
         return self._dedupe(columns)
 
+    def _columns_from_group(self, group_by: str) -> list[str]:
+        if not group_by:
+            return []
+        return self._dedupe([
+            self._unquote_identifier(item.strip())
+            for item in self._split_csv(group_by)
+            if item.strip()
+        ])
+
     def _columns_from_order(self, order_by: str) -> list[str]:
         if not order_by:
             return []
         columns = []
         for item in self._split_csv(order_by):
             column = re.sub(r"(?is)\s+(asc|desc)\s*$", "", item.strip())
-            columns.append(self._unquote_identifier(column))
+            columns.extend(self._columns_from_select_item(column))
         return self._dedupe(columns)
 
     @staticmethod
@@ -631,6 +704,7 @@ class SqlEngine:
         else:
             columns.extend(plan.select_columns)
         columns.extend(plan.where_columns)
+        columns.extend(plan.group_columns)
         columns.extend(plan.order_columns)
         columns.extend(["source_ref", "evidence"])
         return self._dedupe(columns)
@@ -659,25 +733,27 @@ class SqlEngine:
 
         raise ValueError(f"No documents found for SQL source '{table}'.")
 
-    def _extract_rows(self, docs: list[dict], semantic_columns: list[str], where: str) -> list[dict]:
+    def _extract_rows(self, docs: list[dict], semantic_columns: list[str], where: str) -> tuple[list[dict], list[str]]:
         if not semantic_columns:
-            return [self._base_row(doc) for doc in docs]
+            return [self._base_row(doc) for doc in docs], []
 
         prompt = self._language.prompts.get("it", {}).get("SqlExtractRows.json")
         if not prompt:
             raise ValueError("SqlExtractRows.json prompt template not found.")
 
         rows = []
+        warnings = []
         for index, doc in enumerate(docs, start=1):
             self._logger.info(f"Extracting SQL rows from document {index}/{len(docs)}: {doc.get('name', '')}")
             base_row = self._base_row(doc)
-            result = self._llm.invoke(
+            result = self._extract_rows_from_doc(
                 prompt,
-                {
-                    "columns": str(semantic_columns),
-                    "where": where or "Nessuna condizione WHERE.",
-                    "context": format_context([self._normalize_doc(doc)]),
-                },
+                doc,
+                semantic_columns,
+                where,
+                index,
+                len(docs),
+                warnings,
             )
             if not isinstance(result, list):
                 result = []
@@ -689,11 +765,95 @@ class SqlEngine:
                     row[column] = self._scalar(item.get(column, ""))
                 rows.append(row)
 
-        return rows
+        return rows, warnings
+
+    def _extract_rows_from_doc(
+        self,
+        prompt: Any,
+        doc: dict,
+        semantic_columns: list[str],
+        where: str,
+        index: int,
+        total_docs: int,
+        warnings: list[str],
+    ) -> Any:
+        inputs = {
+            "columns": str(semantic_columns),
+            "where": where or "Nessuna condizione WHERE.",
+            "context": self._format_sql_context(doc, sanitize=False),
+        }
+        try:
+            return self._llm.invoke(prompt, inputs)
+        except Exception as exc:
+            if not self._is_content_filter_error(exc):
+                raise
+
+            doc_name = doc.get("name", "") or f"documento {index}"
+            self._logger.warning(
+                f"Provider content filter while extracting SQL rows from {doc_name}. "
+                "Retrying with stricter document redaction."
+            )
+
+        inputs["context"] = self._format_sql_context(doc, sanitize=True, strict=True)
+        try:
+            return self._llm.invoke(prompt, inputs)
+        except Exception as exc:
+            if not self._is_content_filter_error(exc):
+                raise
+
+            doc_name = doc.get("name", "") or f"documento {index}"
+            self._logger.warning(
+                f"Skipping SQL extraction for document {index}/{total_docs} ({doc_name}) "
+                "because the provider content filter rejected the document."
+            )
+            warnings.append(
+                f"Documento {doc_name} saltato durante l'estrazione SQL: il provider LLM ha bloccato il contenuto."
+            )
+            return []
+
+    def _format_sql_context(self, doc: dict, sanitize: bool = True, strict: bool = False) -> str:
+        normalized = self._normalize_doc(doc)
+        text = str(normalized.get("text", ""))
+        if sanitize:
+            text = self._sanitize_sql_document_text(text, strict)
+        payload = {
+            "source_ref": str(normalized["source_ref"]),
+            "source_name": str(normalized["source_name"]),
+            "source_type": str(normalized["source_type"]),
+            "document_text": text,
+        }
+        return json.dumps(payload, ensure_ascii=False)
+
+    @classmethod
+    def _sanitize_sql_document_text(cls, text: str, strict: bool = False) -> str:
+        safe_text = text
+        for pattern in cls.SQL_CONTEXT_REDACTIONS:
+            safe_text = re.sub(pattern, "[instruction-like text omitted]", safe_text, flags=re.IGNORECASE)
+
+        if strict:
+            safe_lines = []
+            for line in safe_text.splitlines():
+                lowered = line.lower()
+                if any(marker in lowered for marker in cls.STRICT_SQL_CONTEXT_MARKERS):
+                    safe_lines.append("[instruction-like line omitted]")
+                else:
+                    safe_lines.append(line)
+            safe_text = "\n".join(safe_lines)
+
+        return safe_text
+
+    @staticmethod
+    def _is_content_filter_error(exc: Exception) -> bool:
+        text = str(exc).lower()
+        return (
+            "content_filter" in text
+            or "responsibleaipolicyviolation" in text
+            or "filtered due to the prompt" in text
+        )
 
     @staticmethod
     def _normalize_doc(doc: dict) -> dict:
-        source_ref = str(doc.get("_id") or doc.get("name") or doc.get("type_doc") or "")
+        source_ref = str(doc.get("source_ref") or doc.get("name") or doc.get("_id") or doc.get("type_doc") or "")
         return {
             "name": doc.get("name") or source_ref,
             "text": doc.get("text", ""),
@@ -706,6 +866,7 @@ class SqlEngine:
     def _base_row(self, doc: dict) -> dict:
         normalized = self._normalize_doc(doc)
         return {
+            "id": self._normalize_uda_id(normalized["source_ref"]),
             "doc_id": str(doc.get("_id") or normalized["source_ref"]),
             "name": normalized["source_name"],
             "type_doc": normalized["source_type"],
@@ -715,6 +876,18 @@ class SqlEngine:
             "source_type": normalized["source_type"],
             "evidence": "",
         }
+
+    @staticmethod
+    def _normalize_uda_id(source_ref: Any) -> str:
+        text = str(source_ref or "").strip()
+        if not text:
+            return ""
+
+        name = text.replace("\\", "/").rsplit("/", 1)[-1]
+        stem = name.rsplit(".", 1)[0] if "." in name else name
+        if re.fullmatch(r"\d+", stem):
+            return str(int(stem))
+        return stem or text
 
     def _deduplicate_rows(self, rows: list[dict]) -> tuple[list[dict], int]:
         deduplicated = []
@@ -747,6 +920,17 @@ class SqlEngine:
             return self._result_columns(plan), []
 
         columns = self._dedupe([c for row in rows for c in row.keys()])
+        if self._is_row_level_result(plan):
+            prefix_metadata_columns = self._result_metadata_columns(plan, columns, self.ROW_PREFIX_METADATA_COLUMNS)
+            suffix_metadata_columns = self._result_metadata_columns(plan, columns, self.ROW_SUFFIX_METADATA_COLUMNS)
+        else:
+            prefix_metadata_columns = []
+            suffix_metadata_columns = []
+        executable_sql = self._sql_with_result_metadata(
+            plan.executable_sql,
+            prefix_metadata_columns,
+            suffix_metadata_columns,
+        )
         conn = sqlite3.connect(":memory:")
         conn.row_factory = sqlite3.Row
         try:
@@ -761,9 +945,9 @@ class SqlEngine:
                 f"INSERT INTO dql_rows ({quoted_columns}) VALUES ({placeholders})",
                 [[row.get(c, "") for c in columns] for row in rows],
             )
-            cursor = conn.execute(plan.executable_sql)
+            cursor = conn.execute(executable_sql)
             result_columns = [desc[0] for desc in cursor.description]
-            result_rows = [dict(row) for row in cursor.fetchall()]
+            result_rows = [self._normalize_result_metadata(dict(row)) for row in cursor.fetchall()]
             return result_columns, result_rows
         except sqlite3.Error as exc:
             raise ValueError(f"SQL execution failed: {exc}") from exc
@@ -773,7 +957,62 @@ class SqlEngine:
     def _result_columns(self, plan: SqlPlan) -> list[str]:
         if plan.select_columns == ["*"]:
             return sorted(self.BASE_COLUMNS | self.INTERNAL_COLUMNS)
-        return self._dedupe(plan.select_columns)
+        if not self._is_row_level_result(plan):
+            return self._dedupe(plan.select_columns)
+        return self._dedupe(
+            list(self.ROW_PREFIX_METADATA_COLUMNS) + plan.select_columns + list(self.ROW_SUFFIX_METADATA_COLUMNS)
+        )
+
+    @staticmethod
+    def _is_row_level_result(plan: SqlPlan) -> bool:
+        return not plan.has_aggregates and not plan.group_by
+
+    def _result_metadata_columns(
+        self,
+        plan: SqlPlan,
+        available_columns: list[str],
+        wanted_columns: tuple[str, ...],
+    ) -> list[str]:
+        if plan.select_columns == ["*"]:
+            return []
+
+        selected = {column.lower() for column in plan.select_columns}
+        available = {column.lower(): column for column in available_columns}
+        return [
+            available[column]
+            for column in wanted_columns
+            if column in available and column not in selected
+        ]
+
+    def _sql_with_result_metadata(
+        self,
+        sql: str,
+        prefix_metadata_columns: list[str],
+        suffix_metadata_columns: list[str],
+    ) -> str:
+        if not prefix_metadata_columns and not suffix_metadata_columns:
+            return sql
+
+        match = re.match(r"(?is)^\s*select\s+(?P<select>.*?)\s+from\s+dql_rows(?P<rest>.*)$", sql)
+        if not match:
+            metadata_columns = prefix_metadata_columns + suffix_metadata_columns
+            metadata_select = ", ".join(self._quote_ident(column) for column in metadata_columns)
+            return re.sub(r"(?is)^\s*select\s+", f"SELECT {metadata_select}, ", sql, count=1)
+
+        select_parts = []
+        if prefix_metadata_columns:
+            select_parts.append(", ".join(self._quote_ident(column) for column in prefix_metadata_columns))
+        select_parts.append(match.group("select").strip())
+        if suffix_metadata_columns:
+            select_parts.append(", ".join(self._quote_ident(column) for column in suffix_metadata_columns))
+
+        return f"SELECT {', '.join(select_parts)} FROM dql_rows{match.group('rest')}"
+
+    def _normalize_result_metadata(self, row: dict) -> dict:
+        for column in self.ROW_METADATA_COLUMNS:
+            if column in row and row[column] is not None:
+                row[column] = str(row[column])
+        return row
 
     @staticmethod
     def _quote_ident(identifier: str) -> str:
