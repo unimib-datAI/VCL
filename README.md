@@ -193,6 +193,16 @@ pip install -r requirements.txt
 
 Create a `.env` file in the repo root with the variables you need. A `.env.example` file is provided as a reference with the main parameters.
 
+`MONGO_INITDB_ROOT_USERNAME` and `MONGO_INITDB_ROOT_PASSWORD` are the credentials used by Docker to initialize the MongoDB root user **the first time the container is created** (i.e. when `./data` is empty). `MONGO_URI` is the connection string the application uses to talk to that same database, so it must embed those same credentials and point at the host-mapped port (`27019`, see `docker-compose.yml`), for example:
+
+```
+MONGO_INITDB_ROOT_USERNAME=vcl_admin
+MONGO_INITDB_ROOT_PASSWORD=<a-strong-password>
+MONGO_URI=mongodb://vcl_admin:<a-strong-password>@localhost:27019/?authSource=admin
+```
+
+**NB**: if you change these credentials *after* the container has already been initialized once, MongoDB will **not** pick them up automatically — the root user already exists with the old credentials. Either wipe `./data` and let Docker re-initialize, or connect with the existing credentials and update/create the user manually (e.g. via `docker exec -it dql-mongodb mongo admin -u <old_user> -p <old_pass>`).
+
 ## 5) Insert corpus files
 
 You must store your documents in the `documents/corpus` directory. The directory should be structured as follows:
@@ -285,11 +295,15 @@ During the container creation, the database will be empty. You must create at le
 
 ```bash
 docker compose up -d --build
-python scripts/create_user.py --username <USER> --password <PASSWORD> --role Admin
+python scripts/create_user.py -username <USER> -password <PASSWORD> -role Admin
 ```
 
+**NB**: `docker compose up -d --build` (with the default `docker-compose.yml`) only starts the **MongoDB** container — the `dql-system` service is commented out and unused, since the application itself is run locally with `python main.py` (see step 8), not inside Docker.
+
 *Optional parameters:*
-*   `--email <EMAIL>` (No emails are sent)
+*   `-email <EMAIL>` (No emails are sent)
+
+*Password requirements:* at least 8 characters, with at least 1 lowercase letter, 1 uppercase letter, 1 digit and 1 special character (`!@#$%^&*()-_+.`).
 
 **NB**
 
@@ -322,7 +336,20 @@ The script accepts several optional flags (arguments) to customize its behavior:
 *   `-provider <PROVIDER_NAME>`
     *   **Description:** Specifies which LLM provider to use.
     *   **Default:** `google_genai`
-    *   **Choices:** `google_genai`, `openai`, `copilot`, `huggingface`.
+    *   **Choices:** `google_genai`, `openai`, `azure_openai`, `copilot`, `huggingface`.
+    *   **Azure OpenAI / Microsoft Foundry:** to use a model deployed on Azure AI Foundry, set `-provider azure_openai` and fill in `.env`:
+        ```
+        AZURE_OPENAI_API_KEY=<key>
+        AZURE_OPENAI_ENDPOINT=<endpoint>
+        ```
+        Both values are on the deployment's **Details** page in the Azure AI Foundry portal:
+        * **Key** → `AZURE_OPENAI_API_KEY`.
+        * **Endpoint** → `AZURE_OPENAI_ENDPOINT`, copied as-is (it may look like `https://<resource>.services.ai.azure.com/openai/v1/responses` — that's fine, it's normalized automatically to the resource root).
+        * **Name** (the deployment name at the top of the page, e.g. `gpt-4.1-mini-renzo-vcl-local`) → passed via `-model_name` when launching the app, e.g.:
+          ```bash
+          python main.py -provider azure_openai -model_name gpt-4.1-mini-renzo-vcl-local
+          ```
+        No other Azure-specific variables are required — `api-version` defaults to a recent stable release and only needs overriding (`OPENAI_API_VERSION` in `.env`) for edge cases.
 
 *   `-model_name <MODEL_NAME>`
     *   **Description:** Specifies the exact LLM model name to use.

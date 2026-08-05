@@ -148,9 +148,10 @@ class LLM:
             if azure_endpoint and "/openai/" in azure_endpoint:
                 os.environ["AZURE_OPENAI_ENDPOINT"] = azure_endpoint.split("/openai/")[0] + "/"
 
-            azure_api_version = os.getenv("OPENAI_API_VERSION") or os.getenv("AZURE_OPENAI_API_VERSION")
-            if azure_api_version:
-                os.environ["OPENAI_API_VERSION"] = azure_api_version
+            # Azure requires an explicit api-version; default kept here so it
+            # doesn't need to be set in .env unless overriding it.
+            azure_api_version = os.getenv("OPENAI_API_VERSION") or os.getenv("AZURE_OPENAI_API_VERSION") or "2024-10-21"
+            os.environ["OPENAI_API_VERSION"] = azure_api_version
         elif provider != "google_genai":
             kwargs["seed"] = 42
 
